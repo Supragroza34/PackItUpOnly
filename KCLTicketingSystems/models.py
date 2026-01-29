@@ -9,7 +9,8 @@ class Ticket(models.Model):
     k_number = models.CharField(max_length=255, unique=True)
     k_email = models.EmailField()
     department = models.CharField(max_length=255)
-    issues = models.TextField()
+    type_of_issue = models.CharField(max_length=255)
+    additional_details = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

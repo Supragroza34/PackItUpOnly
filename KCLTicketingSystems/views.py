@@ -1,8 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Ticket
+from .forms import ReplyForm
 import re
 
 # Create your views here.
@@ -101,3 +102,19 @@ def submit_ticket(request):
             {'errors': {'general': f'An error occurred: {str(e)}'}},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+def home(request):
+    return render(request, 'home.html')
+
+def reply(request):
+    if request.method == "POST":
+        form = ReplyForm(request.POST)
+        if form.is_valid():
+            reply = form.save(commit=False)
+            reply.save()
+            return redirect('reply')
+        
+    else:
+        form = ReplyForm()
+    context = {'form': form}        
+    return render(request, 'reply.html', context)

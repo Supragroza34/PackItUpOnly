@@ -1,0 +1,12 @@
+{% block body %}
+  <h1 class="cover-heading">Repy to ticket</h1>
+  <form method="post">
+    {%csrf_token %}
+    {% for field in form %}
+        <div class="mb-3 form-group">
+            {{ field.label_tag }}
+        </div>
+    {% endfor %}
+    <button type="submit" class = "submit-button">Submit reply</button>    
+  </form>
+{% endblock %}

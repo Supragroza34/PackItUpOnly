@@ -2,8 +2,7 @@ from django.shortcuts import render, redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Ticket
-from .forms import ReplyForm
+from ..models import Ticket
 import re
 
 # Create your views here.

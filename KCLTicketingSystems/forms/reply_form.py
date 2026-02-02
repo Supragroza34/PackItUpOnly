@@ -1,10 +1,7 @@
 from django import forms
+from KCLTicketingSystems.models import Reply
 
-class ReplyForm(forms.Form):
-    body = forms.CharField(
-        widget=forms.Textarea(attrs={
-            "placeholder": "Reply here",
-        }),
-        required=True,
-        max_length=500,
-    )
+class ReplyForm(forms.ModelForm):
+    class Meta:
+        model = Reply
+        fields = ['body']

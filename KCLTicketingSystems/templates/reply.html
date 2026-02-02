@@ -1,12 +1,13 @@
-{% block body %}
-  <h1 class="cover-heading">Repy to ticket</h1>
+{% block content %}
+<h1 class="cover-heading">Reply to ticket 3124 issued by lost_student@kcl.ac.uk</h1>
+<h2>Issue:</h2>
+<p>Can't find lecture recordings</p>
+<body>
   <form method="post">
-    {%csrf_token %}
-    {% for field in form %}
-        <div class="mb-3 form-group">
-            {{ field.label_tag }}
-        </div>
-    {% endfor %}
-    <button type="submit" class = "submit-button">Submit reply</button>    
+      {% csrf_token %}
+      <h3>Your response:</h3> 
+      {{form.as_p}}
+      <button type="submit" class = "submit-button">Submit reply</button>    
   </form>
+</body>
 {% endblock %}

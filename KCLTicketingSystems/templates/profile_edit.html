@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Edit profile</title>
+  <link rel="stylesheet" href="{% static 'profile_edit.css' %}">
+</head>
+
+<body>
+  <div class="page">
+    <div class="container">
+
+      <div class="header">
+        <div>
+          <h1>Edit profile</h1>
+          <div class="subtitle">Update your details below.</div>
+        </div>
+
+        <div class="actions">
+          <a href="{% url 'profile' %}">Back to profile</a>
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="errors">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="section">
+          <div class="row">
+            <div class="field">
+              <label for="{{ form.full_name.id_for_label }}">Full name</label>
+              {{ form.full_name }}
+              {% if form.full_name.errors %}
+                <div class="errors">{{ form.full_name.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="field">
+              <label for="{{ form.student_id.id_for_label }}">Student ID</label>
+              {{ form.student_id }}
+              {% if form.student_id.errors %}
+                <div class="errors">{{ form.student_id.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="{{ form.bio.id_for_label }}">Bio</label>
+            {{ form.bio }}
+            {% if form.bio.errors %}
+              <div class="errors">{{ form.bio.errors }}</div>
+            {% endif %}
+            <div class="help">A short intro about you. Keep it simple.</div>
+          </div>
+
+          <div class="buttons">
+            <button type="submit">Save changes</button>
+            <a class="secondary" href="{% url 'profile' %}">Cancel</a>
+          </div>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</body>
+</html>

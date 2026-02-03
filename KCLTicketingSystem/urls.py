@@ -22,4 +22,5 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
+    path('dashboard/', views.user_dashboard, name='user_dashboard'),
 ]

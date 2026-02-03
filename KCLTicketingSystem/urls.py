@@ -21,6 +21,7 @@ from KCLTicketingSystems import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
+    path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
     path('dashboard/', views.user_dashboard, name='user_dashboard'),
 ]

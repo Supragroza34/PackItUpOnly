@@ -15,7 +15,7 @@ class TicketModelTest(TestCase):
             'name': 'John',
             'surname': 'Doe',
             'k_number': '12345678',
-            'k_email': '12345678@kcl.ac.uk',
+            'k_email': 'K12345678@kcl.ac.uk',
             'department': 'Informatics',
             'type_of_issue': 'Software Installation Issues',
             'additional_details': 'Need help installing Python'
@@ -27,7 +27,7 @@ class TicketModelTest(TestCase):
         self.assertEqual(ticket.name, 'John')
         self.assertEqual(ticket.surname, 'Doe')
         self.assertEqual(ticket.k_number, '12345678')
-        self.assertEqual(ticket.k_email, '12345678@kcl.ac.uk')
+        self.assertEqual(ticket.k_email, 'K12345678@kcl.ac.uk')
         self.assertEqual(ticket.department, 'Informatics')
         self.assertEqual(ticket.type_of_issue, 'Software Installation Issues')
         self.assertEqual(ticket.additional_details, 'Need help installing Python')
@@ -66,7 +66,7 @@ class TicketAPITest(TestCase):
             'name': 'John',
             'surname': 'Doe',
             'k_number': '12345678',
-            'k_email': '12345678@kcl.ac.uk',
+            'k_email': 'K12345678@kcl.ac.uk',
             'department': 'Informatics',
             'type_of_issue': 'Software Installation Issues',
             'additional_details': 'Need help installing Python'
@@ -193,11 +193,22 @@ class TicketAPITest(TestCase):
         """Test submission with email not matching K-Number"""
         data = self.valid_data.copy()
         data['k_number'] = '12345678'
-        data['k_email'] = '87654321@kcl.ac.uk'
+        data['k_email'] = 'K87654321@kcl.ac.uk'
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('errors', response.data)
         self.assertIn('k_email', response.data['errors'])
+    
+    def test_submit_ticket_email_missing_k_prefix(self):
+        """Test submission with email missing K prefix"""
+        data = self.valid_data.copy()
+        data['k_number'] = '12345678'
+        data['k_email'] = '12345678@kcl.ac.uk'  # Missing K prefix
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('errors', response.data)
+        self.assertIn('k_email', response.data['errors'])
+        self.assertIn('KNumber@kcl.ac.uk', response.data['errors']['k_email'])
 
     def test_submit_ticket_invalid_department(self):
         """Test submission with invalid department"""
@@ -216,7 +227,7 @@ class TicketAPITest(TestCase):
             data = self.valid_data.copy()
             data['department'] = dept
             data['k_number'] = f'1234567{valid_departments.index(dept)}'
-            data['k_email'] = f'1234567{valid_departments.index(dept)}@kcl.ac.uk'
+            data['k_email'] = f'K1234567{valid_departments.index(dept)}@kcl.ac.uk'
             response = self.client.post(self.url, data, format='json')
             self.assertEqual(response.status_code, status.HTTP_201_CREATED, 
                            f"Failed for department: {dept}")
@@ -265,7 +276,7 @@ class TicketAPITest(TestCase):
         data['name'] = '  John  '
         data['surname'] = '  Doe  '
         data['k_number'] = '  12345678  '
-        data['k_email'] = '  12345678@kcl.ac.uk  '
+        data['k_email'] = '  K12345678@kcl.ac.uk  '
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         
@@ -273,7 +284,7 @@ class TicketAPITest(TestCase):
         ticket = Ticket.objects.get(k_number='12345678')
         self.assertEqual(ticket.name, 'John')
         self.assertEqual(ticket.surname, 'Doe')
-        self.assertEqual(ticket.k_email, '12345678@kcl.ac.uk')
+        self.assertEqual(ticket.k_email, 'K12345678@kcl.ac.uk')
 
     def test_submit_ticket_multiple_validation_errors(self):
         """Test submission with multiple validation errors"""
@@ -297,15 +308,65 @@ class TicketAPITest(TestCase):
         data = self.valid_data.copy()
         data['name'] = "O'Brien"
         data['k_number'] = '87654321'
-        data['k_email'] = '87654321@kcl.ac.uk'
+        data['k_email'] = 'K87654321@kcl.ac.uk'
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-    def test_submit_ticket_long_k_number(self):
-        """Test submission with a long K-Number"""
+    
+    def test_submit_ticket_exception_handling(self):
+        """Test exception handling in submit_ticket view"""
+        # Mock Ticket.objects.create to raise an exception
+        from unittest.mock import patch
+        with patch('KCLTicketingSystems.views.ticket_view.Ticket.objects.create') as mock_create:
+            mock_create.side_effect = Exception("Database error")
+            response = self.client.post(self.url, self.valid_data, format='json')
+            self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            self.assertIn('errors', response.data)
+            self.assertIn('general', response.data['errors'])
+    
+    def test_submit_ticket_k_number_with_special_characters(self):
+        """Test submission with K-Number containing special characters"""
         data = self.valid_data.copy()
-        data['k_number'] = '123456789012345'
-        data['k_email'] = '123456789012345@kcl.ac.uk'
+        data['k_number'] = '123-456@78'
+        data['k_email'] = 'K123-456@78@kcl.ac.uk'
+        response = self.client.post(self.url, data, format='json')
+        # Should fail validation (though client-side should filter these)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('errors', response.data)
+    
+    def test_submit_ticket_empty_k_number_after_stripping(self):
+        """Test submission with K-Number that becomes empty after stripping"""
+        data = self.valid_data.copy()
+        data['k_number'] = '   '
+        data['k_email'] = 'K@kcl.ac.uk'
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('errors', response.data)
+        self.assertIn('k_number', response.data['errors'])
+
+    def test_submit_ticket_k_number_too_long(self):
+        """Test submission with K-Number longer than 8 digits"""
+        data = self.valid_data.copy()
+        data['k_number'] = '123456789'
+        data['k_email'] = 'K123456789@kcl.ac.uk'
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('errors', response.data)
+        self.assertIn('k_number', response.data['errors'])
+        self.assertEqual(response.data['errors']['k_number'], 'K-Number cannot be more than 8 digits')
+    
+    def test_submit_ticket_k_number_exactly_8_digits(self):
+        """Test submission with K-Number exactly 8 digits (should pass)"""
+        data = self.valid_data.copy()
+        data['k_number'] = '12345678'
+        data['k_email'] = 'K12345678@kcl.ac.uk'
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    
+    def test_submit_ticket_k_number_less_than_8_digits(self):
+        """Test submission with K-Number less than 8 digits (should pass)"""
+        data = self.valid_data.copy()
+        data['k_number'] = '12345'
+        data['k_email'] = 'K12345@kcl.ac.uk'
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -313,3 +374,19 @@ class TicketAPITest(TestCase):
         """Test that GET method is not allowed"""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def test_submit_ticket_k_number_edge_cases(self):
+        """Test K-Number edge cases"""
+        # Test with single digit
+        data = self.valid_data.copy()
+        data['k_number'] = '1'
+        data['k_email'] = 'K1@kcl.ac.uk'
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Test with leading zeros
+        data = self.valid_data.copy()
+        data['k_number'] = '00123456'
+        data['k_email'] = 'K00123456@kcl.ac.uk'
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

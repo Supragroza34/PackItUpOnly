@@ -22,5 +22,6 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('reply/', views.reply, name="reply"),
     path('admin/', admin.site.urls),
+    path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
 ]

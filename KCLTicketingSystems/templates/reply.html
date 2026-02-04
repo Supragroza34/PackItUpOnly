@@ -1,12 +1,33 @@
 {% block content %}
-<h1 class="cover-heading">Reply to ticket 3124 issued by lost_student@kcl.ac.uk</h1>
-<h2>Issue:</h2>
-<p>Can't find lecture recordings</p>
+<h1 class="cover-heading">Reply to ticket {{ticket.id}} issued by {{ticket.name}} {{ticket.surname}}</h1>
+<style>
+  .box {
+    border: 1px solid black;
+  }
+</style>
+<div class="box" size=50>
+  <h2>Ticket details:</h2>
+  <p>email: {{ticket.k_email}}</p>
+  <p>type of issue: {{ticket.type_of_issue}}</p>
+  <p>additional details: {{ ticket.additional_details }}</p>    
+</div>
+<div class="box" size=50>
+  <h2>Responses:</h2>
+    {% if current_reply_count == 0 %}
+      <p>No responses yet...</p>
+    {% else %}
+      {% for reply in ticket.replies.all %}
+        <div>
+          {{ reply.body }}
+        </div>
+      {% endfor %}
+    {% endif %}
+</div>  
 <body>
   <form method="post">
-      {% csrf_token %}
-      <h3>Your response:</h3> 
-      {{form.as_p}}
+      <h2>Your response:</h2> 
+        {% csrf_token %}
+        {{form.as_p}}
       <button type="submit" class = "submit-button">Submit reply</button>    
   </form>
 </body>

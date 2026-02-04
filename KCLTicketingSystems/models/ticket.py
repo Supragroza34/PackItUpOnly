@@ -1,4 +1,5 @@
 from django.db import models
+from .reply import Reply
 
 # Create your models here.
 
@@ -13,6 +14,7 @@ class Ticket(models.Model):
     additional_details = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    replies = models.ManyToManyField(Reply, blank=True)
 
     def __str__(self):
         return f"{self.name} {self.surname}  - {self.k_number}"

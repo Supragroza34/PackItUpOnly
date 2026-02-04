@@ -17,9 +17,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from KCLTicketingSystems import views
+from django.urls import path
+from KCLTicketingSystems.views.email_webhook import email_webhook
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
+    path('api/email-webhook/', email_webhook, name='email_webhook'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

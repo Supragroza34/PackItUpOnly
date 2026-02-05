@@ -1,8 +1,54 @@
 .App {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 20px;
+  min-height: calc(100vh - 40px);
 }
 
+.app-nav {
+  margin: 0 auto 20px;
+  max-width: 980px;
+}
+
+.app-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+}
+
+.nav-link {
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: #f2f6ff;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.nav-link.active {
+  background: white;
+  color: #3b4bc0;
+}
+
+.app-main {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 20px 20px;
+}
+
+@media (max-width: 600px) {
+  .app-nav-inner {
+    justify-content: center;
+  }
+
+  .nav-link {
+    flex: 1;
+    text-align: center;
+  }
+}

@@ -13,12 +13,12 @@
 </div>
 <div class="box" size=50>
   <h2>Responses:</h2>
-    {% if current_reply_count == 0 %}
+    {% if ticket.replies.count == 0 %}
       <p>No responses yet...</p>
     {% else %}
       {% for reply in ticket.replies.all %}
         <div>
-          {{ reply.body }}
+          {{ reply.body }} (posted {{reply.created_at}})
         </div>
       {% endfor %}
     {% endif %}
@@ -32,3 +32,16 @@
   </form>
 </body>
 {% endblock %}
+
+          <!-- {% if reply.leaf_replies.count != 0 %}
+            {% for l_reply in reply.leaf_replies.all %}
+              <li>
+                {{ l_reply.body }} (posted {{reply.created_at}})
+              </li>
+            {% endfor %}
+            <p>Reply</p>
+            <form method="post">
+              {{form.as_p}}
+              {% csrf_token %}
+            </form>
+          {% endif %}     -->

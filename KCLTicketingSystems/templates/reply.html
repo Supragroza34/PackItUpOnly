@@ -13,14 +13,14 @@
 </div>
 <div class="box" size=50>
   <h2>Responses:</h2>
-    {% if ticket.replies.count == 0 %}
-      <p>No responses yet...</p>
-    {% else %}
-      {% for reply in ticket.replies.all %}
+    {% if p_replies %}
+      {% for reply in p_replies %}
         <div>
           {{ reply.body }} (posted {{reply.created_at}})
         </div>
       {% endfor %}
+    {% else %}
+      <p>No responses yet...</p>  
     {% endif %}
 </div>  
 <body>

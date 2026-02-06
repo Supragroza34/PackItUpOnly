@@ -1,5 +1,5 @@
 {% block content %}
-<h1 class="cover-heading">Reply to ticket {{ticket.id}} issued by {{ticket.name}} {{ticket.surname}}</h1>
+<h1 class="cover-heading">Reply to ticket issued by {{ticket.name}} {{ticket.surname}}</h1>
 <style>
   .box {
     border: 1px solid black;
@@ -24,11 +24,11 @@
     {% endif %}
 </div>  
 <body>
+  <h2>Your response:</h2> 
   <form method="post">
-      <h2>Your response:</h2> 
-        {% csrf_token %}
-        {{form.as_p}}
-      <button type="submit" class = "submit-button">Submit reply</button>    
+    {% csrf_token %}
+      {{form.as_p}}
+    <button type="submit" class = "submit-button">Submit reply</button>    
   </form>
 </body>
 {% endblock %}

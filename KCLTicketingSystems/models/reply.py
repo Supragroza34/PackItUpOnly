@@ -9,4 +9,4 @@ class Reply(models.Model):
         ordering = ('created_at',)
 
     def __str__(self):
-        return f"{self.body}"
+        return self.body

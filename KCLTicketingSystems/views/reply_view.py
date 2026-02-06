@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+import datetime
+from django.utils.timezone import make_aware
 from KCLTicketingSystems.forms.reply_form import ReplyForm
 from KCLTicketingSystems.models import Reply, Ticket
 from django.http import HttpResponseRedirect, Http404
@@ -7,7 +9,7 @@ from django.urls import reverse
 
 def reply(request):         #ticket_id
     #current_user = request.user
-    ticket = Ticket.objects.get(pk=1)
+    ticket = Ticket.objects.get(pk=2)
     current_reply_count = 0
     if ticket.replies:
         current_reply_count = ticket.replies.count
@@ -15,14 +17,12 @@ def reply(request):         #ticket_id
         form = ReplyForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                reply = form.save(commit=False)
-                reply.body = request.body
+                reply = Reply(body=form.cleaned_data['body'], created_at=make_aware(datetime.datetime.now()))
                 reply.save()
                 ticket.replies.add(reply)
-                form.save()
                 return redirect('reply')
             except:
-                raise Http404
+                raise Http404("Reply was not added")
         else:
             path = reverse('reply')
             return HttpResponseRedirect(path)

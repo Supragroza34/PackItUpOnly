@@ -25,7 +25,6 @@ echo   Setup Complete!
 echo ============================================
 echo.
 echo To start the application:
-echo   - Backend:  Run start-backend.bat
-echo   - Frontend: Run start-frontend.bat
+echo   Run 'start-all.bat' to launch both servers.
 echo.
 pause

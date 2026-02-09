@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
+from django.views.decorators.csrf import csrf_exempt
 from ..models import Ticket
 import os
 import re
@@ -24,6 +25,7 @@ try:
 except ImportError:
     GEMINI_AVAILABLE = False
 
+@csrf_exempt  # Exempt from CSRF since this is called by external service (Mailgun)
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def email_webhook(request):

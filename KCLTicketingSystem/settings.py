@@ -37,9 +37,12 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
-# For development only: Allow any ngrok domain (not recommended for production)
-# Django doesn't support wildcards, so we'll handle this in middleware if needed
-# For now, add your specific ngrok domain above
+# CSRF trusted origins (for ngrok and localhost)
+CSRF_TRUSTED_ORIGINS = [
+    'https://unprotective-ungrieved-cheryle.ngrok-free.dev',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
 
 
 # Application definition

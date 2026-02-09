@@ -7,6 +7,12 @@ import re
 
 # Create your views here.
 
+def ticket_form(request):
+    """
+    Display the ticket form page
+    """
+    return render(request, 'ticket_form.html')
+
 @api_view(['POST'])
 def submit_ticket(request):
     """

@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +30,16 @@ SECRET_KEY = 'django-insecure-ij%5&&=4@$tm!$653)nvwfirl_t8rsrqq+4mkxei4b3s21@$&&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# For development: Allow ngrok domains and localhost
+ALLOWED_HOSTS = [
+    'unprotective-ungrieved-cheryle.ngrok-free.dev',
+    'localhost',
+    '127.0.0.1',
+]
+
+# For development only: Allow any ngrok domain (not recommended for production)
+# Django doesn't support wildcards, so we'll handle this in middleware if needed
+# For now, add your specific ngrok domain above
 
 
 # Application definition
@@ -120,6 +134,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files (user uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -141,3 +159,25 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = "KCLTicketingSystems.User"
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'KCLTicketingSystems.views.email_webhook': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

@@ -3,7 +3,6 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from ..models import Ticket
 import os
-import openai
 import re
 import json
 import logging
@@ -11,8 +10,19 @@ import logging
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Initialize OpenAI client
-openai.api_key = os.getenv('OPENAI_API_KEY', '')
+# Try to import AI libraries (fallback if not available)
+try:
+    import openai
+    openai.api_key = os.getenv('OPENAI_API_KEY', '')
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+try:
+    from google import genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
@@ -50,16 +60,9 @@ def email_webhook(request):
     logger.info(f"Extracted data: {json.dumps(extracted_data, indent=2)}")
     
     try:
-        # Check if ticket already exists for this K-Number
+        # Create the ticket (users can now have multiple tickets)
         k_number = extracted_data.get('k_number', '')
-        logger.info(f"Checking for duplicate K-Number: {k_number}")
-        
-        if k_number and k_number != '00000000' and Ticket.objects.filter(k_number=k_number).exists():
-            logger.warning(f"Duplicate ticket detected for K-Number: {k_number}")
-            return Response({
-                'error': 'A ticket with this K-Number already exists',
-                'k_number': k_number
-            }, status=400)
+        logger.info(f"Creating ticket for K-Number: {k_number}")
         
         # Create the ticket
         logger.info("Creating ticket...")
@@ -130,34 +133,86 @@ def extract_ticket_info_with_ai(email_content, sender_email):
     }}
     """
     
+    # Try Gemini first (free tier), then OpenAI, then fallback
     try:
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            print("Warning: OPENAI_API_KEY not set, using fallback extraction")
-            return fallback_extraction(email_content, sender_email)
-        
-        client = openai.OpenAI(api_key=api_key)
-        
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # or "gpt-3.5-turbo" for cheaper option
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that extracts structured data from emails. Always return valid JSON only."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.1,  # Low temperature for consistent extraction
-            response_format={"type": "json_object"}  # Force JSON response
-        )
-        
-        # Parse AI response
-        extracted_json = json.loads(response.choices[0].message.content)
-        
-        # Validate and clean the data
-        return validate_extracted_data(extracted_json, sender_email)
-        
+        # Try Google Gemini (free tier available) - using new google.genai API
+        if GEMINI_AVAILABLE:
+            gemini_key = os.getenv('GEMINI_API_KEY')
+            if gemini_key:
+                logger.info("Using Google Gemini for extraction...")
+                try:
+                    # Initialize client with API key
+                    client = genai.Client(api_key=gemini_key)
+                    
+                    # Try different models in order of preference
+                    models_to_try = [
+                        "gemini-2.0-flash-exp",
+                        "gemini-1.5-flash-latest",
+                        "gemini-1.5-flash",
+                        "gemini-1.5-pro",
+                        "gemini-pro"
+                    ]
+                    
+                    full_prompt = f"You are a helpful assistant that extracts structured data from emails. Always return valid JSON only.\n\n{prompt}"
+                    
+                    response = None
+                    for model_name in models_to_try:
+                        try:
+                            logger.info(f"Trying Gemini model: {model_name}")
+                            response = client.models.generate_content(
+                                model=model_name,
+                                contents=full_prompt
+                            )
+                            break  # Success, exit loop
+                        except Exception as e:
+                            logger.warning(f"Model {model_name} failed: {e}")
+                            continue
+                    
+                    if not response:
+                        raise Exception("All Gemini models failed")
+                    
+                    # Extract JSON from response
+                    response_text = response.text.strip()
+                    # Remove markdown code blocks if present
+                    if response_text.startswith('```'):
+                        response_text = response_text.split('```')[1]
+                        if response_text.startswith('json'):
+                            response_text = response_text[4:]
+                    response_text = response_text.strip()
+                    
+                    extracted_json = json.loads(response_text)
+                    return validate_extracted_data(extracted_json, sender_email)
+                except Exception as e:
+                    raise Exception(f"Gemini API error: {str(e)}")
     except Exception as e:
-        # Fallback to basic extraction if AI fails
-        print(f"AI extraction failed: {e}")
-        return fallback_extraction(email_content, sender_email)
+        logger.warning(f"Gemini extraction failed: {e}")
+    
+    # Try OpenAI as fallback
+    try:
+        if OPENAI_AVAILABLE:
+            api_key = os.getenv('OPENAI_API_KEY')
+            if api_key:
+                logger.info("Using OpenAI for extraction...")
+                client = openai.OpenAI(api_key=api_key)
+                
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant that extracts structured data from emails. Always return valid JSON only."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.1,
+                    response_format={"type": "json_object"}
+                )
+                
+                extracted_json = json.loads(response.choices[0].message.content)
+                return validate_extracted_data(extracted_json, sender_email)
+    except Exception as e:
+        logger.warning(f"OpenAI extraction failed: {e}")
+    
+    # Fallback to regex extraction
+    logger.info("Using fallback regex extraction (no AI available)")
+    return fallback_extraction(email_content, sender_email)
 
 
 def validate_extracted_data(data, sender_email):
@@ -215,12 +270,55 @@ def fallback_extraction(email_content, sender_email):
         if k_number_in_body:
             k_number = k_number_in_body.group(1)
     
+    # Try to extract name from email body (look for patterns like "Amey Tripathi" or "John Smith")
+    name = 'Email User'
+    surname = 'Pending'
+    
+    # Heuristic 1: scan line-by-line for a clean full name line
+    for line in email_content.splitlines():
+        stripped = line.strip()
+        # Skip header lines
+        if stripped.lower().startswith(('subject:', 'from:', 'to:', 'sent:', 're:', 'fw:', 'fwd:')):
+            continue
+        # Match a line that looks like "Amey Tripathi"
+        m = re.match(r'^([A-Z][a-z]+)\s+([A-Z][a-z]+)$', stripped)
+        if m:
+            candidate_name, candidate_surname = m.group(1), m.group(2)
+            if not re.search(r'\d', candidate_name) and not re.search(r'\d', candidate_surname):
+                name = candidate_name
+                surname = candidate_surname
+                break
+
+    # Heuristic 2: if still default, fall back to first capitalised pair anywhere in body
+    if name == 'Email User' and surname == 'Pending':
+        name_pattern = r'([A-Z][a-z]+)\s+([A-Z][a-z]+)'
+        name_match = re.search(name_pattern, email_content)
+        if name_match:
+            candidate_name = name_match.group(1)
+            candidate_surname = name_match.group(2)
+            if not re.search(r'\d', candidate_name) and not re.search(r'\d', candidate_surname):
+                name = candidate_name
+                surname = candidate_surname
+    
+    # Try to extract department from body
+    department = 'Informatics'  # Default
+    if re.search(r'(?i)(informatics|computer science|cs)', email_content):
+        department = 'Informatics'
+    elif re.search(r'(?i)(engineering)', email_content):
+        department = 'Engineering'
+    elif re.search(r'(?i)(medicine|medical)', email_content):
+        department = 'Medicine'
+    
+    # Extract subject/issue type from email
+    subject_match = re.search(r'Subject:\s*(.+?)(?:\n|$)', email_content)
+    type_of_issue = subject_match.group(1).strip() if subject_match else 'General Issue'
+    
     return {
-        'name': 'Email User',
-        'surname': 'Pending',
+        'name': name,
+        'surname': surname,
         'k_number': k_number,
         'k_email': f"K{k_number}@kcl.ac.uk" if k_number != '00000000' else sender_email,
-        'department': 'Informatics',
-        'type_of_issue': 'General Issue',
+        'department': department,
+        'type_of_issue': type_of_issue,
         'additional_details': email_content
     }

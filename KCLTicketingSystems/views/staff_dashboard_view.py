@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.utils import timezone
 from datetime import timedelta
-from ..models import Ticket
+from ..models import Ticket, User
 
 def staff_dashboard(request):
     filter_options = request.GET.get("filtering", "open")
@@ -29,5 +29,6 @@ def staff_dashboard(request):
     return render(request, "staff_dashboard.html", {
         "tickets": tickets,
         "filter_options": filter_options,
+        "user": request.user
     })
     

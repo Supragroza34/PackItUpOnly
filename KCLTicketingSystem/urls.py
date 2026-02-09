@@ -24,5 +24,5 @@ urlpatterns = [
     path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
     path('dashboard/staff/', views.staff_dashboard, name='staff_dashboard'),
-    path('dashboard/staff/ticket/<int:pk>/', views.home, name='ticket_info')
+    path('dashboard/staff/ticket/<int:pk>/', views.ticket_info, name='ticket_info')
 ]

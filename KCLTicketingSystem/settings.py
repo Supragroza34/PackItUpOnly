@@ -37,12 +37,18 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
+<<<<<<< Updated upstream
 # CSRF trusted origins (for ngrok and localhost)
 CSRF_TRUSTED_ORIGINS = [
     'https://unprotective-ungrieved-cheryle.ngrok-free.dev',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+=======
+# For development only: Allow any ngrok domain (not recommended for production)
+# Django doesn't support wildcards, so we'll handle this in middleware if needed
+# For now, add your specific ngrok domain above
+>>>>>>> Stashed changes
 
 
 # Application definition
@@ -137,10 +143,13 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+<<<<<<< Updated upstream
 # Media files (user uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+=======
+>>>>>>> Stashed changes
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -161,8 +170,12 @@ REST_FRAMEWORK = {
     ],
 }
 
+<<<<<<< Updated upstream
 # AUTH_USER_MODEL = "KCLTicketingSystems.User"  # Commented out to fix migration issues
 # Using default Django User model instead
+=======
+AUTH_USER_MODEL = "KCLTicketingSystems.User"
+>>>>>>> Stashed changes
 
 # Logging configuration
 LOGGING = {

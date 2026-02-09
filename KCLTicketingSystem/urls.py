@@ -16,10 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from KCLTicketingSystems import views
-from KCLTicketingSystems.views.email_webhook import email_webhook
 from django.conf import settings
 from django.conf.urls.static import static
+
+from KCLTicketingSystems import views
+from KCLTicketingSystems.views.email_webhook import email_webhook
 
 urlpatterns = [
     path('', views.home, name='home'),

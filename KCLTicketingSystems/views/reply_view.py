@@ -7,9 +7,9 @@ from KCLTicketingSystems.models import Reply, Ticket
 from django.http import HttpResponseRedirect, Http404
 from django.urls import reverse
 
-def reply(request):         #ticket_id
+def reply(request, ticket_id):         #ticket_id
     #current_user = request.user
-    ticket=Ticket.objects.get(pk=2)
+    ticket=Ticket.objects.get(pk=ticket_id)
     replies=Reply.objects.filter(ticket=ticket)
     if request.method == "POST":
         form = ReplyForm(request.POST, request.FILES)

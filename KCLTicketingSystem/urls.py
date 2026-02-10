@@ -23,6 +23,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
-    path('dashboard/staff/', views.staff_dashboard, name='staff_dashboard'),
-    path('dashboard/staff/ticket/<int:pk>/', views.ticket_info, name='ticket_info')
+    path('api/staff/dashboard/', views.staff_dashboard, name='staff_dashboard'),
+    path('api/ticket/<int:pk>/', views.ticket_info, name='ticket_info')
 ]

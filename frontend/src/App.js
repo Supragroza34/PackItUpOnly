@@ -1,18 +1,17 @@
 import React from 'react';
 import './App.css';
+import {BrowserRouter, Routes, Route} from 'react-router-dom';
+import StaffDashboardPage from './pages/StaffDashboardPage';
+import TicketPage from './pages/TicketPage';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>KCL Ticketing System</h1>
-        <p>Frontend placeholder - build your components here</p>
-        <div className="api-info">
-          <h2>Backend API Available:</h2>
-          <p>POST /api/submit-ticket/</p>
-        </div>
-      </header>
-    </div>
+    <BrowserRouter>
+    <Routes>
+      <Route path="/staff/dashboard" element={<StaffDashboardPage />} />
+      <Route path="/ticket/:id" element={<TicketPage />} />
+    </Routes>
+    </BrowserRouter>
   );
 }
 

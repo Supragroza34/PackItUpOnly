@@ -1,13 +1,13 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-import datetime
 from django.utils.timezone import make_aware
-from KCLTicketingSystems.forms.reply_form import ReplyForm
-from KCLTicketingSystems.models import Reply, Ticket
+from ..forms.reply_form import ReplyForm
+from ..models import Reply, Ticket
 from django.http import HttpResponseRedirect, Http404
 from django.urls import reverse
+import datetime
 
-def reply(request, ticket_id):         #ticket_id
+def reply(request, ticket_id):
     #current_user = request.user
     ticket=Ticket.objects.get(pk=ticket_id)
     replies=Reply.objects.filter(ticket=ticket)
@@ -22,6 +22,7 @@ def reply(request, ticket_id):         #ticket_id
                     #leaf_replies=form.cleaned_data['leaf_replies']
                 )
                 reply.save()
+                return redirect('reply', ticket_id = ticket_id)
             except:
                 raise Http404("Reply was not added")
         else:

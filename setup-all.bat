@@ -1,4 +1,6 @@
 @echo off
+cd /d "%~dp0"
+
 echo ============================================
 echo   KCL Ticketing System - First Time Setup
 echo ============================================

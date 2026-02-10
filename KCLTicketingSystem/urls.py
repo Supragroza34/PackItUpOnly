@@ -20,6 +20,7 @@ from KCLTicketingSystems import views
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('reply/<int:ticket_id>/', views.reply, name="reply"),  # if ticket objects do not exist in db will return 404 error for now
     path('admin/', admin.site.urls),
     path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),

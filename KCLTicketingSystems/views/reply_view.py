@@ -22,11 +22,10 @@ def reply(request, ticket_id):         #ticket_id
                     #leaf_replies=form.cleaned_data['leaf_replies']
                 )
                 reply.save()
-                return redirect('reply')
             except:
                 raise Http404("Reply was not added")
         else:
-            path = reverse('reply')
+            path = reverse('reply', kwargs={'ticket_id': ticket_id,})
             return HttpResponseRedirect(path)
     else:
         form = ReplyForm()

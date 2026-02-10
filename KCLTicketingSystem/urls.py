@@ -16,16 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-
 from KCLTicketingSystems import views
 
 urlpatterns = [
+    path('', views.home, name='home'),
     path('admin/', admin.site.urls),
-    path("accounts/", include("django.contrib.auth.urls")),
-    path("profile/", views.profile_view, name="profile"),
-    path("profile/edit/", views.profile_edit, name="profile_edit"),
-    path("accounts/", include("django.contrib.auth.urls")),
-    path("accounts/signup/", views.signup, name="signup"),
+    path('ticket-form/', views.ticket_form, name='ticket_form'),
+    path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
 ]
-
-

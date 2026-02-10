@@ -19,3 +19,11 @@ media/
 # OS
 Thumbs.db
 .DS_Store
+
+# Node/Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/build/
+frontend/coverage/

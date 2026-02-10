@@ -8,6 +8,8 @@ from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from .forms import SignUpForm
 
+
+'''
 class ProfileForm(forms.Form):
     full_name = forms.CharField(max_length=120, required=False)
     student_id = forms.CharField(max_length=30, required=False)
@@ -54,3 +56,6 @@ def signup(request):
     else:
         form = SignUpForm()
     return render(request, "registration/signup.html", {"form": form})
+
+    
+    '''

@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
         ('KCLTicketingSystems', '0001_initial'),
     ]
 
+    
     operations = [
         migrations.RenameField(
             model_name='profile',
@@ -16,3 +17,5 @@ class Migration(migrations.Migration):
             new_name='student_id',
         ),
     ]
+
+    

@@ -18,6 +18,7 @@ def submit_ticket(request):
     """
     API endpoint to submit a ticket with validation
     """
+   
     data = request.data
     
     # Extract form data

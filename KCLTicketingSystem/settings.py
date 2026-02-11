@@ -161,7 +161,7 @@ REST_FRAMEWORK = {
     ],
 }
 
-AUTH_USER_MODEL = "KCLTicketingSystems.User"  # Commented out to fix migration issues
+#AUTH_USER_MODEL = "KCLTicketingSystems.User"  # Commented out to fix migration issues
 # Using default Django User model instead
 
 # Logging configuration

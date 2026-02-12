@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch, authHeaders } from "./api";
 
-export function Profile() {
+export default function Profile() {
   const [user, setUser] = useState(null);
   const [err, setErr] = useState("");
 

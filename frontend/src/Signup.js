@@ -2,7 +2,7 @@ import { useState } from "react";
 import { apiFetch } from "./api";
 import { useNavigate } from "react-router-dom";
 
-export function Signup() {
+export default function Signup() {
   const nav = useNavigate();
   const [form, setForm] = useState({
     username: "",

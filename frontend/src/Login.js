@@ -2,7 +2,7 @@ import { useState } from "react";
 import { apiFetch } from "./api";
 import { useNavigate } from "react-router-dom";
 
-export function Login() {
+export default function Login() {
   const nav = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

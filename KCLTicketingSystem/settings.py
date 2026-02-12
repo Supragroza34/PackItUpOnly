@@ -45,6 +45,9 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
+AUTH_USER_MODEL = "KCLTicketingSystems.User"
+
+
 # Application definition
 
 INSTALLED_APPS = [

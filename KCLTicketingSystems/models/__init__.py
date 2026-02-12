@@ -1,5 +1,6 @@
 # from .user import User  # Commented out - using default Django User model
-from .ticket import Ticket
+from .user import User
+from .ticket import *
 from .attachment import Attachment
 from .reply import Reply
 

@@ -16,12 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from KCLTicketingSystems import views
+from KCLTicketingSystems.views.email_webhook import email_webhook
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('reply/<int:ticket_id>/', views.reply, name="reply"),  # if ticket objects do not exist in db will return 404 error for now
     path('admin/', admin.site.urls),
     path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
     path("api/", include("KCLTicketingSystems.urls")),
+    path('dashboard/', views.user_dashboard, name='user_dashboard'),
+    path('api/email-webhook/', email_webhook, name='email_webhook'),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

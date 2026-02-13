@@ -1,19 +1,36 @@
 import React from 'react';
 import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>KCL Ticketing System</h1>
-        <p>Frontend placeholder - build your components here</p>
-        <div className="api-info">
-          <h2>Backend API Available:</h2>
-          <p>POST /api/submit-ticket/</p>
-        </div>
-      </header>
-    </div>
-  );
+import Login from "./Login";
+import Signup from "./Signup";
+import Profile from "./Profile";
+
+function isAuthed() {
+  return !!localStorage.getItem("access");
 }
 
-export default App;
+function Protected({ children }) {
+  return isAuthed() ? children : <Navigate to="/login" replace />;
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/profile"
+          element={
+            <Protected>
+              <Profile />
+            </Protected>
+          }
+        />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}

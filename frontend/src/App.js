@@ -1,73 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import FaqPage from './pages/FaqPage';
-import TicketForm from './components/TicketForm';
-import './App.css';
+import React from "react";
+import "./App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-const getCurrentPath = () => {
-  const path = window.location.pathname || '/';
-  return path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path;
-};
+import Login from "./Login";
+import Signup from "./Signup";
+import Profile from "./Profile";
 
-const NavItem = ({ label, path, isActive, onNavigate }) => (
-  <a
-    href={path}
-    className={`nav-link ${isActive ? 'active' : ''}`}
-    onClick={(event) => onNavigate(event, path)}
-  >
-    {label}
-  </a>
-);
+// add your pages/components
+import FaqPage from "./pages/FaqPage";
+import TicketForm from "./components/TicketForm";
 
-function App() {
-  const [currentPath, setCurrentPath] = useState(getCurrentPath);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(getCurrentPath());
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  const handleNavigate = (event, path) => {
-    event.preventDefault();
-    if (path === currentPath) {
-      return;
-    }
-
-    window.history.pushState({}, '', path);
-    setCurrentPath(getCurrentPath());
-  };
-
-  const pageContent = currentPath === '/faqs' ? (
-    <FaqPage onNavigate={handleNavigate} />
-  ) : (
-    <TicketForm />
-  );
-
-  return (
-    <div className="App">
-      <header className="app-nav">
-        <div className="app-nav-inner">
-          <NavItem
-            label="Create Ticket"
-            path="/"
-            isActive={currentPath === '/'}
-            onNavigate={handleNavigate}
-          />
-          <NavItem
-            label="FAQs"
-            path="/faqs"
-            isActive={currentPath === '/faqs'}
-            onNavigate={handleNavigate}
-          />
-        </div>
-      </header>
-
-      <main className="app-main">{pageContent}</main>
-    </div>
-  );
+function isAuthed() {
+  return !!localStorage.getItem("access");
 }
 
-export default App;
+function Protected({ children }) {
+  return isAuthed() ? children : <Navigate to="/login" replace />;
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* keep existing auth flow */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        {/* existing protected route */}
+        <Route
+          path="/profile"
+          element={
+            <Protected>
+              <Profile />
+            </Protected>
+          }
+        />
+
+        {/* add your FAQ + ticket pages (make them protected if you want) */}
+        <Route
+          path="/ticket"
+          element={
+            <Protected>
+              <TicketForm />
+            </Protected>
+          }
+        />
+        <Route
+          path="/faqs"
+          element={
+            <Protected>
+              <FaqPage />
+            </Protected>
+          }
+        />
+
+        {/* fallback */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}

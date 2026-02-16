@@ -24,17 +24,15 @@ from KCLTicketingSystems.views.email_webhook import email_webhook
 
 urlpatterns = [
     path('', views.home, name='home'),
-    path('reply/<int:ticket_id>/', views.reply, name="reply"),  # if ticket objects do not exist in db will return 404 error for now
+    path('reply/<int:ticket_id>/', views.reply, name="reply"),
     path('admin/', admin.site.urls),
     path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
     
-    # Admin Authentication
-    path('api/admin/login/', admin_views.admin_login, name='admin_login'),
-    path('api/admin/logout/', admin_views.admin_logout, name='admin_logout'),
-    path('api/admin/current-user/', admin_views.admin_current_user, name='admin_current_user'),
+    # API Routes (includes JWT auth: /api/auth/token/, /api/auth/register/, /api/users/me/)
+    path("api/", include("KCLTicketingSystems.urls")),
     
-    # Admin Dashboard
+    # Admin Dashboard API
     path('api/admin/dashboard/stats/', admin_views.dashboard_stats, name='admin_dashboard_stats'),
     
     # Admin Ticket Management
@@ -51,7 +49,7 @@ urlpatterns = [
     
     # Staff List for Assignment
     path('api/admin/staff/', admin_views.admin_staff_list, name='admin_staff_list'),
-    path("api/", include("KCLTicketingSystems.urls")),
+    
     path('dashboard/', views.user_dashboard, name='user_dashboard'),
     path('api/email-webhook/', email_webhook, name='email_webhook'),
 ]

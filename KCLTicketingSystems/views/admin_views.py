@@ -1,7 +1,4 @@
 from django.shortcuts import render
-from django.contrib.auth import authenticate, login, logout
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
@@ -9,7 +6,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-import json
 
 from ..models.ticket import Ticket
 from ..models.user import User
@@ -20,83 +16,13 @@ from ..serializers import (
     UserSerializer,
     DashboardStatsSerializer
 )
-from ..permissions import admin_required, IsAdmin
-
-
-# ================= AUTHENTICATION =================
-
-@csrf_exempt
-def admin_login(request):
-    """Admin login endpoint"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            username = data.get('username')
-            password = data.get('password')
-            
-            if not username or not password:
-                return JsonResponse(
-                    {'error': 'Username and password required'},
-                    status=400
-                )
-            
-            user = authenticate(request, username=username, password=password)
-            
-            if user is not None:
-                if user.role == 'admin':
-                    login(request, user)
-                    return JsonResponse({
-                        'success': True,
-                        'user': {
-                            'id': user.id,
-                            'username': user.username,
-                            'email': user.email,
-                            'first_name': user.first_name,
-                            'last_name': user.last_name,
-                            'role': user.role,
-                        }
-                    })
-                else:
-                    return JsonResponse(
-                        {'error': 'Admin access required'},
-                        status=403
-                    )
-            else:
-                return JsonResponse(
-                    {'error': 'Invalid credentials'},
-                    status=401
-                )
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON'}, status=400)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    
-    return JsonResponse({'error': 'POST method required'}, status=405)
-
-
-@admin_required
-def admin_logout(request):
-    """Admin logout endpoint"""
-    logout(request)
-    return JsonResponse({'success': True, 'message': 'Logged out successfully'})
-
-
-@admin_required
-def admin_current_user(request):
-    """Get current admin user info"""
-    return JsonResponse({
-        'id': request.user.id,
-        'username': request.user.username,
-        'email': request.user.email,
-        'first_name': request.user.first_name,
-        'last_name': request.user.last_name,
-        'role': request.user.role,
-    })
+from ..permissions import IsAdmin
 
 
 # ================= DASHBOARD STATISTICS =================
 
-@admin_required
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def dashboard_stats(request):
     """Get dashboard statistics"""
     try:
@@ -131,14 +57,15 @@ def dashboard_stats(request):
         }
         
         serializer = DashboardStatsSerializer(data)
-        return JsonResponse(serializer.data)
+        return Response(serializer.data)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # ================= TICKET MANAGEMENT =================
 
-@admin_required
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_tickets_list(request):
     """Get all tickets with filtering, searching, and pagination"""
     try:
@@ -187,7 +114,7 @@ def admin_tickets_list(request):
         
         serializer = TicketListSerializer(tickets_page, many=True)
         
-        return JsonResponse({
+        return Response({
             'tickets': serializer.data,
             'total': total_count,
             'page': page,
@@ -195,32 +122,30 @@ def admin_tickets_list(request):
             'total_pages': (total_count + page_size - 1) // page_size
         })
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@admin_required
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_ticket_detail(request, ticket_id):
     """Get single ticket details"""
     try:
         ticket = Ticket.objects.get(id=ticket_id)
         serializer = TicketSerializer(ticket)
-        return JsonResponse(serializer.data)
+        return Response(serializer.data)
     except Ticket.DoesNotExist:
-        return JsonResponse({'error': 'Ticket not found'}, status=404)
+        return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@csrf_exempt
-@admin_required
+@api_view(['PATCH', 'PUT'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_ticket_update(request, ticket_id):
     """Update ticket (status, priority, assignment, notes)"""
-    if request.method not in ['PATCH', 'PUT']:
-        return JsonResponse({'error': 'PATCH or PUT method required'}, status=405)
-    
     try:
         ticket = Ticket.objects.get(id=ticket_id)
-        data = json.loads(request.body)
+        data = request.data
         
         # Update allowed fields
         if 'status' in data:
@@ -237,35 +162,31 @@ def admin_ticket_update(request, ticket_id):
         
         ticket.save()
         serializer = TicketSerializer(ticket)
-        return JsonResponse(serializer.data)
+        return Response(serializer.data)
     except Ticket.DoesNotExist:
-        return JsonResponse({'error': 'Ticket not found'}, status=404)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@csrf_exempt
-@admin_required
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_ticket_delete(request, ticket_id):
     """Delete a ticket"""
-    if request.method != 'DELETE':
-        return JsonResponse({'error': 'DELETE method required'}, status=405)
-    
     try:
         ticket = Ticket.objects.get(id=ticket_id)
         ticket.delete()
-        return JsonResponse({'success': True, 'message': 'Ticket deleted successfully'})
+        return Response({'success': True, 'message': 'Ticket deleted successfully'})
     except Ticket.DoesNotExist:
-        return JsonResponse({'error': 'Ticket not found'}, status=404)
+        return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # ================= USER MANAGEMENT =================
 
-@admin_required
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_users_list(request):
     """Get all users with filtering and pagination"""
     try:
@@ -298,7 +219,7 @@ def admin_users_list(request):
         
         serializer = UserSerializer(users_page, many=True)
         
-        return JsonResponse({
+        return Response({
             'users': serializer.data,
             'total': total_count,
             'page': page,
@@ -306,32 +227,30 @@ def admin_users_list(request):
             'total_pages': (total_count + page_size - 1) // page_size
         })
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@admin_required
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_user_detail(request, user_id):
     """Get single user details"""
     try:
         user = User.objects.get(id=user_id)
         serializer = UserSerializer(user)
-        return JsonResponse(serializer.data)
+        return Response(serializer.data)
     except User.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=404)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@csrf_exempt
-@admin_required
+@api_view(['PATCH', 'PUT'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_user_update(request, user_id):
     """Update user details (role, department, etc.)"""
-    if request.method not in ['PATCH', 'PUT']:
-        return JsonResponse({'error': 'PATCH or PUT method required'}, status=405)
-    
     try:
         user = User.objects.get(id=user_id)
-        data = json.loads(request.body)
+        data = request.data
         
         # Update allowed fields
         if 'role' in data:
@@ -349,46 +268,42 @@ def admin_user_update(request, user_id):
         
         user.save()
         serializer = UserSerializer(user)
-        return JsonResponse(serializer.data)
+        return Response(serializer.data)
     except User.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=404)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@csrf_exempt
-@admin_required
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_user_delete(request, user_id):
     """Delete a user"""
-    if request.method != 'DELETE':
-        return JsonResponse({'error': 'DELETE method required'}, status=405)
-    
     try:
         user = User.objects.get(id=user_id)
         
         # Prevent deleting self
         if user.id == request.user.id:
-            return JsonResponse({'error': 'Cannot delete your own account'}, status=400)
+            return Response({'error': 'Cannot delete your own account'}, status=status.HTTP_400_BAD_REQUEST)
         
         user.delete()
-        return JsonResponse({'success': True, 'message': 'User deleted successfully'})
+        return Response({'success': True, 'message': 'User deleted successfully'})
     except User.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=404)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # ================= STAFF USERS FOR ASSIGNMENT =================
 
-@admin_required
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_staff_list(request):
     """Get list of staff users for ticket assignment"""
     try:
         staff = User.objects.filter(role__in=[User.Role.STAFF, User.Role.ADMIN]).values(
             'id', 'username', 'first_name', 'last_name', 'email', 'role'
         )
-        return JsonResponse({'staff': list(staff)})
+        return Response({'staff': list(staff)})
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,42 +1,22 @@
 const API_BASE_URL = 'http://localhost:8000/api/admin';
 
+// Helper to get auth headers with JWT token
+function getAuthHeaders() {
+    const token = localStorage.getItem('access');
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+}
+
 class AdminAPI {
     // ================= AUTHENTICATION =================
-    
-    async login(username, password) {
-        const response = await fetch(`${API_BASE_URL}/login/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({ username, password }),
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Login failed');
-        }
-        
-        return response.json();
-    }
-    
-    async logout() {
-        const response = await fetch(`${API_BASE_URL}/logout/`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        
-        if (!response.ok) {
-            throw new Error('Logout failed');
-        }
-        
-        return response.json();
-    }
+    // Note: Login now uses the common JWT endpoint at /api/auth/token/
+    // So we don't need separate admin login/logout methods
     
     async getCurrentUser() {
-        const response = await fetch(`${API_BASE_URL}/current-user/`, {
-            credentials: 'include',
+        const response = await fetch('http://localhost:8000/api/users/me/', {
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {
@@ -50,7 +30,7 @@ class AdminAPI {
     
     async getDashboardStats() {
         const response = await fetch(`${API_BASE_URL}/dashboard/stats/`, {
-            credentials: 'include',
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {
@@ -75,7 +55,7 @@ class AdminAPI {
         
         const url = `${API_BASE_URL}/tickets/?${queryParams.toString()}`;
         const response = await fetch(url, {
-            credentials: 'include',
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {
@@ -87,7 +67,7 @@ class AdminAPI {
     
     async getTicketDetail(ticketId) {
         const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}/`, {
-            credentials: 'include',
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {
@@ -100,10 +80,7 @@ class AdminAPI {
     async updateTicket(ticketId, data) {
         const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}/update/`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
+            headers: getAuthHeaders(),
             body: JSON.stringify(data),
         });
         
@@ -118,7 +95,7 @@ class AdminAPI {
     async deleteTicket(ticketId) {
         const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}/delete/`, {
             method: 'DELETE',
-            credentials: 'include',
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {
@@ -141,7 +118,7 @@ class AdminAPI {
         
         const url = `${API_BASE_URL}/users/?${queryParams.toString()}`;
         const response = await fetch(url, {
-            credentials: 'include',
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {
@@ -153,7 +130,7 @@ class AdminAPI {
     
     async getUserDetail(userId) {
         const response = await fetch(`${API_BASE_URL}/users/${userId}/`, {
-            credentials: 'include',
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {
@@ -166,10 +143,7 @@ class AdminAPI {
     async updateUser(userId, data) {
         const response = await fetch(`${API_BASE_URL}/users/${userId}/update/`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
+            headers: getAuthHeaders(),
             body: JSON.stringify(data),
         });
         
@@ -184,7 +158,7 @@ class AdminAPI {
     async deleteUser(userId) {
         const response = await fetch(`${API_BASE_URL}/users/${userId}/delete/`, {
             method: 'DELETE',
-            credentials: 'include',
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {
@@ -199,7 +173,7 @@ class AdminAPI {
     
     async getStaffList() {
         const response = await fetch(`${API_BASE_URL}/staff/`, {
-            credentials: 'include',
+            headers: getAuthHeaders(),
         });
         
         if (!response.ok) {

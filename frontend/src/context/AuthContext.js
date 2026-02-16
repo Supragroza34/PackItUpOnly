@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import adminApi from '../services/adminApi';
+import { apiFetch } from '../api';
 
 const AuthContext = createContext();
 
@@ -22,8 +23,11 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
         try {
-            const userData = await adminApi.getCurrentUser();
-            setUser(userData);
+            const token = localStorage.getItem('access');
+            if (token) {
+                const userData = await adminApi.getCurrentUser();
+                setUser(userData);
+            }
         } catch (err) {
             setUser(null);
         } finally {
@@ -34,8 +38,17 @@ export const AuthProvider = ({ children }) => {
     const login = async (username, password) => {
         try {
             setError(null);
-            const response = await adminApi.login(username, password);
-            setUser(response.user);
+            // Use JWT token endpoint
+            const data = await apiFetch('/auth/token/', {
+                method: 'POST',
+                body: JSON.stringify({ username, password }),
+            });
+            localStorage.setItem('access', data.access);
+            localStorage.setItem('refresh', data.refresh);
+            
+            // Fetch user data
+            const userData = await adminApi.getCurrentUser();
+            setUser(userData);
             return { success: true };
         } catch (err) {
             setError(err.message);
@@ -45,7 +58,8 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await adminApi.logout();
+            localStorage.removeItem('access');
+            localStorage.removeItem('refresh');
             setUser(null);
             return { success: true };
         } catch (err) {

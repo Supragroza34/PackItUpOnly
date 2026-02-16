@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './utils/PrivateRoute';
-import AdminLogin from './components/Admin/AdminLogin';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import TicketsManagement from './components/Admin/TicketsManagement';
 import UsersManagement from './components/Admin/UsersManagement';
@@ -38,7 +37,6 @@ export default function App() {
           />
           
           {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={
             <PrivateRoute>
               <AdminDashboard />

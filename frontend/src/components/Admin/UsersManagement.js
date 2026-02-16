@@ -84,7 +84,7 @@ const UsersManagement = () => {
 
     const handleLogout = async () => {
         await logout();
-        navigate('/admin/login');
+        navigate('/login');
     };
 
     return (
@@ -177,7 +177,8 @@ const UsersManagement = () => {
                                                 <button
                                                     onClick={() => handleDeleteUser(usr.id)}
                                                     className="btn-action btn-delete"
-                                                    disabled={usr.id === user?.id}
+                                                    disabled={Number(usr.id) === Number(user?.id)}
+                                                    title={Number(usr.id) === Number(user?.id) ? "Cannot delete your own account" : "Delete user"}
                                                 >
                                                     Delete
                                                 </button>

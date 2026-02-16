@@ -11,17 +11,20 @@ export default function Login() {
 
   async function onSubmit(e) {
     e.preventDefault();
+    
+    if (loading) return; // Prevent double submission
+    
     setErr("");
     setLoading(true);
     
     try {
-      console.log("Attempting login...");
+      console.log("Attempting login with:", username);
       const data = await apiFetch("/auth/token/", {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
       
-      console.log("Login successful, tokens received");
+      console.log("Login successful, tokens received:", data);
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
       
@@ -33,18 +36,18 @@ export default function Login() {
       
       console.log("User profile:", userProfile);
       
-      // Redirect based on user role
+      // Redirect based on user role - don't setLoading(false) here!
       if (userProfile.role === "admin" || userProfile.is_superuser || userProfile.is_staff) {
         console.log("Redirecting to admin dashboard");
-        nav("/admin/dashboard");
+        nav("/admin/dashboard", { replace: true });
       } else {
         console.log("Redirecting to profile");
-        nav("/profile");
+        nav("/profile", { replace: true });
       }
     } catch (e2) {
       console.error("Login error:", e2);
       setErr("Login failed: " + (e2.message || "Please check your credentials."));
-      setLoading(false);
+      setLoading(false); // Only reset loading on error
     }
   }
 

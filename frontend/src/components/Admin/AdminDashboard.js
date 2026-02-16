@@ -30,7 +30,7 @@ const AdminDashboard = () => {
 
     const handleLogout = async () => {
         await logout();
-        navigate('/admin/login');
+        navigate('/login');
     };
 
     if (loading) {

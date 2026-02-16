@@ -96,7 +96,7 @@ const TicketsManagement = () => {
 
     const handleLogout = async () => {
         await logout();
-        navigate('/admin/login');
+        navigate('/login');
     };
 
     return (

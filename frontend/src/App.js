@@ -1,7 +1,8 @@
 import React from 'react';
 import './App.css';
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
+import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
+import StaffDashboardPage from './pages/StaffDashboardPage';
+import TicketPage from './pages/TicketPage';
 import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
@@ -21,6 +22,8 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/staff/dashboard" element={<StaffDashboardPage />} />
+        <Route path="/ticket/:id" element={<TicketPage />} />
         <Route
           path="/profile"
           element={

@@ -15,7 +15,7 @@ class Ticket(models.Model):
     
     name = models.CharField(max_length=255)
     surname = models.CharField(max_length=255)
-    k_number = models.CharField(max_length=255)  # Removed unique=True to allow multiple tickets per user
+    k_number = models.CharField(max_length=255)
     k_email = models.EmailField()
 
     department = models.CharField(max_length=255)
@@ -23,6 +23,7 @@ class Ticket(models.Model):
     additional_details = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=255, default='Open')
 
     def __str__(self):
         return f"{self.name} {self.surname}  - {self.k_number}"

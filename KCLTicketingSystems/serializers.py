@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 
                   'k_number', 'department', 'role', 'is_staff', 'is_superuser']
-        read_only_fields = ['id', 'is_staff', 'is_superuser']
+        read_only_fields = ['id', 'role', 'is_staff', 'is_superuser']
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -34,6 +34,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 class TicketSerializer(serializers.ModelSerializer):
     """Serializer for Ticket model - Admin view"""
     assigned_to_details = UserSerializer(source='assigned_to', read_only=True)
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True
+    )
     
     class Meta:
         model = Ticket

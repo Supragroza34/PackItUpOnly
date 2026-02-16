@@ -53,7 +53,7 @@ def dashboard_stats(request):
             'total_students': students,
             'total_staff': staff,
             'total_admins': admins,
-            'recent_tickets': TicketListSerializer(recent, many=True).data,
+            'recent_tickets': recent,  # Pass queryset, not serialized data
         }
         
         serializer = DashboardStatsSerializer(data)
@@ -145,24 +145,14 @@ def admin_ticket_update(request, ticket_id):
     """Update ticket (status, priority, assignment, notes)"""
     try:
         ticket = Ticket.objects.get(id=ticket_id)
-        data = request.data
         
-        # Update allowed fields
-        if 'status' in data:
-            ticket.status = data['status']
-        if 'priority' in data:
-            ticket.priority = data['priority']
-        if 'assigned_to' in data:
-            if data['assigned_to'] is None:
-                ticket.assigned_to = None
-            else:
-                ticket.assigned_to_id = data['assigned_to']
-        if 'admin_notes' in data:
-            ticket.admin_notes = data['admin_notes']
-        
-        ticket.save()
-        serializer = TicketSerializer(ticket)
-        return Response(serializer.data)
+        # Use serializer for partial update
+        serializer = TicketUpdateSerializer(ticket, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            # Return full ticket data using TicketSerializer
+            return Response(TicketSerializer(ticket).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Ticket.DoesNotExist:
         return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

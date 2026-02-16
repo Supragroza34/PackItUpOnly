@@ -51,7 +51,7 @@ urlpatterns = [
     path('api/admin/staff/', admin_views.admin_staff_list, name='admin_staff_list'),
     
     path('dashboard/', views.user_dashboard, name='user_dashboard'),
-    path('api/email-webhook/', email_webhook, name='email_webhook'),
+    path('api/email-webhook/', email_webhook, name='email_webhook')
 ]
 
 # Serve media files in development

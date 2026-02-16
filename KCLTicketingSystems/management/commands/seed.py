@@ -16,7 +16,7 @@ from ...models import User
 
 user_fixtures = [
     {'username': 'johndoe', 'email': 'john.doe@example.org', 'k_number': '12345678', 'first_name': 'John', 'last_name': 'Doe', 'department': 'Informatics', 'role': 'student'},
-    {'username': 'janedee', 'email': 'jane.dee@example.org', 'k_number': '45678123', 'first_name': 'Jane', 'last_name': 'Dee', 'department': 'Informatics', 'role': 'staff'},
+    {'username': 'janedee', 'email': 'jane.dee@example.org', 'k_number': '45678123', 'first_name': 'Jane', 'last_name': 'Dee', 'department': 'Informatics', 'role': 'Staff'},
     {'username': 'Chrisdoo', 'email': 'chris.doo@example.org', 'k_number': '03472783', 'first_name': 'Chris', 'last_name': 'Doo', 'department': 'Informatics', 'role': 'student'},
 ]
 

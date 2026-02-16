@@ -16,7 +16,7 @@ class Ticket(models.Model):
     
     name = models.CharField(max_length=255)
     surname = models.CharField(max_length=255)
-    k_number = models.CharField(max_length=255)  # Removed unique=True to allow multiple tickets per user
+    k_number = models.CharField(max_length=255)
     k_email = models.EmailField()
 
     department = models.CharField(max_length=255)

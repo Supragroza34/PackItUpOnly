@@ -1,20 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 function TicketPage() {
     const { id } = useParams();
     const [ticket, setTicket] = useState(null);
-
+    const navigate = useNavigate();
+    
     useEffect(() => {
-        fetch(`/api/ticket/${id}/`)
+        fetch(`/api/ticket/${id}/`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('access')}`
+            }
+        })
             .then(res => {
                 if (res.status === 401) {
-                    window.location.href = '/login';
+                    localStorage.removeItem('access');
+                    navigate('/login');
+                    return;
                 }
                 return res.json();
             })
-            .then(data => setTicket(data))
-    }, [id]);
+            .then(data => {
+                if (data) setTicket(data);
+            })
+            .catch(err => console.error('Error:', err));
+    }, [id, navigate]);
 
     if (!ticket) return <p>Loading...</p>;
 
@@ -28,6 +38,7 @@ function TicketPage() {
             <h2>Submitted By</h2>
             <p>Name: {ticket.k_number.first_name} {ticket.k_number.last_name}</p>
             <p>Email: {ticket.k_number.email}</p>
+            <button onClick={() => navigate('/dashboard/staff')}>Reply</button>
         </div>
     );
 }

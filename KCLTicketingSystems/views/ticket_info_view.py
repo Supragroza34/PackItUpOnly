@@ -28,8 +28,8 @@ class TicketSerializer(serializers.ModelSerializer):
 
 @api_view(['GET'])
 def ticket_info(request, pk):
-    # if not request.user.is_authenticated:
-    #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+    if not request.user.is_authenticated:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
     
     ticket = get_object_or_404(Ticket, pk=pk)
     serializer = TicketSerializer(ticket)

@@ -21,8 +21,10 @@ class TicketSerializer(serializers.ModelSerializer):
 
 @api_view(['GET'])
 def staff_dashboard(request):
-    # if not request.user.is_authenticated:
-    #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+    if not request.user.is_authenticated:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    if not request.user.role == "Staff":
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
     
     filter_options = request.GET.get("filtering", "open")
     cutoff = timezone.now() - timedelta(days=3)

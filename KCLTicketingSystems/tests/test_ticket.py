@@ -78,7 +78,9 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('message', response.data)
         self.assertIn('ticket_id', response.data)
+        self.assertIn('attachments_count', response.data)
         self.assertEqual(response.data['message'], 'Ticket submitted successfully')
+        self.assertEqual(response.data['attachments_count'], 0)
         
         # Verify ticket was created in database
         ticket = Ticket.objects.get(k_number='12345678')

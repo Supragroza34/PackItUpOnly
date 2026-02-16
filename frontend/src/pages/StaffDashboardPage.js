@@ -1,20 +1,31 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Link} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 
 function StaffDashboardPage() {
     const [tickets, setTickets] = useState([]);
     const [filter, setFilter] = useState("open");
+    const navigate = useNavigate();
     useEffect(() => {
-    fetch('/api/staff/dashboard/?filtering=' + filter)
+    fetch('/api/staff/dashboard/?filtering=' + filter, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access')}`
+        }
+    })
         .then(res => {
             if (res.status === 401) {
-                window.location.href = '/login'; //redirects if user is not specified
+                alert('You do not have permission to access this page.');
+                localStorage.removeItem('access');
+                navigate('/login');
+                return;
             }
             return res.json();
         })
-        .then(data => setTickets(data))
-}, [filter]);
+        .then(data => {
+            if (data) setTickets(data);
+        })
+        .catch(err => console.error('Error:', err))
+    }, [filter, navigate]);
     return (
         <div>
             <h1>Staff Dashboard</h1>

@@ -17,11 +17,16 @@ export default function Login() {
     setErr("");
     setLoading(true);
     
+    // Get values from form elements to handle autofill properly
+    const formData = new FormData(e.target);
+    const usernameValue = formData.get('username');
+    const passwordValue = formData.get('password');
+    
     try {
-      console.log("Attempting login with:", username);
+      console.log("Attempting login with:", usernameValue);
       const data = await apiFetch("/auth/token/", {
         method: "POST",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: usernameValue, password: passwordValue }),
       });
       
       console.log("Login successful, tokens received:", data);
@@ -57,6 +62,7 @@ export default function Login() {
       {err && <p style={{ color: "crimson", background: "#ffe6e6", padding: "10px", borderRadius: "5px" }}>{err}</p>}
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
         <input 
+          name="username"
           value={username} 
           onChange={(e) => setUsername(e.target.value)} 
           placeholder="Username" 
@@ -64,6 +70,7 @@ export default function Login() {
           required
         />
         <input 
+          name="password"
           value={password} 
           onChange={(e) => setPassword(e.target.value)} 
           placeholder="Password" 

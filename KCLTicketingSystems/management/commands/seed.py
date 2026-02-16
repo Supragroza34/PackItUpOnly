@@ -54,7 +54,19 @@ class Command(BaseCommand):
         Runs the full seeding workflow and stores ``self.users`` for any
         post-processing or debugging (not required for operation).
         """
-        User.objects.create_superuser('spr_usr', 'spr.usr@example.org', 'SuperUser8^]')
+        # Try to create superuser if it doesn't exist
+        try:
+            if not User.objects.filter(username='spr_usr').exists():
+                User.objects.create_superuser(
+                    username='spr_usr',
+                    email='spr.usr@example.org',
+                    password='SuperUser8^]',
+                    k_number='99999999'
+                )
+                print("Created superuser 'spr_usr'")
+        except Exception as e:
+            print(f"Superuser creation skipped: {e}")
+        
         self.create_users()
         self.users = User.objects.all()
 
@@ -113,7 +125,7 @@ class Command(BaseCommand):
         username = create_username(k_number)
         email = create_email(k_number)
         department = self.faker.job()
-        role = "Student"
+        role = "student"
         self.try_create_user({'username': username, 'email': email, 'k_number': k_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
 
     def generate_staff(self):
@@ -124,7 +136,7 @@ class Command(BaseCommand):
         username = create_username(k_number)
         email = create_email(k_number)
         department = self.faker.job()
-        role = "Staff"
+        role = "staff"
         self.try_create_user({'username': username, 'email': email, 'k_number': k_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
        
     def try_create_user(self, data):
@@ -148,7 +160,7 @@ class Command(BaseCommand):
             data (dict): Mapping with keys ``username``, ``email``,
                 ``first_name``, and ``last_name``.
         """
-        User.objects.create(
+        user = User.objects.create(
             username=data['username'],
             first_name=data['first_name'],
             last_name=data['last_name'],
@@ -156,8 +168,9 @@ class Command(BaseCommand):
             k_number=data['k_number'],
             department=data['department'],
             role=data['role'],
-            password=Command.DEFAULT_PASSWORD,
         )
+        user.set_password(Command.DEFAULT_PASSWORD)
+        user.save()
 
 def create_username(k_number):
     """

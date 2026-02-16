@@ -1,11 +1,14 @@
 import React from 'react';
-import './App.css';
-import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
-import StaffDashboardPage from './pages/StaffDashboardPage';
-import TicketPage from './pages/TicketPage';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import PrivateRoute from './utils/PrivateRoute';
+import AdminDashboard from './components/Admin/AdminDashboard';
+import TicketsManagement from './components/Admin/TicketsManagement';
+import UsersManagement from './components/Admin/UsersManagement';
 import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
+import './App.css';
 
 function isAuthed() {
   return !!localStorage.getItem("access");
@@ -17,23 +20,43 @@ function Protected({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/staff/dashboard" element={<StaffDashboardPage />} />
-        <Route path="/ticket/:id" element={<TicketPage />} />
-        <Route
-          path="/profile"
-          element={
-            <Protected>
-              <Profile />
-            </Protected>
-          }
-        />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* User Authentication Routes */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/profile"
+            element={
+              <Protected>
+                <Profile />
+              </Protected>
+            }
+          />
+          
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={
+            <PrivateRoute>
+              <AdminDashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/tickets" element={
+            <PrivateRoute>
+              <TicketsManagement />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/users" element={
+            <PrivateRoute>
+              <UsersManagement />
+            </PrivateRoute>
+          } />
+
+          {/* Fallback Route */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

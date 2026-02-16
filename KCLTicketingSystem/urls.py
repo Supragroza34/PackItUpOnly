@@ -16,8 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from KCLTicketingSystems import views
 from KCLTicketingSystems.views import admin_views
+from KCLTicketingSystems.views.email_webhook import email_webhook
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -48,4 +51,11 @@ urlpatterns = [
     
     # Staff List for Assignment
     path('api/admin/staff/', admin_views.admin_staff_list, name='admin_staff_list'),
+    path("api/", include("KCLTicketingSystems.urls")),
+    path('dashboard/', views.user_dashboard, name='user_dashboard'),
+    path('api/email-webhook/', email_webhook, name='email_webhook'),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,42 +1,41 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './utils/PrivateRoute';
 import AdminLogin from './components/Admin/AdminLogin';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import TicketsManagement from './components/Admin/TicketsManagement';
 import UsersManagement from './components/Admin/UsersManagement';
+import Login from "./Login";
+import Signup from "./Signup";
+import Profile from "./Profile";
 import './App.css';
 
-function App() {
+function isAuthed() {
+  return !!localStorage.getItem("access");
+}
+
+function Protected({ children }) {
+  return isAuthed() ? children : <Navigate to="/login" replace />;
+}
+
+export default function App() {
   return (
     <AuthProvider>
-      <Router>
+      <BrowserRouter>
         <Routes>
-          {/* Default Home Page */}
-          <Route path="/" element={
-            <div className="App">
-              <header className="App-header">
-                <h1>KCL Ticketing System</h1>
-                <p>Frontend placeholder - build your components here</p>
-                <div className="api-info">
-                  <h2>Backend API Available:</h2>
-                  <p>POST /api/submit-ticket/</p>
-                  <Link to="/admin/login" style={{
-                    display: 'inline-block',
-                    marginTop: '20px',
-                    padding: '10px 20px',
-                    background: '#667eea',
-                    color: 'white',
-                    textDecoration: 'none',
-                    borderRadius: '5px'
-                  }}>
-                    Admin Dashboard →
-                  </Link>
-                </div>
-              </header>
-            </div>
-          } />
+          {/* User Authentication Routes */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/profile"
+            element={
+              <Protected>
+                <Profile />
+              </Protected>
+            }
+          />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -55,10 +54,11 @@ function App() {
               <UsersManagement />
             </PrivateRoute>
           } />
+
+          {/* Fallback Route */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-      </Router>
+      </BrowserRouter>
     </AuthProvider>
   );
 }
-
-export default App;

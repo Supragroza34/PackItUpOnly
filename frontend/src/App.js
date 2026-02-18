@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./utils/PrivateRoute";
 
-
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import TicketsManagement from "./components/Admin/TicketsManagement";
 import UsersManagement from "./components/Admin/UsersManagement";
@@ -33,7 +32,6 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-
           <Route
             path="/profile"
             element={
@@ -43,7 +41,7 @@ export default function App() {
             }
           />
 
-          {/* FAQ Route */}
+          {/* FAQs (added) */}
           <Route
             path="/faqs"
             element={
@@ -79,7 +77,7 @@ export default function App() {
             }
           />
 
-          {/* Fallback */}
+          {/* Fallback Route */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>

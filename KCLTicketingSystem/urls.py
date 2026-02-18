@@ -16,10 +16,44 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from KCLTicketingSystems import views
+from KCLTicketingSystems.views import admin_views
+from KCLTicketingSystems.views.email_webhook import email_webhook
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('reply/<int:ticket_id>/', views.reply, name="reply"),
     path('admin/', admin.site.urls),
+    path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
+    
+    # API Routes (includes JWT auth: /api/auth/token/, /api/auth/register/, /api/users/me/)
+    path("api/", include("KCLTicketingSystems.urls")),
+    
+    # Admin Dashboard API
+    path('api/admin/dashboard/stats/', admin_views.dashboard_stats, name='admin_dashboard_stats'),
+    
+    # Admin Ticket Management
+    path('api/admin/tickets/', admin_views.admin_tickets_list, name='admin_tickets_list'),
+    path('api/admin/tickets/<int:ticket_id>/', admin_views.admin_ticket_detail, name='admin_ticket_detail'),
+    path('api/admin/tickets/<int:ticket_id>/update/', admin_views.admin_ticket_update, name='admin_ticket_update'),
+    path('api/admin/tickets/<int:ticket_id>/delete/', admin_views.admin_ticket_delete, name='admin_ticket_delete'),
+    
+    # Admin User Management
+    path('api/admin/users/', admin_views.admin_users_list, name='admin_users_list'),
+    path('api/admin/users/<int:user_id>/', admin_views.admin_user_detail, name='admin_user_detail'),
+    path('api/admin/users/<int:user_id>/update/', admin_views.admin_user_update, name='admin_user_update'),
+    path('api/admin/users/<int:user_id>/delete/', admin_views.admin_user_delete, name='admin_user_delete'),
+    
+    # Staff List for Assignment
+    path('api/admin/staff/', admin_views.admin_staff_list, name='admin_staff_list'),
+    
+    path('dashboard/', views.user_dashboard, name='user_dashboard'),
+    path('api/email-webhook/', email_webhook, name='email_webhook')
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

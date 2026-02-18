@@ -1,18 +1,31 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from ..models import Ticket
+from ..models import Ticket, Attachment
 import re
+import os
 
 # Create your views here.
+
+def ticket_form(request):
+    """
+    Display the ticket form page
+    """
+    return render(request, 'ticket_form.html')
 
 @api_view(['POST'])
 def submit_ticket(request):
     """
-    API endpoint to submit a ticket with validation
+    API endpoint to submit a ticket with validation and file attachments
     """
-    data = request.data
+    # Handle both JSON and FormData
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        data = request.POST
+        files = request.FILES.getlist('attachments')
+    else:
+        data = request.data
+        files = []
     
     # Extract form data
     name = data.get('name', '').strip()
@@ -70,6 +83,23 @@ def submit_ticket(request):
     if not additional_details:
         errors['additional_details'] = 'Additional details are required'
     
+    # Validate file attachments
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt']
+    
+    if files:
+        for file in files:
+            # Check file size
+            if file.size > MAX_FILE_SIZE:
+                errors['attachments'] = f'{file.name} exceeds the maximum file size of 10MB'
+                break
+            
+            # Check file extension
+            file_ext = os.path.splitext(file.name)[1].lower()
+            if file_ext not in ALLOWED_EXTENSIONS:
+                errors['attachments'] = f'{file.name} has an invalid file type. Allowed types: images, PDF, DOC, DOCX, TXT'
+                break
+    
     # If there are validation errors, return them
     if errors:
         return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -92,10 +122,25 @@ def submit_ticket(request):
             type_of_issue=type_of_issue,
             additional_details=additional_details
         )
-        return Response({
+        
+        # Save attachments if any
+        attachment_count = 0
+        if files:
+            for file in files:
+                attachment = Attachment.objects.create(
+                    ticket=ticket,
+                    file=file,
+                    original_filename=file.name
+                )
+                attachment_count += 1
+        
+        response_data = {
             'message': 'Ticket submitted successfully',
-            'ticket_id': ticket.id
-        }, status=status.HTTP_201_CREATED)
+            'ticket_id': ticket.id,
+            'attachments_count': attachment_count
+        }
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response(
             {'errors': {'general': f'An error occurred: {str(e)}'}},

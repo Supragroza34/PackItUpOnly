@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Form - KCL Ticketing System</title>
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .ticket-form-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .form-heading {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+        .section-heading {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .is-invalid {
+            border-color: #dc3545;
+        }
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #dc3545;
+        }
+        .success-message {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 0.375rem;
+            color: #155724;
+        }
+        .error-message {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 0.375rem;
+            color: #721c24;
+        }
+        #k_email {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background-color: #f8f9fa;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .file-item .file-name {
+            flex: 1;
+            margin-right: 0.5rem;
+        }
+        .file-item .file-size {
+            color: #6c757d;
+            margin-right: 0.5rem;
+        }
+        .file-item .remove-file {
+            cursor: pointer;
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .file-item .remove-file:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="ticket-form-container">
+            <h1 class="form-heading">Ticket Form</h1>
+            
+            <div id="success-message" class="success-message" style="display: none;">
+                Ticket submitted successfully!
+            </div>
+
+            <div id="error-message" class="error-message" style="display: none;">
+                <span id="error-text"></span>
+            </div>
+
+            <form id="ticket-form" method="POST" action="{% url 'submit_ticket' %}">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="name" 
+                        name="name" 
+                        placeholder="Enter your name"
+                        required
+                    >
+                    <div class="invalid-feedback" id="name-error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="surname" class="form-label">Surname</label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="surname" 
+                        name="surname" 
+                        placeholder="Enter your surname"
+                        required
+                    >
+                    <div class="invalid-feedback" id="surname-error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="k_number" class="form-label">K-Number</label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="k_number" 
+                        name="k_number" 
+                        placeholder="Enter your K-Number (e.g., 12345678)"
+                        maxlength="8"
+                        required
+                    >
+                    <div class="invalid-feedback" id="k_number-error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="k_email" class="form-label">Email (K Number Email)</label>
+                    <input 
+                        type="email" 
+                        class="form-control" 
+                        id="k_email" 
+                        name="k_email" 
+                        placeholder="KNumber@kcl.ac.uk"
+                        readonly
+                        required
+                    >
+                    <div class="invalid-feedback" id="k_email-error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <h2 class="section-heading">Department</h2>
+                    <select 
+                        class="form-select" 
+                        id="department" 
+                        name="department"
+                        required
+                    >
+                        <option value="">Select a department</option>
+                        <option value="Informatics">Informatics</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Medicine">Medicine</option>
+                    </select>
+                    <div class="invalid-feedback" id="department-error"></div>
+                </div>
+
+                <div class="mb-3" id="type-of-issue-container" style="display: none;">
+                    <h2 class="section-heading">Type Of Issue</h2>
+                    <select 
+                        class="form-select" 
+                        id="type_of_issue" 
+                        name="type_of_issue"
+                        required
+                    >
+                        <option value="">Select type of issue</option>
+                    </select>
+                    <div class="invalid-feedback" id="type_of_issue-error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="additional_details" class="form-label">Further Additional Details</label>
+                    <textarea 
+                        class="form-control" 
+                        id="additional_details" 
+                        name="additional_details" 
+                        rows="5"
+                        placeholder="Please provide additional details about your issue..."
+                        required
+                    ></textarea>
+                    <div class="invalid-feedback" id="additional_details-error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="attachments" class="form-label">Attachments (Optional)</label>
+                    <input 
+                        type="file" 
+                        class="form-control" 
+                        id="attachments" 
+                        name="attachments" 
+                        multiple
+                        accept="image/*,.pdf,.doc,.docx,.txt"
+                    >
+                    <small class="form-text text-muted">
+                        You can upload images, PDFs, or documents. Maximum file size: 10MB per file.
+                    </small>
+                    <div id="file-list" class="mt-2"></div>
+                    <div class="invalid-feedback" id="attachments-error"></div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    class="btn btn-primary w-100"
+                    id="submit-button"
+                >
+                    Submit Ticket
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Department-specific issue types
+        const issueTypes = {
+            Informatics: [
+                'Software Installation Issues',
+                'Network Connectivity Problems',
+                'Database Access Request',
+                'Programming Assignment Help',
+                'System Access Request',
+                'Lab Equipment Issues',
+                'Course Material Access'
+            ],
+            Engineering: [
+                'Lab Equipment Malfunction',
+                'CAD Software Issues',
+                'Project Submission Problems',
+                'Workshop Access Request',
+                'Technical Support Request',
+                'Hardware Troubleshooting',
+                'Simulation Software Problems'
+            ],
+            Medicine: [
+                'Clinical System Access',
+                'Medical Database Query',
+                'Patient Record System Issues',
+                'Research Data Access',
+                'Lab Results System Problems',
+                'Medical Software Support',
+                'Clinical Training Resources'
+            ]
+        };
+
+        // K Number input handling
+        const kNumberInput = document.getElementById('k_number');
+        const kEmailInput = document.getElementById('k_email');
+        const departmentSelect = document.getElementById('department');
+        const typeOfIssueSelect = document.getElementById('type_of_issue');
+        const typeOfIssueContainer = document.getElementById('type-of-issue-container');
+        const form = document.getElementById('ticket-form');
+        const submitButton = document.getElementById('submit-button');
+        const attachmentsInput = document.getElementById('attachments');
+        const fileList = document.getElementById('file-list');
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+        let selectedFiles = [];
+
+        // Filter K Number input to only allow numbers, max 8 digits
+        kNumberInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9]/g, '').slice(0, 8);
+            e.target.value = value;
+            
+            // Auto-generate email
+            if (value) {
+                kEmailInput.value = `K${value}@kcl.ac.uk`;
+            } else {
+                kEmailInput.value = '';
+            }
+            
+            // Clear error when user starts typing
+            clearFieldError('k_number');
+            clearFieldError('k_email');
+        });
+
+        // Department change handler
+        departmentSelect.addEventListener('change', function(e) {
+            const department = e.target.value;
+            
+            // Clear and reset type of issue
+            typeOfIssueSelect.innerHTML = '<option value="">Select type of issue</option>';
+            typeOfIssueSelect.value = '';
+            
+            if (department && issueTypes[department]) {
+                // Show type of issue container
+                typeOfIssueContainer.style.display = 'block';
+                
+                // Populate issue types
+                issueTypes[department].forEach(issue => {
+                    const option = document.createElement('option');
+                    option.value = issue;
+                    option.textContent = issue;
+                    typeOfIssueSelect.appendChild(option);
+                });
+            } else {
+                // Hide type of issue container
+                typeOfIssueContainer.style.display = 'none';
+            }
+            
+            // Clear error when user selects department
+            clearFieldError('department');
+        });
+
+        // Handle file selection
+        attachmentsInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            const validFiles = [];
+            const errors = [];
+            
+            files.forEach(file => {
+                // Check file size
+                if (file.size > MAX_FILE_SIZE) {
+                    errors.push(`${file.name} exceeds the maximum file size of 10MB`);
+                    return;
+                }
+                
+                // Check if file already selected
+                if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    return; // Skip duplicate
+                }
+                
+                validFiles.push(file);
+            });
+            
+            // Add valid files to selectedFiles
+            selectedFiles = [...selectedFiles, ...validFiles];
+            
+            // Update file input to reflect selected files
+            updateFileInput();
+            updateFileList();
+            
+            // Show errors if any
+            if (errors.length > 0) {
+                showFieldError('attachments', errors.join(', '));
+            } else {
+                clearFieldError('attachments');
+            }
+        });
+        
+        // Function to update file input
+        function updateFileInput() {
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            attachmentsInput.files = dt.files;
+        }
+        
+        // Function to update file list display
+        function updateFileList() {
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const fileName = document.createElement('span');
+                fileName.className = 'file-name';
+                fileName.textContent = file.name;
+                
+                const fileSize = document.createElement('span');
+                fileSize.className = 'file-size';
+                fileSize.textContent = formatFileSize(file.size);
+                
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'remove-file';
+                removeBtn.textContent = '×';
+                removeBtn.onclick = () => {
+                    selectedFiles.splice(index, 1);
+                    updateFileInput();
+                    updateFileList();
+                    clearFieldError('attachments');
+                };
+                
+                fileItem.appendChild(fileName);
+                fileItem.appendChild(fileSize);
+                fileItem.appendChild(removeBtn);
+                fileList.appendChild(fileItem);
+            });
+        }
+        
+        // Function to format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        // Clear field errors when user starts typing/selecting
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            field.addEventListener('input', function() {
+                clearFieldError(this.name || this.id);
+            });
+            field.addEventListener('change', function() {
+                clearFieldError(this.name || this.id);
+            });
+        });
+
+        function clearFieldError(fieldName) {
+            const errorElement = document.getElementById(`${fieldName}-error`);
+            const fieldElement = document.getElementById(fieldName) || document.querySelector(`[name="${fieldName}"]`);
+            
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+            if (fieldElement) {
+                fieldElement.classList.remove('is-invalid');
+            }
+        }
+
+        function showFieldError(fieldName, message) {
+            const errorElement = document.getElementById(`${fieldName}-error`);
+            const fieldElement = document.getElementById(fieldName) || document.querySelector(`[name="${fieldName}"]`);
+            
+            if (errorElement) {
+                errorElement.textContent = message;
+            }
+            if (fieldElement) {
+                fieldElement.classList.add('is-invalid');
+            }
+        }
+
+        function showSuccessMessage() {
+            const successMessage = document.getElementById('success-message');
+            successMessage.style.display = 'block';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function showErrorMessage(message) {
+            const errorMessage = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+            errorText.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideErrorMessage() {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.style.display = 'none';
+        }
+
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Hide previous messages
+            hideErrorMessage();
+            document.getElementById('success-message').style.display = 'none';
+            
+            // Clear all previous errors
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+            
+            // Client-side validation
+            const formData = new FormData(form);
+            const errors = {};
+            
+            // Validate name (no numbers)
+            const name = formData.get('name') ? formData.get('name').trim() : '';
+            if (!name) {
+                errors.name = 'Name is required';
+            } else if (/\d/.test(name)) {
+                errors.name = 'Name cannot contain numbers';
+            }
+            
+            // Validate surname (no numbers)
+            const surname = formData.get('surname') ? formData.get('surname').trim() : '';
+            if (!surname) {
+                errors.surname = 'Surname is required';
+            } else if (/\d/.test(surname)) {
+                errors.surname = 'Surname cannot contain numbers';
+            }
+            
+            // Validate K-Number
+            const kNumber = formData.get('k_number') ? formData.get('k_number').trim() : '';
+            if (!kNumber) {
+                errors.k_number = 'K-Number is required';
+            } else if (/[a-zA-Z]/.test(kNumber)) {
+                errors.k_number = 'K-Number cannot contain letters';
+            } else if (kNumber.length > 8) {
+                errors.k_number = 'K-Number cannot be more than 8 digits';
+            }
+            
+            // Validate email
+            const kEmail = formData.get('k_email') ? formData.get('k_email').trim() : '';
+            if (!kEmail) {
+                errors.k_email = 'Email is required';
+            } else {
+                const emailPattern = new RegExp(`^K${kNumber}@kcl\\.ac\\.uk$`);
+                if (!emailPattern.test(kEmail)) {
+                    errors.k_email = 'Email must be in the format: KNumber@kcl.ac.uk';
+                }
+            }
+            
+            // Validate department
+            const department = formData.get('department');
+            if (!department) {
+                errors.department = 'Department is required';
+            }
+            
+            // Validate type of issue
+            const typeOfIssue = formData.get('type_of_issue');
+            if (!typeOfIssue) {
+                errors.type_of_issue = 'Type of issue is required';
+            }
+            
+            // Validate additional details
+            const additionalDetails = formData.get('additional_details') ? formData.get('additional_details').trim() : '';
+            if (!additionalDetails) {
+                errors.additional_details = 'Additional details are required';
+            }
+            
+            // Show client-side errors
+            if (Object.keys(errors).length > 0) {
+                Object.keys(errors).forEach(field => {
+                    showFieldError(field, errors[field]);
+                });
+                return;
+            }
+            
+            // Validate file sizes
+            if (selectedFiles.length > 0) {
+                const oversizedFiles = selectedFiles.filter(f => f.size > MAX_FILE_SIZE);
+                if (oversizedFiles.length > 0) {
+                    showFieldError('attachments', 'Some files exceed the maximum size of 10MB');
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Submit Ticket';
+                    return;
+                }
+            }
+            
+            // Disable submit button
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+            
+            try {
+                // Create FormData for file upload
+                const formDataToSend = new FormData(form);
+                
+                // Remove the attachments from FormData and add files individually
+                formDataToSend.delete('attachments');
+                selectedFiles.forEach(file => {
+                    formDataToSend.append('attachments', file);
+                });
+                
+                const response = await fetch('{% url "submit_ticket" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: formDataToSend
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Success
+                    showSuccessMessage();
+                    form.reset();
+                    kEmailInput.value = '';
+                    typeOfIssueContainer.style.display = 'none';
+                    typeOfIssueSelect.innerHTML = '<option value="">Select type of issue</option>';
+                    selectedFiles = [];
+                    updateFileList();
+                } else {
+                    // Server validation errors
+                    if (data.errors) {
+                        Object.keys(data.errors).forEach(field => {
+                            showFieldError(field, data.errors[field]);
+                        });
+                    } else {
+                        showErrorMessage('An error occurred while submitting the ticket. Please try again.');
+                    }
+                }
+            } catch (error) {
+                showErrorMessage('An error occurred while submitting the ticket. Please try again.');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Ticket';
+            }
+        });
+    </script>
+</body>
+</html>
+

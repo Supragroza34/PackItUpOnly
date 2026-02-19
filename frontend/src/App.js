@@ -12,6 +12,7 @@ import Signup from "./Signup";
 import Profile from "./Profile";
 
 import FaqPage from "./pages/FaqPage";
+import SearchPage from "./pages/SearchPage";
 
 import "./App.css";
 
@@ -47,6 +48,15 @@ export default function App() {
             element={
               <Protected>
                 <FaqPage />
+              </Protected>
+            }
+          />
+
+          <Route
+            path="/search"
+            element={
+              <Protected>
+                <SearchPage />
               </Protected>
             }
           />

@@ -62,6 +62,13 @@ class TicketListSerializer(serializers.ModelSerializer):
         return None
 
 
+class TicketSearchSerializer(serializers.ModelSerializer):
+    """Serializer for user ticket search results"""
+    class Meta:
+        model = Ticket
+        fields = ['id', 'type_of_issue', 'status', 'created_at']
+
+
 class TicketUpdateSerializer(serializers.ModelSerializer):
     """Serializer for admin updating tickets"""
     class Meta:

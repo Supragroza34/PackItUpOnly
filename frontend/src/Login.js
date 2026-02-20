@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { apiFetch, authHeaders } from "./api";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 
 export default function Login() {
   const nav = useNavigate();
+  const { login: authLogin, user } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -29,6 +30,21 @@ export default function Login() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Redirect when user is set in AuthContext
+  useEffect(() => {
+    if (user && loading) {
+      console.log("User loaded in context, redirecting...");
+      // Redirect based on user role
+      if (user.role === "admin" || user.is_superuser || user.is_staff) {
+        console.log("Redirecting to admin dashboard");
+        nav("/admin/dashboard", { replace: true });
+      } else {
+        console.log("Redirecting to profile");
+        nav("/profile", { replace: true });
+      }
+    }
+  }, [user, loading, nav]);
+
   async function onSubmit(e) {
     e.preventDefault();
     
@@ -50,37 +66,16 @@ export default function Login() {
     
     try {
       console.log("Attempting login with:", usernameValue);
-      const data = await apiFetch("/auth/token/", {
-        method: "POST",
-        body: JSON.stringify({ username: usernameValue, password: passwordValue }),
-      });
       
-      console.log("Login successful, tokens received");
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
+      // Use AuthContext's login method which properly updates user state
+      const result = await authLogin(usernameValue, passwordValue);
       
-      // Fetch user profile to check role
-      console.log("Fetching user profile...");
-      const userProfile = await apiFetch("/users/me/", {
-        headers: authHeaders(),
-      });
-      
-      console.log("User profile received, role:", userProfile.role);
-      
-      // Small delay to ensure state updates, then redirect
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Redirect based on user role
-      if (userProfile.role === "admin" || userProfile.is_superuser || userProfile.is_staff) {
-        console.log("Redirecting to admin dashboard");
-        nav("/admin/dashboard", { replace: true });
-      } else {
-        console.log("Redirecting to profile");
-        nav("/profile", { replace: true });
+      if (!result.success) {
+        throw new Error(result.error || "Login failed");
       }
       
-      // Reset loading after a delay in case navigation is slow
-      setTimeout(() => setLoading(false), 2000);
+      console.log("Login successful");
+      // Navigation will happen in the useEffect when user state is updated
       
     } catch (e2) {
       console.error("Login error:", e2);

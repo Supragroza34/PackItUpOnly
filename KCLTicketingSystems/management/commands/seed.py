@@ -57,12 +57,14 @@ class Command(BaseCommand):
         # Try to create superuser if it doesn't exist
         try:
             if not User.objects.filter(username='spr_usr').exists():
-                User.objects.create_superuser(
+                spr_user = User.objects.create_superuser(
                     username='spr_usr',
                     email='spr.usr@example.org',
                     password='SuperUser8^]',
-                    k_number='99999999'
+                    k_number=''  # Admins don't have k_numbers
                 )
+                spr_user.role = User.Role.ADMIN
+                spr_user.save()
                 print("Created superuser 'spr_usr'")
         except Exception as e:
             print(f"Superuser creation skipped: {e}")

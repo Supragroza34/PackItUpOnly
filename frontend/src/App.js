@@ -12,6 +12,7 @@ import Signup from "./Signup";
 import Profile from "./Profile";
 
 import FaqPage from "./pages/FaqPage";
+import StaffDashboardPage from "./pages/StaffDashboardPage";
 
 import "./App.css";
 
@@ -47,6 +48,16 @@ export default function App() {
             element={
               <Protected>
                 <FaqPage />
+              </Protected>
+            }
+          />
+
+          {/* Staff Dashboard */}
+          <Route
+            path="/staff-dashboard"
+            element={
+              <Protected>
+                <StaffDashboardPage />
               </Protected>
             }
           />

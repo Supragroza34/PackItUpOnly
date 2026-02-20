@@ -1,4 +1,5 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework import status
@@ -6,8 +7,9 @@ from django.utils import timezone
 from datetime import timedelta
 from ..models import Ticket
 
+
 class TicketSerializer(serializers.ModelSerializer):
-    is_overdue = serializers.SerializerMethodField() 
+    is_overdue = serializers.SerializerMethodField()
 
     class Meta:
         model = Ticket
@@ -15,16 +17,19 @@ class TicketSerializer(serializers.ModelSerializer):
 
     def get_is_overdue(self, obj):
         cutoff = timezone.now() - timedelta(days=3)
-        is_overdue = (obj.status == "Open" and obj.created_at < cutoff)
-        return is_overdue
+        return obj.status == "Open" and obj.created_at < cutoff
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def staff_dashboard(request):
-    if not request.user.is_authenticated:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
-    if not request.user.role == "Staff":
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Check if user has staff role (optional - remove if all authenticated users can access)
+    user_role = getattr(request.user, 'role', None)
+    if user_role and user_role not in ["Staff", "admin"]:
+        return Response(
+            {"error": "Staff access required"},
+            status=status.HTTP_403_FORBIDDEN
+        )
     
     filter_options = request.GET.get("filtering", "open")
     cutoff = timezone.now() - timedelta(days=3)

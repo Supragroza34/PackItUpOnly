@@ -8,6 +8,7 @@ import UsersManagement from './components/Admin/UsersManagement';
 import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
+import UserDashboardPage from './pages/UserDashboard';
 import './App.css';
 
 function isAuthed() {
@@ -34,6 +35,15 @@ export default function App() {
                 <Profile />
               </Protected>
             }
+          />
+          
+          <Route
+          path="/dashboard"
+          element={
+            <Protected>
+            <UserDashboardPage />
+            </Protected>
+          }
           />
           
           {/* Admin Routes */}

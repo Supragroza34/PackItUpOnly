@@ -46,8 +46,11 @@ export default function Login() {
         console.log("Redirecting to admin dashboard");
         nav("/admin/dashboard", { replace: true });
       } else {
-        console.log("Redirecting to profile");
-        nav("/profile", { replace: true });
+        //console.log("Redirecting to profile");
+        //nav("/profile", { replace: true });
+
+        console.log("Redirecting to user dashboard");
+        nav("/dashboard", { replace: true });
       }
     } catch (e2) {
       console.error("Login error:", e2);

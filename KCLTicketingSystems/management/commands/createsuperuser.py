@@ -3,7 +3,16 @@ from django.core.management import CommandError
 
 
 class Command(createsuperuser.Command):
-    help = 'Create a superuser with admin role'
+    help = 'Create a superuser with admin role (no k_number required for admins)'
+
+    def add_arguments(self, parser):
+        super().add_arguments(parser)
+        parser.add_argument(
+            '--k_number',
+            dest='k_number',
+            default='',
+            help='K number for the user (leave empty for admin users)',
+        )
 
     def _update_user_role(self, username):
         """Update a specific user's role to admin."""

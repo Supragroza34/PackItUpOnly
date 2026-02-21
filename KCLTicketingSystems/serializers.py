@@ -17,17 +17,29 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     """Serializer for user registration"""
     password = serializers.CharField(write_only=True, min_length=8)
+    k_number = serializers.CharField(required=True, allow_blank=False)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'first_name', 'last_name', 
                   'k_number', 'department']
 
+    def validate_k_number(self, value):
+        """Validate k_number uniqueness"""
+        if User.objects.filter(k_number=value).exists():
+            raise serializers.ValidationError("A user with this K-Number already exists.")
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
-        user.save()
+        try:
+            user.save()
+        except Exception as e:
+            if 'k_number' in str(e) and 'UNIQUE' in str(e):
+                raise serializers.ValidationError({'k_number': 'A user with this K-Number already exists.'})
+            raise
         return user
 
 

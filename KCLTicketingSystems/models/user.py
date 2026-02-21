@@ -17,5 +17,8 @@ class User(AbstractUser):
         default=Role.STUDENT,
     )
 
+    class Meta:
+        db_table = 'KCLTicketingSystems_user'
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.k_number})"

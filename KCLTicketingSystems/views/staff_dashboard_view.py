@@ -20,36 +20,40 @@ class TicketSerializer(serializers.ModelSerializer):
         return obj.status == "Open" and obj.created_at < cutoff
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def staff_dashboard(request):
-    # Check if user has staff role (optional - remove if all authenticated users can access)
-    user_role = getattr(request.user, 'role', None)
+def _check_staff_access(user):
+    """Check if user has staff or admin role."""
+    user_role = getattr(user, 'role', None)
     if user_role and user_role not in ["Staff", "admin"]:
         return Response(
             {"error": "Staff access required"},
             status=status.HTTP_403_FORBIDDEN
         )
-    
-    filter_options = request.GET.get("filtering", "open")
+    return None
+
+
+def _apply_ticket_filter(tickets, filter_options):
+    """Apply filtering to tickets based on filter option."""
     cutoff = timezone.now() - timedelta(days=3)
-
-    tickets = Ticket.objects.all()
-
     if filter_options == "open":
-        tickets = (tickets.filter(status='Open'))
-    elif filter_options == "closed":
-        tickets = (tickets.filter(status='Closed'))
-    elif filter_options == "overdue":
-        tickets = tickets.filter(status='Open', created_at__lt=cutoff)
-    elif filter_options == "all":
-        pass  # leave as all
-    else:
-        filter_options = ""
+        return tickets.filter(status='Open')
+    if filter_options == "closed":
+        return tickets.filter(status='Closed')
+    if filter_options == "overdue":
+        return tickets.filter(status='Open', created_at__lt=cutoff)
+    return tickets
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def staff_dashboard(request):
+    access_error = _check_staff_access(request.user)
+    if access_error:
+        return access_error
+    filter_options = request.GET.get("filtering", "open")
+    tickets = Ticket.objects.all()
+    tickets = _apply_ticket_filter(tickets, filter_options)
     tickets = tickets.order_by("created_at")
-    serializer = TicketSerializer(tickets, many = True)
-
+    serializer = TicketSerializer(tickets, many=True)
     return Response(serializer.data)
 
     

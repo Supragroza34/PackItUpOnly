@@ -36,6 +36,7 @@ ALLOWED_HOSTS = [
     'unprotective-ungrieved-cheryle.ngrok-free.dev',
     'localhost',
     '127.0.0.1',
+    '192.168.1.120',
 ]
 
 # CSRF trusted origins (for ngrok and localhost)
@@ -43,6 +44,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://unprotective-ungrieved-cheryle.ngrok-free.dev',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://192.168.1.120:8000',
 ]
 
 
@@ -154,6 +156,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://192.168.1.120:3000",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

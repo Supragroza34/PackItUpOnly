@@ -5,7 +5,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
-# ruff: noqa=PLR0915
+# noqa: PLR0915
 try:
     import openai
     OPENAI_AVAILABLE = True

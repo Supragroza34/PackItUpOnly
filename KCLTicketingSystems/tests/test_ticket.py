@@ -40,11 +40,13 @@ class TicketModelTest(TestCase):
         expected_str = f"{ticket.name} {ticket.surname}  - {ticket.k_number}"
         self.assertEqual(str(ticket), expected_str)
 
-    def test_ticket_k_number_unique(self):
-        """Test that K-Number must be unique"""
-        Ticket.objects.create(**self.ticket_data)
-        with self.assertRaises(Exception):
-            Ticket.objects.create(**self.ticket_data)
+    def test_ticket_k_number_not_unique(self):
+        """Test that K-Number can be duplicated (multiple tickets per user allowed)"""
+        ticket1 = Ticket.objects.create(**self.ticket_data)
+        ticket2 = Ticket.objects.create(**self.ticket_data)
+        # Both tickets should be created successfully
+        self.assertEqual(ticket1.k_number, ticket2.k_number)
+        self.assertNotEqual(ticket1.id, ticket2.id)
 
     def test_ticket_auto_timestamps(self):
         """Test that created_at and updated_at are automatically set"""
@@ -235,19 +237,23 @@ class TicketAPITest(TestCase):
                            f"Failed for department: {dept}")
 
     def test_submit_ticket_duplicate_k_number(self):
-        """Test submission with duplicate K-Number"""
+        """Test submission with duplicate K-Number (multiple tickets per user allowed)"""
         # Create first ticket
         response1 = self.client.post(self.url, self.valid_data, format='json')
         self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
         
-        # Try to create second ticket with same K-Number
+        # Create second ticket with same K-Number (should succeed)
         data = self.valid_data.copy()
         data['name'] = 'Jane'  # Different name
+        data['type_of_issue'] = 'Network Connectivity Problems'  # Different issue
+        data['additional_details'] = 'Different issue description'
         response2 = self.client.post(self.url, data, format='json')
-        self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('errors', response2.data)
-        self.assertIn('k_number', response2.data['errors'])
-        self.assertIn('already exists', response2.data['errors']['k_number'])
+        # Should succeed - multiple tickets per K-Number are allowed
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+        self.assertIn('ticket_id', response2.data)
+        # Verify both tickets exist
+        tickets = Ticket.objects.filter(k_number=self.valid_data['k_number'])
+        self.assertEqual(tickets.count(), 2)
 
     def test_submit_ticket_empty_string_fields(self):
         """Test submission with empty string fields"""

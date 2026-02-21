@@ -49,7 +49,8 @@ class TicketFormViewTest(TestCase):
         
         self.assertIn('bootstrap@5.3.0', content)
         self.assertIn('bootstrap.min.css', content)
-        self.assertIn('bootstrap.min.js', content)
+        # Template uses bootstrap.bundle.min.js (not bootstrap.min.js)
+        self.assertIn('bootstrap.bundle.min.js', content)
 
     def test_ticket_form_contains_csrf_token(self):
         """Test that CSRF token is present in the form"""

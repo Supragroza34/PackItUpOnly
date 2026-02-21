@@ -25,7 +25,7 @@ from KCLTicketingSystems.views.email_webhook import email_webhook
 urlpatterns = [
     path('', views.home, name='home'),
     path('reply/<int:ticket_id>/', views.reply, name="reply"),
-    path('admin/', admin.site.urls),
+    #path('admin/', admin.site.urls),
     path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
     

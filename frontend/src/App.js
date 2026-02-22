@@ -6,8 +6,8 @@ import PrivateRoute from "./utils/PrivateRoute";
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import TicketsManagement from "./components/Admin/TicketsManagement";
 import UsersManagement from "./components/Admin/UsersManagement";
-import StaffDashboard from './components/Staff/StaffDashboard';
-import TicketPage from './components/Staff/TicketPage';
+import StaffDashboardPage from "./pages/StaffDashboardPage";
+import TicketPage from "./pages/TicketPage";
 
 import Login from "./Login";
 import Signup from "./Signup";
@@ -64,7 +64,7 @@ export default function App() {
 
           <Route path="/staff/dashboard" element={
             <PrivateRoute>
-              <StaffDashboard />
+              <StaffDashboardPage />
             </PrivateRoute>
           } />  
 

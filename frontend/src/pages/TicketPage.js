@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 function TicketPage() {
-    const { id } = useParams();
-    const [ticket, setTicket] = useState(null);
+    const { ticket_id } = useParams();
+    const [ticket, setTicket] = useState([]);
+    const [body, setBody] = useState("");
     const navigate = useNavigate();
     
+    function fetchPost() {
+        fetch(`/api/staff/dashboard/${ticket_id}/`)
+        .then(res => res.json())
+        .then(setTicket);
+    }
+    
     useEffect(() => {
-        fetch(`/api/ticket/${id}/`, {
+        fetch(`/api/staff/dashboard/${ticket_id}/`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('access')}`
             }
@@ -24,7 +31,28 @@ function TicketPage() {
                 if (data) setTicket(data);
             })
             .catch(err => console.error('Error:', err));
-    }, [id, navigate]);
+    }, [ticket_id, navigate]);
+
+    function submitReply(e) {
+        e.preventDefault();
+
+        fetch("/api/replies/create/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem('access')}`
+        },
+        body: JSON.stringify({
+            ticket: ticket_id,
+            body: body
+        })
+        })
+        .then(res => res.json())
+        .then(() => {
+            setBody("");
+            fetchPost(); // refresh replies
+        });
+    }
 
     if (!ticket) return <p>Loading...</p>;
 
@@ -36,9 +64,24 @@ function TicketPage() {
             <p>Created: {ticket.created_at}</p>
             <p>Last Updated: {ticket.updated_at}</p>
             <h2>Submitted By</h2>
-            <p>Name: {ticket.k_number.first_name} {ticket.k_number.last_name}</p>
-            <p>Email: {ticket.k_number.email}</p>
-            <button onClick={() => navigate('/dashboard/staff')}>Reply</button>
+            <p>Name: {ticket.user?.first_name} {ticket.user?.last_name}</p>
+            <p>Email: {ticket.user?.email}</p>
+            <h2>Replies</h2>
+            {ticket.replies?.map(reply => (
+                <div key={reply?.id}>
+                <b>{reply?.user_username}</b>: {reply?.body} - posted at {reply?.created_at}
+                </div>
+            ))}
+            {/* Reply form */}
+            <form onSubmit={submitReply}>
+                <textarea
+                value={body}
+                onChange={e => setBody(e.target.value)}
+                placeholder="Write a reply..."
+                />
+                <button type="submit">Reply</button>
+            </form>
+            <button onClick={() => navigate('/staff/dashboard/')}>Back to dashboard</button>
         </div>
     );
 }

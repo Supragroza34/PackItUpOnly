@@ -87,7 +87,7 @@ export default function Login() {
         console.log("Redirecting to admin dashboard");
         nav("/admin/dashboard", { replace: true });
       }
-      else if(user.role ==="staff" || user.role === "Staff"){
+      else if(user?.role ==="staff" || user?.role === "Staff"){
         console.log("Redirecting to staff dashboard");
         nav("/staff/dashboard", { replace: true });
       } 

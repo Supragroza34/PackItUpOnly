@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models.ticket import Ticket
+from .models.reply import Reply
 
 User = get_user_model()
 
@@ -30,9 +31,24 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class ReplySerializer(serializers.ModelSerializer):
+    # user = UserSerializer(read_only=True)
+    user_username = serializers.CharField(source="user.username", read_only=True)
+    # ticket = TicketSerializer(read_only=True)
+
+    class Meta:
+        model = Reply
+        fields = "__all__"
+        read_only_fields = ['created_at', 'updated_at']
+
+class ReplyCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Reply
+        fields = ['ticket', 'body']   
 
 class TicketSerializer(serializers.ModelSerializer):
     """Serializer for Ticket model - Admin view"""
+    user = UserSerializer(read_only=True)
     assigned_to_details = UserSerializer(source='assigned_to', read_only=True)
     assigned_to = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),

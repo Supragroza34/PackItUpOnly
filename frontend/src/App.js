@@ -6,6 +6,8 @@ import PrivateRoute from "./utils/PrivateRoute";
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import TicketsManagement from "./components/Admin/TicketsManagement";
 import UsersManagement from "./components/Admin/UsersManagement";
+import StaffDashboard from './components/Staff/StaffDashboard';
+import TicketPage from './components/Staff/TicketPage';
 
 import Login from "./Login";
 import Signup from "./Signup";
@@ -52,7 +54,19 @@ export default function App() {
           }
           />
           
-          
+          {/* Staff Routes */}
+
+          <Route path="/staff/dashboard/:ticket_id" element={
+            <PrivateRoute>
+              <TicketPage />
+            </PrivateRoute>
+          } />  
+
+          <Route path="/staff/dashboard" element={
+            <PrivateRoute>
+              <StaffDashboard />
+            </PrivateRoute>
+          } />  
 
           {/* FAQs (added) */}
           <Route
@@ -90,8 +104,8 @@ export default function App() {
             }
           />
 
-          {/* Fallback Route
-          <Route path="*" element={<Navigate to="/login" replace />} /> */}
+          {/* Fallback Route */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

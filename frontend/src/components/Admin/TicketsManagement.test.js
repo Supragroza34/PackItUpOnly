@@ -28,9 +28,8 @@ describe('TicketsManagement', () => {
   const mockTickets = [
     {
       id: 1,
-      name: 'John',
-      surname: 'Doe',
-      k_number: 'K1234567',
+      user_name: 'John Doe',
+      user_k_number: 'K1234567',
       department: 'Computer Science',
       type_of_issue: 'Technical',
       status: 'pending',
@@ -40,9 +39,8 @@ describe('TicketsManagement', () => {
     },
     {
       id: 2,
-      name: 'Jane',
-      surname: 'Smith',
-      k_number: 'K7654321',
+      user_name: 'Jane Smith',
+      user_k_number: 'K7654321',
       department: 'IT',
       type_of_issue: 'Account',
       status: 'in_progress',

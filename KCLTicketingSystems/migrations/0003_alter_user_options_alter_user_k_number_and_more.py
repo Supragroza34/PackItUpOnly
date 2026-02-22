@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('KCLTicketingSystems', '0002_ticket_admin_notes_ticket_assigned_to_and_more'),
+        ('KCLTicketingSystems', '0001_initial'),
         ('auth', '0012_alter_user_first_name_max_length'),
     ]
 

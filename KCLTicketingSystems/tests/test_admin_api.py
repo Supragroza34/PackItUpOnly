@@ -48,33 +48,49 @@ class AdminDashboardStatsTest(TestCase):
         
         # Create test tickets
         self.ticket1 = Ticket.objects.create(
-            name='John',
-            surname='Doe',
-            k_number='12345678',
-            k_email='K12345678@kcl.ac.uk',
+            user=self.student,
             department='Informatics',
             type_of_issue='Software Installation Issues',
+            additional_details='Need help installing software',
             status=Ticket.Status.PENDING
         )
         
-        self.ticket2 = Ticket.objects.create(
-            name='Jane',
-            surname='Smith',
+        # Create another user for ticket2
+        self.user2 = User.objects.create_user(
+            username='user2',
+            email='user2@test.com',
+            password='testpass123',
+            first_name='Jane',
+            last_name='Smith',
             k_number='87654321',
-            k_email='K87654321@kcl.ac.uk',
+            role=User.Role.STUDENT
+        )
+        
+        self.ticket2 = Ticket.objects.create(
+            user=self.user2,
             department='Engineering',
             type_of_issue='Hardware Issues',
+            additional_details='Hardware not working',
             status=Ticket.Status.IN_PROGRESS,
             assigned_to=self.staff
         )
         
-        self.ticket3 = Ticket.objects.create(
-            name='Bob',
-            surname='Johnson',
+        # Create another user for ticket3
+        self.user3 = User.objects.create_user(
+            username='user3',
+            email='user3@test.com',
+            password='testpass123',
+            first_name='Bob',
+            last_name='Johnson',
             k_number='11223344',
-            k_email='K11223344@kcl.ac.uk',
+            role=User.Role.STUDENT
+        )
+        
+        self.ticket3 = Ticket.objects.create(
+            user=self.user3,
             department='Mathematics',
             type_of_issue='Network Issues',
+            additional_details='Cannot connect to network',
             status=Ticket.Status.RESOLVED
         )
 
@@ -113,8 +129,8 @@ class AdminDashboardStatsTest(TestCase):
         self.assertEqual(response.data['pending_tickets'], 1)
         self.assertEqual(response.data['in_progress_tickets'], 1)
         self.assertEqual(response.data['resolved_tickets'], 1)
-        self.assertEqual(response.data['total_users'], 3)
-        self.assertEqual(response.data['total_students'], 1)
+        self.assertEqual(response.data['total_users'], 5)
+        self.assertEqual(response.data['total_students'], 3)
         self.assertEqual(response.data['total_staff'], 1)
         self.assertEqual(response.data['total_admins'], 1)
 
@@ -142,15 +158,22 @@ class AdminTicketsListTest(TestCase):
             role=User.Role.ADMIN
         )
         
-        # Create test tickets
+        # Create test tickets with users
         for i in range(25):
-            Ticket.objects.create(
-                name=f'User{i}',
-                surname='Test',
+            user = User.objects.create_user(
+                username=f'ticketuser{i}',
+                email=f'ticketuser{i}@test.com',
+                password='testpass123',
+                first_name=f'User{i}',
+                last_name='Test',
                 k_number=f'1000000{i:02d}',
-                k_email=f'K1000000{i:02d}@kcl.ac.uk',
+                role=User.Role.STUDENT
+            )
+            Ticket.objects.create(
+                user=user,
                 department='Informatics' if i % 2 == 0 else 'Engineering',
                 type_of_issue='Software Installation Issues',
+                additional_details=f'Test ticket {i}',
                 status=Ticket.Status.PENDING if i % 3 == 0 else Ticket.Status.IN_PROGRESS
             )
 
@@ -227,14 +250,23 @@ class AdminTicketDetailTest(TestCase):
             role=User.Role.ADMIN
         )
         
+        # Create test user for ticket
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser',
+            email='ticketuser@test.com',
+            password='testpass123',
+            first_name='John',
+            last_name='Doe',
+            k_number='12345678',
+            role=User.Role.STUDENT
+        )
+        
         # Create test ticket
         self.ticket = Ticket.objects.create(
-            name='John',
-            surname='Doe',
-            k_number='12345678',
-            k_email='K12345678@kcl.ac.uk',
+            user=self.ticket_user,
             department='Informatics',
-            type_of_issue='Software Installation Issues'
+            type_of_issue='Software Installation Issues',
+            additional_details='Need help with software'
         )
         
         self.url = f'/api/admin/tickets/{self.ticket.id}/'
@@ -250,9 +282,9 @@ class AdminTicketDetailTest(TestCase):
         response = self.client.get(self.url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'John')
-        self.assertEqual(response.data['surname'], 'Doe')
-        self.assertEqual(response.data['k_number'], '12345678')
+        self.assertEqual(response.data['user'], self.ticket_user.id)
+        self.assertEqual(response.data['department'], 'Informatics')
+        self.assertEqual(response.data['type_of_issue'], 'Software Installation Issues')
 
     def test_ticket_detail_not_found(self):
         """Test ticket detail with non-existent ID"""
@@ -287,14 +319,23 @@ class AdminTicketUpdateTest(TestCase):
             role=User.Role.STAFF
         )
         
+        # Create test user for ticket
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser',
+            email='ticketuser@test.com',
+            password='testpass123',
+            first_name='John',
+            last_name='Doe',
+            k_number='12345678',
+            role=User.Role.STUDENT
+        )
+        
         # Create test ticket
         self.ticket = Ticket.objects.create(
-            name='John',
-            surname='Doe',
-            k_number='12345678',
-            k_email='K12345678@kcl.ac.uk',
+            user=self.ticket_user,
             department='Informatics',
             type_of_issue='Software Installation Issues',
+            additional_details='Need help with software',
             status=Ticket.Status.PENDING
         )
         
@@ -386,14 +427,23 @@ class AdminTicketDeleteTest(TestCase):
             role=User.Role.ADMIN
         )
         
+        # Create test user for ticket
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser',
+            email='ticketuser@test.com',
+            password='testpass123',
+            first_name='John',
+            last_name='Doe',
+            k_number='12345678',
+            role=User.Role.STUDENT
+        )
+        
         # Create test ticket
         self.ticket = Ticket.objects.create(
-            name='John',
-            surname='Doe',
-            k_number='12345678',
-            k_email='K12345678@kcl.ac.uk',
+            user=self.ticket_user,
             department='Informatics',
-            type_of_issue='Software Installation Issues'
+            type_of_issue='Software Installation Issues',
+            additional_details='Need help with software'
         )
         
         self.url = f'/api/admin/tickets/{self.ticket.id}/delete/'

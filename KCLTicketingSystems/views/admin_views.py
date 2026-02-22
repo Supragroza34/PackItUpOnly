@@ -75,10 +75,10 @@ def admin_tickets_list(request):
         search = request.GET.get('search', '')
         if search:
             tickets = tickets.filter(
-                Q(name__icontains=search) |
-                Q(surname__icontains=search) |
-                Q(k_number__icontains=search) |
-                Q(k_email__icontains=search) |
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search) |
+                Q(user__k_number__icontains=search) |
+                Q(user__email__icontains=search) |
                 Q(department__icontains=search) |
                 Q(type_of_issue__icontains=search)
             )

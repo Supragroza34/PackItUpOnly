@@ -140,8 +140,8 @@ const AdminDashboard = () => {
                                     {stats.recent_tickets.map((ticket) => (
                                         <tr key={ticket.id}>
                                             <td>{ticket.id}</td>
-                                            <td>{ticket.name} {ticket.surname}</td>
-                                            <td>{ticket.k_number}</td>
+                                            <td>{ticket.user_name}</td>
+                                            <td>{ticket.user_k_number}</td>
                                             <td>{ticket.department}</td>
                                             <td>{ticket.type_of_issue}</td>
                                             <td>

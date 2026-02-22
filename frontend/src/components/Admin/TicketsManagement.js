@@ -194,8 +194,8 @@ const TicketsManagement = () => {
                                     {tickets.map((ticket) => (
                                         <tr key={ticket.id}>
                                             <td>{ticket.id}</td>
-                                            <td>{ticket.name} {ticket.surname}</td>
-                                            <td>{ticket.k_number}</td>
+                                            <td>{ticket.user_name}</td>
+                                            <td>{ticket.user_k_number}</td>
                                             <td>{ticket.department}</td>
                                             <td>{ticket.type_of_issue}</td>
                                             <td>
@@ -261,9 +261,9 @@ const TicketsManagement = () => {
                         <form onSubmit={handleUpdateTicket}>
                             <div className="modal-section">
                                 <h3>Ticket Information</h3>
-                                <p><strong>Name:</strong> {editedTicket.name} {editedTicket.surname}</p>
-                                <p><strong>K-Number:</strong> {editedTicket.k_number}</p>
-                                <p><strong>Email:</strong> {editedTicket.k_email}</p>
+                                <p><strong>Name:</strong> {editedTicket.user_details?.first_name} {editedTicket.user_details?.last_name}</p>
+                                <p><strong>K-Number:</strong> {editedTicket.user_details?.k_number}</p>
+                                <p><strong>Email:</strong> {editedTicket.user_details?.email}</p>
                                 <p><strong>Department:</strong> {editedTicket.department}</p>
                                 <p><strong>Issue Type:</strong> {editedTicket.type_of_issue}</p>
                                 <p><strong>Details:</strong> {editedTicket.additional_details}</p>

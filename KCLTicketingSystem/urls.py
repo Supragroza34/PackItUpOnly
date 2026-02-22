@@ -19,13 +19,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from KCLTicketingSystems import views
-from KCLTicketingSystems.views import admin_views
+from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view
 from KCLTicketingSystems.views.email_webhook import email_webhook
 
 urlpatterns = [
     path('', views.home, name='home'),
-    path('reply/<int:ticket_id>/', views.reply, name="reply"),
-    #path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls),
     path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
     
@@ -49,6 +48,11 @@ urlpatterns = [
     
     # Staff List for Assignment
     path('api/admin/staff/', admin_views.admin_staff_list, name='admin_staff_list'),
+
+    # Staff Dashboard
+    path('api/staff/dashboard/', staff_dashboard_view.staff_dashboard, name='staff_dashboard'),
+    path('api/staff/dashboard/<int:ticket_id>/', ticket_info_view.ticket_info, name='ticket_info'),
+    path('api/staff/dashboard/reply/<int:ticket_id>/', reply_view.reply_details, name="reply"),
     
     path('api/dashboard/', views.user_dashboard, name="user_dashboard"),
     path('api/email-webhook/', email_webhook, name='email_webhook')

@@ -237,10 +237,9 @@ class TicketSerializerTest(TestCase):
         """Test that TicketSerializer includes all fields"""
         serializer = TicketSerializer(self.ticket)
         
-        # Should include all model fields plus user_details and assigned_to_details
+        # Should include all model fields plus user and assigned_to_details
         self.assertIn('id', serializer.data)
         self.assertIn('user', serializer.data)
-        self.assertIn('user_details', serializer.data)
         self.assertIn('assigned_to', serializer.data)
         self.assertIn('assigned_to_details', serializer.data)
 

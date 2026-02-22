@@ -261,9 +261,9 @@ const TicketsManagement = () => {
                         <form onSubmit={handleUpdateTicket}>
                             <div className="modal-section">
                                 <h3>Ticket Information</h3>
-                                <p><strong>Name:</strong> {editedTicket.user_details?.first_name} {editedTicket.user_details?.last_name}</p>
-                                <p><strong>K-Number:</strong> {editedTicket.user_details?.k_number}</p>
-                                <p><strong>Email:</strong> {editedTicket.user_details?.email}</p>
+                                <p><strong>Name:</strong> {editedTicket.user?.first_name} {editedTicket.user?.last_name}</p>
+                                <p><strong>K-Number:</strong> {editedTicket.user?.k_number}</p>
+                                <p><strong>Email:</strong> {editedTicket.user?.email}</p>
                                 <p><strong>Department:</strong> {editedTicket.department}</p>
                                 <p><strong>Issue Type:</strong> {editedTicket.type_of_issue}</p>
                                 <p><strong>Details:</strong> {editedTicket.additional_details}</p>

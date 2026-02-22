@@ -42,10 +42,15 @@ export default function Login() {
     if (user && loading) {
       console.log("User loaded in Redux, redirecting...");
       // Redirect based on user role
-      if (user.role === "admin" || user.is_superuser || user.is_staff) {
+      if (user.role === "admin" || user.is_superuser) {
         console.log("Redirecting to admin dashboard");
         nav("/admin/dashboard", { replace: true });
-      } else {
+      } 
+      else if(user.role ==="staff" || user.role === "Staff"){
+        console.log("Redirecting to staff dashboard");
+        nav("/staff/dashboard", { replace: true });
+      }
+      else {
         console.log("Redirecting to profile");
         nav("/profile", { replace: true });
       }
@@ -81,10 +86,15 @@ export default function Login() {
       // Navigation will happen in the useEffect when user state is updated
       
       // Redirect based on user role - don't setLoading(false) here!
-      if (userProfile.role === "admin" || userProfile.is_superuser || userProfile.is_staff) {
+      if (user?.role === "admin" || user?.is_superuser) {
         console.log("Redirecting to admin dashboard");
         nav("/admin/dashboard", { replace: true });
-      } else {
+      }
+      else if(user?.role ==="staff" || user?.role === "Staff"){
+        console.log("Redirecting to staff dashboard");
+        nav("/staff/dashboard", { replace: true });
+      } 
+      else {
         //console.log("Redirecting to profile");
         //nav("/profile", { replace: true });
 

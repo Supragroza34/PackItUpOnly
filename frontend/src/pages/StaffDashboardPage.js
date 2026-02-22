@@ -1,9 +1,11 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function StaffDashboardPage() {
     const [tickets, setTickets] = useState([]);
+    const { user, logout } = useAuth();
     const [filter, setFilter] = useState("open");
     const navigate = useNavigate();
     useEffect(() => {
@@ -26,9 +28,23 @@ function StaffDashboardPage() {
         })
         .catch(err => console.error('Error:', err))
     }, [filter, navigate]);
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login');
+    };
+
     return (
         <div>
             <h1>Staff Dashboard</h1>
+            <div>
+                <p>
+                    Welcome, {user?.first_name || user?.last_name}
+                </p>
+                <button onClick={handleLogout}>
+                    Logout
+                </button>
+            </div>
             <select value={filter} onChange={(e) => setFilter(e.target.value)}>
                 <option value="open">Open</option>
                 <option value="overdue">Overdue</option>
@@ -39,11 +55,11 @@ function StaffDashboardPage() {
             <p>No tickets available.</p>
             ) : (
             tickets.map(ticket => (
-            <Link key={ticket.id} to={`/ticket/${ticket.id}`}>
-            <p>Type of issue:{ticket.type_of_issue}</p>
-            <p>K-Number: {ticket.k_number}</p>
-            <p>Created: {ticket.created_at}</p>
-            <p>Status: {ticket.is_overdue ? "Overdue" : ticket.status}</p>
+            <Link key={ticket.id} to={`/staff/dashboard/${ticket.id}`}>
+            {/* <p>Type of issue:{ticket.type_of_issue}</p> */}
+            <p>Created by: {ticket.user?.first_name} {ticket.user?.last_name}</p>
+            {/* <p>Created: {ticket.created_at}</p> */}
+            {/* <p>Status: {ticket.is_overdue ? "Overdue" : ticket.status}</p> */}
             </Link>
             ))
             )}

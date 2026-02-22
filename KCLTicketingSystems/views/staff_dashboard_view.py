@@ -5,13 +5,15 @@ from rest_framework import status
 from django.utils import timezone
 from datetime import timedelta
 from ..models import Ticket
+from ..serializers import UserSerializer
 
 class TicketSerializer(serializers.ModelSerializer):
     is_overdue = serializers.SerializerMethodField() 
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = Ticket
-        fields = ['id', 'type_of_issue', 'status', 'is_overdue', 'k_number', 'created_at']
+        fields = "__all__"
 
     def get_is_overdue(self, obj):
         cutoff = timezone.now() - timedelta(days=3)
@@ -29,14 +31,14 @@ def staff_dashboard(request):
     filter_options = request.GET.get("filtering", "open")
     cutoff = timezone.now() - timedelta(days=3)
 
-    tickets = Ticket.objects.all()
+    tickets = Ticket.objects.filter(assigned_to=request.user)
 
     if filter_options == "open":
-        tickets = (tickets.filter(status='Open'))
+        tickets = (tickets.filter(status='pending'))
     elif filter_options == "closed":
         tickets = (tickets.filter(status='Closed'))
     elif filter_options == "overdue":
-        tickets = tickets.filter(status='Open', created_at__lt=cutoff)
+        tickets = tickets.filter(status='pending', created_at__lt=cutoff)
     elif filter_options == "all":
         pass  # leave as all
     else:

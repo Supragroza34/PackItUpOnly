@@ -1,84 +1,85 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import adminApi from '../../services/adminApi';
-import { useAuth } from '../../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { 
+    fetchTickets, 
+    fetchStaffList, 
+    fetchTicketDetail, 
+    updateTicket,
+    deleteTicket as deleteTicketAction 
+} from '../../store/slices/adminSlice';
+import { logout } from '../../store/slices/authSlice';
 import './TicketsManagement.css';
 
 const TicketsManagement = () => {
-    const [tickets, setTickets] = useState([]);
-    const [staffList, setStaffList] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedTicket, setSelectedTicket] = useState(null);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    
+    const { user } = useSelector((state) => state.auth);
+    const { 
+        tickets, 
+        ticketsTotalPages, 
+        ticketsLoading: loading, 
+        ticketsError: error,
+        selectedTicket,
+        staffList 
+    } = useSelector((state) => state.admin);
+    
     const [showModal, setShowModal] = useState(false);
-    const [pagination, setPagination] = useState({ page: 1, total: 0, page_size: 20 });
+    const [pagination, setPagination] = useState({ page: 1, page_size: 20 });
+    const [editedTicket, setEditedTicket] = useState(null);
     
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [priorityFilter, setPriorityFilter] = useState('');
-    
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
 
     useEffect(() => {
-        fetchTickets();
-        fetchStaffList();
-    }, [pagination.page, searchTerm, statusFilter, priorityFilter]);
+        dispatch(fetchTickets({
+            page: pagination.page,
+            page_size: pagination.page_size,
+            search: searchTerm,
+            status: statusFilter,
+            priority: priorityFilter,
+        }));
+    }, [dispatch, pagination.page, pagination.page_size, searchTerm, statusFilter, priorityFilter]);
 
-    const fetchTickets = async () => {
-        try {
-            setLoading(true);
-            const data = await adminApi.getTickets({
-                page: pagination.page,
-                page_size: pagination.page_size,
-                search: searchTerm,
-                status: statusFilter,
-                priority: priorityFilter,
-            });
-            setTickets(data.tickets);
-            setPagination(prev => ({ ...prev, total: data.total, total_pages: data.total_pages }));
-            setError(null);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchStaffList = async () => {
-        try {
-            const data = await adminApi.getStaffList();
-            setStaffList(data.staff);
-        } catch (err) {
-            console.error('Failed to fetch staff list:', err);
-        }
-    };
+    useEffect(() => {
+        dispatch(fetchStaffList());
+    }, [dispatch]);
 
     const handleViewTicket = async (ticketId) => {
         try {
-            const ticketData = await adminApi.getTicketDetail(ticketId);
-            setSelectedTicket(ticketData);
+            await dispatch(fetchTicketDetail(ticketId)).unwrap();
+            setEditedTicket(selectedTicket);
             setShowModal(true);
         } catch (err) {
-            alert('Failed to load ticket details: ' + err.message);
+            alert('Failed to load ticket details: ' + err);
         }
     };
+
+    useEffect(() => {
+        if (selectedTicket) {
+            setEditedTicket(selectedTicket);
+        }
+    }, [selectedTicket]);
 
     const handleUpdateTicket = async (e) => {
         e.preventDefault();
         try {
-            await adminApi.updateTicket(selectedTicket.id, {
-                status: selectedTicket.status,
-                priority: selectedTicket.priority,
-                assigned_to: selectedTicket.assigned_to,
-                admin_notes: selectedTicket.admin_notes,
-            });
+            await dispatch(updateTicket({
+                ticketId: editedTicket.id,
+                updates: {
+                    status: editedTicket.status,
+                    priority: editedTicket.priority,
+                    assigned_to: editedTicket.assigned_to,
+                    admin_notes: editedTicket.admin_notes,
+                }
+            })).unwrap();
             alert('Ticket updated successfully!');
             setShowModal(false);
-            fetchTickets();
         } catch (err) {
-            alert('Failed to update ticket: ' + err.message);
+            alert('Failed to update ticket: ' + err);
         }
     };
 
@@ -86,17 +87,26 @@ const TicketsManagement = () => {
         if (!window.confirm('Are you sure you want to delete this ticket?')) return;
         
         try {
-            await adminApi.deleteTicket(ticketId);
+            await dispatch(deleteTicketAction(ticketId)).unwrap();
             alert('Ticket deleted successfully!');
-            fetchTickets();
         } catch (err) {
-            alert('Failed to delete ticket: ' + err.message);
+            alert('Failed to delete ticket: ' + err);
         }
     };
 
     const handleLogout = async () => {
-        await logout();
+        await dispatch(logout());
         navigate('/login');
+    };
+
+    const refreshTickets = () => {
+        dispatch(fetchTickets({
+            page: pagination.page,
+            page_size: pagination.page_size,
+            search: searchTerm,
+            status: statusFilter,
+            priority: priorityFilter,
+        }));
     };
 
     return (
@@ -155,7 +165,7 @@ const TicketsManagement = () => {
                         <option value="urgent">Urgent</option>
                     </select>
                     
-                    <button onClick={fetchTickets} className="btn-refresh">Refresh</button>
+                    <button onClick={refreshTickets} className="btn-refresh">Refresh</button>
                 </div>
 
                 {loading ? (
@@ -229,11 +239,11 @@ const TicketsManagement = () => {
                                 Previous
                             </button>
                             <span className="page-info">
-                                Page {pagination.page} of {pagination.total_pages || 1}
+                                Page {pagination.page} of {ticketsTotalPages || 1}
                             </span>
                             <button
                                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                                disabled={pagination.page >= pagination.total_pages}
+                                disabled={pagination.page >= ticketsTotalPages}
                                 className="btn-page"
                             >
                                 Next
@@ -243,21 +253,21 @@ const TicketsManagement = () => {
                 )}
             </main>
 
-            {showModal && selectedTicket && (
+            {showModal && editedTicket && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h2>Edit Ticket #{selectedTicket.id}</h2>
+                        <h2>Edit Ticket #{editedTicket.id}</h2>
                         
                         <form onSubmit={handleUpdateTicket}>
                             <div className="modal-section">
                                 <h3>Ticket Information</h3>
-                                <p><strong>Name:</strong> {selectedTicket.name} {selectedTicket.surname}</p>
-                                <p><strong>K-Number:</strong> {selectedTicket.k_number}</p>
-                                <p><strong>Email:</strong> {selectedTicket.k_email}</p>
-                                <p><strong>Department:</strong> {selectedTicket.department}</p>
-                                <p><strong>Issue Type:</strong> {selectedTicket.type_of_issue}</p>
-                                <p><strong>Details:</strong> {selectedTicket.additional_details}</p>
-                                <p><strong>Created:</strong> {new Date(selectedTicket.created_at).toLocaleString()}</p>
+                                <p><strong>Name:</strong> {editedTicket.name} {editedTicket.surname}</p>
+                                <p><strong>K-Number:</strong> {editedTicket.k_number}</p>
+                                <p><strong>Email:</strong> {editedTicket.k_email}</p>
+                                <p><strong>Department:</strong> {editedTicket.department}</p>
+                                <p><strong>Issue Type:</strong> {editedTicket.type_of_issue}</p>
+                                <p><strong>Details:</strong> {editedTicket.additional_details}</p>
+                                <p><strong>Created:</strong> {new Date(editedTicket.created_at).toLocaleString()}</p>
                             </div>
 
                             <div className="modal-section">
@@ -266,8 +276,8 @@ const TicketsManagement = () => {
                                 <div className="form-group">
                                     <label>Status</label>
                                     <select
-                                        value={selectedTicket.status}
-                                        onChange={(e) => setSelectedTicket({ ...selectedTicket, status: e.target.value })}
+                                        value={editedTicket.status}
+                                        onChange={(e) => setEditedTicket({ ...editedTicket, status: e.target.value })}
                                     >
                                         <option value="pending">Pending</option>
                                         <option value="in_progress">In Progress</option>
@@ -279,8 +289,8 @@ const TicketsManagement = () => {
                                 <div className="form-group">
                                     <label>Priority</label>
                                     <select
-                                        value={selectedTicket.priority}
-                                        onChange={(e) => setSelectedTicket({ ...selectedTicket, priority: e.target.value })}
+                                        value={editedTicket.priority}
+                                        onChange={(e) => setEditedTicket({ ...editedTicket, priority: e.target.value })}
                                     >
                                         <option value="low">Low</option>
                                         <option value="medium">Medium</option>
@@ -292,9 +302,9 @@ const TicketsManagement = () => {
                                 <div className="form-group">
                                     <label>Assign To</label>
                                     <select
-                                        value={selectedTicket.assigned_to || ''}
-                                        onChange={(e) => setSelectedTicket({ 
-                                            ...selectedTicket, 
+                                        value={editedTicket.assigned_to || ''}
+                                        onChange={(e) => setEditedTicket({ 
+                                            ...editedTicket, 
                                             assigned_to: e.target.value ? parseInt(e.target.value) : null 
                                         })}
                                     >
@@ -310,8 +320,8 @@ const TicketsManagement = () => {
                                 <div className="form-group">
                                     <label>Admin Notes</label>
                                     <textarea
-                                        value={selectedTicket.admin_notes}
-                                        onChange={(e) => setSelectedTicket({ ...selectedTicket, admin_notes: e.target.value })}
+                                        value={editedTicket.admin_notes || ''}
+                                        onChange={(e) => setEditedTicket({ ...editedTicket, admin_notes: e.target.value })}
                                         rows={4}
                                     />
                                 </div>

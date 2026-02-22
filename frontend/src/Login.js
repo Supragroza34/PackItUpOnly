@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
+import { useDispatch, useSelector } from "react-redux";
+import { login as loginAction, checkAuth } from "./store/slices/authSlice";
 
 export default function Login() {
+  const dispatch = useDispatch();
   const nav = useNavigate();
-  const { login: authLogin, user } = useAuth();
+  const { user } = useSelector((state) => state.auth);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -13,6 +15,11 @@ export default function Login() {
   // Refs to handle autofill properly
   const usernameRef = useRef(null);
   const passwordRef = useRef(null);
+
+  // Check auth on mount
+  useEffect(() => {
+    dispatch(checkAuth());
+  }, [dispatch]);
 
   // Sync autofilled values with state
   useEffect(() => {
@@ -28,12 +35,12 @@ export default function Login() {
     // Check for autofill after a short delay
     const timer = setTimeout(syncAutofill, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [username, password]);
 
-  // Redirect when user is set in AuthContext
+  // Redirect when user is set in Redux
   useEffect(() => {
     if (user && loading) {
-      console.log("User loaded in context, redirecting...");
+      console.log("User loaded in Redux, redirecting...");
       // Redirect based on user role
       if (user.role === "admin" || user.is_superuser || user.is_staff) {
         console.log("Redirecting to admin dashboard");
@@ -67,19 +74,15 @@ export default function Login() {
     try {
       console.log("Attempting login with:", usernameValue);
       
-      // Use AuthContext's login method which properly updates user state
-      const result = await authLogin(usernameValue, passwordValue);
-      
-      if (!result.success) {
-        throw new Error(result.error || "Login failed");
-      }
+      // Dispatch Redux login action
+      await dispatch(loginAction({ username: usernameValue, password: passwordValue })).unwrap();
       
       console.log("Login successful");
       // Navigation will happen in the useEffect when user state is updated
       
     } catch (e2) {
       console.error("Login error:", e2);
-      setErr("Login failed: " + (e2.message || "Please check your credentials."));
+      setErr("Login failed: " + (e2 || "Please check your credentials."));
       setLoading(false);
     }
   }

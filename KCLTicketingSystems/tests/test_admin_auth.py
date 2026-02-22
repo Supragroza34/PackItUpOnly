@@ -211,11 +211,7 @@ class UserRegistrationTest(TestCase):
         response = self.client.post(self.register_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         
-        # Missing k_number
-        data = self.valid_registration_data.copy()
-        del data['k_number']
-        response = self.client.post(self.register_url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # k_number is optional (blank=True in model), so not tested here
 
     def test_registration_short_password(self):
         """Test registration with password shorter than 8 characters"""

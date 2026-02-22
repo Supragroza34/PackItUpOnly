@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { checkAuth } from '../store/slices/authSlice';
 
 const PrivateRoute = ({ children }) => {
-    const { user, loading } = useAuth();
+    const dispatch = useDispatch();
+    const { user, loading } = useSelector((state) => state.auth);
+
+    useEffect(() => {
+        dispatch(checkAuth());
+    }, [dispatch]);
 
     if (loading) {
         return (

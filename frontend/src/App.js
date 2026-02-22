@@ -1,6 +1,8 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { Provider } from "react-redux";
+import store from "./store";
+
 import PrivateRoute from "./utils/PrivateRoute";
 
 import AdminDashboard from "./components/Admin/AdminDashboard";
@@ -25,7 +27,7 @@ function Protected({ children }) {
 
 export default function App() {
   return (
-    <AuthProvider>
+    <Provider store={store}>
       <BrowserRouter>
         <Routes>
           {/* User Authentication Routes */}
@@ -81,6 +83,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
+    </Provider>
   );
 }

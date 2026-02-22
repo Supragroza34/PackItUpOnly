@@ -1,72 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import adminApi from '../../services/adminApi';
-import { useAuth } from '../../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { 
+    fetchUsers, 
+    fetchUserDetail, 
+    updateUser,
+    deleteUser as deleteUserAction 
+} from '../../store/slices/adminSlice';
+import { logout } from '../../store/slices/authSlice';
 import './UsersManagement.css';
 
 const UsersManagement = () => {
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedUser, setSelectedUser] = useState(null);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    
+    const { user } = useSelector((state) => state.auth);
+    const { 
+        users, 
+        usersTotalPages, 
+        usersLoading: loading, 
+        usersError: error,
+        selectedUser
+    } = useSelector((state) => state.admin);
+    
     const [showModal, setShowModal] = useState(false);
-    const [pagination, setPagination] = useState({ page: 1, total: 0, page_size: 20 });
+    const [pagination, setPagination] = useState({ page: 1, page_size: 20 });
+    const [editedUser, setEditedUser] = useState(null);
     
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
-    
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
 
     useEffect(() => {
-        fetchUsers();
-    }, [pagination.page, searchTerm, roleFilter]);
-
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
-            const data = await adminApi.getUsers({
-                page: pagination.page,
-                page_size: pagination.page_size,
-                search: searchTerm,
-                role: roleFilter,
-            });
-            setUsers(data.users);
-            setPagination(prev => ({ ...prev, total: data.total, total_pages: data.total_pages }));
-            setError(null);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+        dispatch(fetchUsers({
+            page: pagination.page,
+            page_size: pagination.page_size,
+            search: searchTerm,
+            role: roleFilter,
+        }));
+    }, [dispatch, pagination.page, pagination.page_size, searchTerm, roleFilter]);
 
     const handleViewUser = async (userId) => {
         try {
-            const userData = await adminApi.getUserDetail(userId);
-            setSelectedUser(userData);
+            await dispatch(fetchUserDetail(userId)).unwrap();
+            setEditedUser(selectedUser);
             setShowModal(true);
         } catch (err) {
-            alert('Failed to load user details: ' + err.message);
+            alert('Failed to load user details: ' + err);
         }
     };
+
+    useEffect(() => {
+        if (selectedUser) {
+            setEditedUser(selectedUser);
+        }
+    }, [selectedUser]);
 
     const handleUpdateUser = async (e) => {
         e.preventDefault();
         try {
-            await adminApi.updateUser(selectedUser.id, {
-                role: selectedUser.role,
-                department: selectedUser.department,
-                first_name: selectedUser.first_name,
-                last_name: selectedUser.last_name,
-                email: selectedUser.email,
-            });
+            await dispatch(updateUser({
+                userId: editedUser.id,
+                updates: {
+                    role: editedUser.role,
+                    department: editedUser.department,
+                    first_name: editedUser.first_name,
+                    last_name: editedUser.last_name,
+                    email: editedUser.email,
+                }
+            })).unwrap();
             alert('User updated successfully!');
             setShowModal(false);
-            fetchUsers();
         } catch (err) {
-            alert('Failed to update user: ' + err.message);
+            alert('Failed to update user: ' + err);
         }
     };
 
@@ -74,17 +80,25 @@ const UsersManagement = () => {
         if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
         
         try {
-            await adminApi.deleteUser(userId);
+            await dispatch(deleteUserAction(userId)).unwrap();
             alert('User deleted successfully!');
-            fetchUsers();
         } catch (err) {
-            alert('Failed to delete user: ' + err.message);
+            alert('Failed to delete user: ' + err);
         }
     };
 
     const handleLogout = async () => {
-        await logout();
+        await dispatch(logout());
         navigate('/login');
+    };
+
+    const refreshUsers = () => {
+        dispatch(fetchUsers({
+            page: pagination.page,
+            page_size: pagination.page_size,
+            search: searchTerm,
+            role: roleFilter,
+        }));
     };
 
     return (
@@ -130,7 +144,7 @@ const UsersManagement = () => {
                         <option value="admin">Admin</option>
                     </select>
                     
-                    <button onClick={fetchUsers} className="btn-refresh">Refresh</button>
+                    <button onClick={refreshUsers} className="btn-refresh">Refresh</button>
                 </div>
 
                 {loading ? (
@@ -198,11 +212,11 @@ const UsersManagement = () => {
                                 Previous
                             </button>
                             <span className="page-info">
-                                Page {pagination.page} of {pagination.total_pages || 1}
+                                Page {pagination.page} of {usersTotalPages || 1}
                             </span>
                             <button
                                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                                disabled={pagination.page >= pagination.total_pages}
+                                disabled={pagination.page >= usersTotalPages}
                                 className="btn-page"
                             >
                                 Next
@@ -212,16 +226,16 @@ const UsersManagement = () => {
                 )}
             </main>
 
-            {showModal && selectedUser && (
+            {showModal && editedUser && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h2>Edit User #{selectedUser.id}</h2>
+                        <h2>Edit User #{editedUser.id}</h2>
                         
                         <form onSubmit={handleUpdateUser}>
                             <div className="modal-section">
                                 <h3>User Information</h3>
-                                <p><strong>Username:</strong> {selectedUser.username}</p>
-                                <p><strong>K-Number:</strong> {selectedUser.k_number}</p>
+                                <p><strong>Username:</strong> {editedUser.username}</p>
+                                <p><strong>K-Number:</strong> {editedUser.k_number}</p>
                             </div>
 
                             <div className="modal-section">
@@ -231,8 +245,8 @@ const UsersManagement = () => {
                                     <label>First Name</label>
                                     <input
                                         type="text"
-                                        value={selectedUser.first_name}
-                                        onChange={(e) => setSelectedUser({ ...selectedUser, first_name: e.target.value })}
+                                        value={editedUser.first_name}
+                                        onChange={(e) => setEditedUser({ ...editedUser, first_name: e.target.value })}
                                     />
                                 </div>
 
@@ -240,8 +254,8 @@ const UsersManagement = () => {
                                     <label>Last Name</label>
                                     <input
                                         type="text"
-                                        value={selectedUser.last_name}
-                                        onChange={(e) => setSelectedUser({ ...selectedUser, last_name: e.target.value })}
+                                        value={editedUser.last_name}
+                                        onChange={(e) => setEditedUser({ ...editedUser, last_name: e.target.value })}
                                     />
                                 </div>
 
@@ -249,8 +263,8 @@ const UsersManagement = () => {
                                     <label>Email</label>
                                     <input
                                         type="email"
-                                        value={selectedUser.email}
-                                        onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
+                                        value={editedUser.email}
+                                        onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
                                     />
                                 </div>
 
@@ -258,16 +272,16 @@ const UsersManagement = () => {
                                     <label>Department</label>
                                     <input
                                         type="text"
-                                        value={selectedUser.department || ''}
-                                        onChange={(e) => setSelectedUser({ ...selectedUser, department: e.target.value })}
+                                        value={editedUser.department || ''}
+                                        onChange={(e) => setEditedUser({ ...editedUser, department: e.target.value })}
                                     />
                                 </div>
 
                                 <div className="form-group">
                                     <label>Role</label>
                                     <select
-                                        value={selectedUser.role}
-                                        onChange={(e) => setSelectedUser({ ...selectedUser, role: e.target.value })}
+                                        value={editedUser.role}
+                                        onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value })}
                                     >
                                         <option value="student">Student</option>
                                         <option value="staff">Staff</option>

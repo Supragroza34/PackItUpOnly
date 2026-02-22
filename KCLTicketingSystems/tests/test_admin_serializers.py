@@ -169,7 +169,8 @@ class RegisterSerializerTest(TestCase):
 
     def test_register_serializer_missing_required_fields(self):
         """Test that missing required fields are rejected"""
-        required_fields = ['username', 'email', 'password', 'k_number']
+        # k_number is not required as it has blank=True in the model
+        required_fields = ['username', 'email', 'password']
         
         for field in required_fields:
             data = self.valid_data.copy()

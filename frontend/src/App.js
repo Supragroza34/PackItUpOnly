@@ -1,15 +1,21 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import PrivateRoute from './utils/PrivateRoute';
-import AdminDashboard from './components/Admin/AdminDashboard';
-import TicketsManagement from './components/Admin/TicketsManagement';
-import UsersManagement from './components/Admin/UsersManagement';
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import PrivateRoute from "./utils/PrivateRoute";
+
+import AdminDashboard from "./components/Admin/AdminDashboard";
+import TicketsManagement from "./components/Admin/TicketsManagement";
+import UsersManagement from "./components/Admin/UsersManagement";
+
 import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
 import UserDashboardPage from './pages/UserDashboard';
 import './App.css';
+
+import FaqPage from "./pages/FaqPage";
+
+import "./App.css";
 
 function isAuthed() {
   return !!localStorage.getItem("access");
@@ -46,22 +52,42 @@ export default function App() {
           }
           />
           
+
+          {/* FAQs (added) */}
+          <Route
+            path="/faqs"
+            element={
+              <Protected>
+                <FaqPage />
+              </Protected>
+            }
+          />
+
           {/* Admin Routes */}
-          <Route path="/admin/dashboard" element={
-            <PrivateRoute>
-              <AdminDashboard />
-            </PrivateRoute>
-          } />
-          <Route path="/admin/tickets" element={
-            <PrivateRoute>
-              <TicketsManagement />
-            </PrivateRoute>
-          } />
-          <Route path="/admin/users" element={
-            <PrivateRoute>
-              <UsersManagement />
-            </PrivateRoute>
-          } />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <PrivateRoute>
+                <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/tickets"
+            element={
+              <PrivateRoute>
+                <TicketsManagement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <PrivateRoute>
+                <UsersManagement />
+              </PrivateRoute>
+            }
+          />
 
           {/* Fallback Route */}
           <Route path="*" element={<Navigate to="/login" replace />} />

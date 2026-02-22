@@ -18,13 +18,7 @@ class User(AbstractUser):
     )
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['k_number'],
-                condition=models.Q(k_number__gt=''),
-                name='unique_k_number_when_not_empty'
-            )
-        ]
+        db_table = 'KCLTicketingSystems_user'
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.k_number})" if self.k_number else f"{self.first_name} {self.last_name}"

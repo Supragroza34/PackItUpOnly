@@ -14,6 +14,7 @@ import UserDashboardPage from './pages/UserDashboard';
 import './App.css';
 
 import FaqPage from "./pages/FaqPage";
+import StaffDashboardPage from "./pages/StaffDashboardPage";
 
 import "./App.css";
 
@@ -59,6 +60,16 @@ export default function App() {
             element={
               <Protected>
                 <FaqPage />
+              </Protected>
+            }
+          />
+
+          {/* Staff Dashboard */}
+          <Route
+            path="/staff-dashboard"
+            element={
+              <Protected>
+                <StaffDashboardPage />
               </Protected>
             }
           />

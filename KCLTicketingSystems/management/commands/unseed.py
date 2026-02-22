@@ -5,41 +5,32 @@ from ...models import User, Ticket
 class Command(BaseCommand):
     help = 'Remove all seeded data from the database'
 
-    def handle(self, *args, **options):
-        # Get list of existing tables
-        tables = connection.introspection.table_names()
-        
-        # Delete only if tables exist
-        try:
-            if 'KCLTicketingSystems_user' in tables:
-                User.objects.all().delete()
-                self.stdout.write(self.style.SUCCESS('Deleted all users'))
-        except Exception as e:
-            self.stdout.write(self.style.WARNING(f'Could not delete users: {e}'))
-        
-        try:
-            if 'KCLTicketingSystems_ticket' in tables:
-                Ticket.objects.all().delete()
-                self.stdout.write(self.style.SUCCESS('Deleted all tickets'))
-        except Exception as e:
-            self.stdout.write(self.style.WARNING(f'Could not delete tickets: {e}'))
-        
-        # Try to import and delete Reply and Attachment if they exist
+    def _delete_model(self, model_class, table_name, model_name, tables):
+        """Delete all records from a model if table exists."""
+        if table_name in tables:
+            try:
+                model_class.objects.all().delete()
+                self.stdout.write(self.style.SUCCESS(f'Deleted all {model_name}'))
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'Could not delete {model_name}: {e}'))
+
+    def _delete_optional_models(self, tables):
+        """Delete Reply and Attachment models if they exist."""
         try:
             from ...models import Reply
-            if 'KCLTicketingSystems_reply' in tables:
-                Reply.objects.all().delete()
-                self.stdout.write(self.style.SUCCESS('Deleted all replies'))
+            self._delete_model(Reply, 'KCLTicketingSystems_reply', 'replies', tables)
         except:
             pass
-        
         try:
             from ...models import Attachment
-            if 'KCLTicketingSystems_attachment' in tables:
-                Attachment.objects.all().delete()
-                self.stdout.write(self.style.SUCCESS('Deleted all attachments'))
+            self._delete_model(Attachment, 'KCLTicketingSystems_attachment', 'attachments', tables)
         except:
             pass
-        
+
+    def handle(self, *args, **options):
+        tables = connection.introspection.table_names()
+        self._delete_model(User, 'KCLTicketingSystems_user', 'users', tables)
+        self._delete_model(Ticket, 'KCLTicketingSystems_ticket', 'tickets', tables)
+        self._delete_optional_models(tables)
         self.stdout.write(self.style.SUCCESS('\n✅ Unseed completed!'))
 

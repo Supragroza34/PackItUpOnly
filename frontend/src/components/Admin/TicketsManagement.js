@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminApi from '../../services/adminApi';
 import { useAuth } from '../../context/AuthContext';
@@ -21,12 +21,7 @@ const TicketsManagement = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchTickets();
-        fetchStaffList();
-    }, [pagination.page, searchTerm, statusFilter, priorityFilter]);
-
-    const fetchTickets = async () => {
+    const fetchTickets = useCallback(async () => {
         try {
             setLoading(true);
             const data = await adminApi.getTickets({
@@ -44,16 +39,21 @@ const TicketsManagement = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, pagination.page_size, searchTerm, statusFilter, priorityFilter]);
 
-    const fetchStaffList = async () => {
+    const fetchStaffList = useCallback(async () => {
         try {
             const data = await adminApi.getStaffList();
             setStaffList(data.staff);
         } catch (err) {
             console.error('Failed to fetch staff list:', err);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchTickets();
+        fetchStaffList();
+    }, [fetchTickets, fetchStaffList]);
 
     const handleViewTicket = async (ticketId) => {
         try {

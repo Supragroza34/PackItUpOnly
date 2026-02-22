@@ -14,37 +14,35 @@ class Command(createsuperuser.Command):
             help='K number for the user (leave empty for admin users)',
         )
 
-    def handle(self, *args, **options):
+    def _update_user_role(self, username):
+        """Update a specific user's role to admin."""
         from KCLTicketingSystems.models.user import User
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        # Store k_number and remove from options before calling parent
-        k_number = options.pop('k_number', '')
-        
-        # Get count of superusers before creating new one
-        superuser_count_before = User.objects.filter(is_superuser=True).count()
-        
-        # Call the parent command to create the superuser
-        super().handle(*args, **options)
-        
-        # Get the newly created superuser (most recent one)
-        # Look for superusers created in the last minute
-        recent_time = timezone.now() - timedelta(minutes=1)
-        new_user = User.objects.filter(
-            is_superuser=True,
-            date_joined__gte=recent_time
-        ).order_by('-date_joined').first()
-        
-        # Fallback: if no recent user found, get the most recent superuser
-        if not new_user:
-            new_user = User.objects.filter(is_superuser=True).order_by('-date_joined').first()
-        
-        if new_user:
-            # Set role to admin and ensure k_number is empty (admins don't have k_numbers)
-            new_user.role = User.Role.ADMIN
-            new_user.k_number = k_number  # Empty string for admins
-            new_user.save()
+        try:
+            user = User.objects.get(username=username)
+            if user.is_superuser and user.role != User.Role.ADMIN:
+                user.role = User.Role.ADMIN
+                user.save()
+                self.stdout.write(
+                    self.style.SUCCESS(f'Successfully set role to "admin" for superuser: {username}')
+                )
+        except User.DoesNotExist:
+            pass
+
+    def _update_all_superusers(self):
+        """Update all superusers without admin role."""
+        from KCLTicketingSystems.models.user import User
+        superusers = User.objects.filter(is_superuser=True).exclude(role=User.Role.ADMIN)
+        if superusers.exists():
+            count = superusers.update(role=User.Role.ADMIN)
             self.stdout.write(
-                self.style.SUCCESS(f'Successfully created superuser "{new_user.username}" with admin role')
+                self.style.SUCCESS(f'Updated {count} superuser(s) to have admin role')
             )
+
+    def handle(self, *args, **options):
+        super().handle(*args, **options)
+        username = options.get('username') or options.get('database')
+        from KCLTicketingSystems.models.user import User
+        if username:
+            self._update_user_role(username)
+        else:
+            self._update_all_superusers()

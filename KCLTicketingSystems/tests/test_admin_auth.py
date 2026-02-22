@@ -191,31 +191,19 @@ class UserRegistrationTest(TestCase):
         response = self.client.post(self.register_url, duplicate_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def _test_missing_field(self, field_name):
+        """Test registration with a missing required field."""
+        data = self.valid_registration_data.copy()
+        del data[field_name]
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_registration_missing_required_fields(self):
         """Test registration with missing required fields"""
-        # Missing username
-        data = self.valid_registration_data.copy()
-        del data['username']
-        response = self.client.post(self.register_url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        
-        # Missing email
-        data = self.valid_registration_data.copy()
-        del data['email']
-        response = self.client.post(self.register_url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        
-        # Missing password
-        data = self.valid_registration_data.copy()
-        del data['password']
-        response = self.client.post(self.register_url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        
-        # Missing k_number
-        data = self.valid_registration_data.copy()
-        del data['k_number']
-        response = self.client.post(self.register_url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self._test_missing_field('username')
+        self._test_missing_field('email')
+        self._test_missing_field('password')
+        self._test_missing_field('k_number')
 
     def test_registration_short_password(self):
         """Test registration with password shorter than 8 characters"""

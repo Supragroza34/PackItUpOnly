@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminApi from '../../services/adminApi';
 import { useAuth } from '../../context/AuthContext';
@@ -19,11 +19,7 @@ const UsersManagement = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchUsers();
-    }, [pagination.page, searchTerm, roleFilter]);
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
             const data = await adminApi.getUsers({
@@ -40,7 +36,11 @@ const UsersManagement = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, pagination.page_size, searchTerm, roleFilter]);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
 
     const handleViewUser = async (userId) => {
         try {

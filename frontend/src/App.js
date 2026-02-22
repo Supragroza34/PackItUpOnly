@@ -52,6 +52,7 @@ export default function App() {
           }
           />
           
+          
 
           {/* FAQs (added) */}
           <Route
@@ -89,8 +90,8 @@ export default function App() {
             }
           />
 
-          {/* Fallback Route */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          {/* Fallback Route
+          <Route path="*" element={<Navigate to="/login" replace />} /> */}
         </Routes>
       </BrowserRouter>
     </AuthProvider>

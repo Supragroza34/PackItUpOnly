@@ -282,7 +282,7 @@ class AdminTicketDetailTest(TestCase):
         response = self.client.get(self.url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['user'], self.ticket_user.id)
+        self.assertEqual(response.data['user']['id'], self.ticket_user.id)
         self.assertEqual(response.data['department'], 'Informatics')
         self.assertEqual(response.data['type_of_issue'], 'Software Installation Issues')
 

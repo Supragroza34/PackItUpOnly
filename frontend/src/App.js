@@ -12,6 +12,8 @@ import UsersManagement from "./components/Admin/UsersManagement";
 import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
+import UserDashboardPage from './pages/UserDashboard';
+import './App.css';
 
 import FaqPage from "./pages/FaqPage";
 
@@ -42,6 +44,16 @@ export default function App() {
               </Protected>
             }
           />
+          
+          <Route
+          path="/dashboard"
+          element={
+            <Protected>
+            <UserDashboardPage />
+            </Protected>
+          }
+          />
+          
 
           {/* FAQs (added) */}
           <Route

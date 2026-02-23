@@ -1,4 +1,8 @@
 import React from 'react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import './StaffDashboardPage.css';
 import {useState, useEffect} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,26 +14,46 @@ function StaffDashboardPage() {
     const [tickets, setTickets] = useState([]);
     const [filter, setFilter] = useState("open");
     const navigate = useNavigate();
+    
+    // Hard guard: only staff should ever see this page
+    useEffect(() => {
+        if (!user) return;
+        if (user.role !== 'staff' && user.role !== 'Staff') {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [user, navigate]);
 
     useEffect(() => {
-    fetch('/api/staff-dashboard/?filtering=' + filter, {
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access')}`
-        }
-    })
-        .then(res => {
-            if (res.status === 401) {
-                alert('You do not have permission to access this page.');
-                localStorage.removeItem('access');
-                navigate('/login');
-                return;
+        fetch('/api/staff-dashboard/?filtering=' + filter, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('access')}`
             }
-            return res.json();
         })
-        .then(data => {
-            if (data) setTickets(data);
-        })
-        .catch(err => console.error('Error:', err))
+            .then(res => {
+                if (res.status === 401) {
+                    alert('You do not have permission to access this page.');
+                    localStorage.removeItem('access');
+                    navigate('/login');
+                    return;
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (!data) return;
+
+                console.log('Staff dashboard response:', data);
+
+                const ticketsArray = Array.isArray(data)
+                    ? data
+                    : Array.isArray(data.tickets)
+                        ? data.tickets
+                        : Array.isArray(data.results)
+                            ? data.results
+                            : [];
+
+                setTickets(ticketsArray);
+            })
+            .catch(err => console.error('Error:', err))
     }, [filter, navigate]);
 
     const handleLogout = async () => {
@@ -38,33 +62,46 @@ function StaffDashboardPage() {
     };
 
     return (
-        <div>
+        <div className="staff-dashboard">
             <h1>Staff Dashboard</h1>
-            <div>
-                <p>
+
+            <div className="staff-dashboard-header">
+                <p className="staff-dashboard-user">
                     Welcome, {user?.first_name || user?.last_name}
                 </p>
-                <button onClick={handleLogout}>
+                <button className="staff-dashboard-logout" onClick={handleLogout}>
                     Logout
                 </button>
             </div>
-            <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-                <option value="open">Open</option>
-                <option value="overdue">Overdue</option>
-                <option value="closed">Closed</option>
-                <option value="all">All</option>
-            </select>
+
+            <div className="staff-dashboard-filter">
+                <label>
+                    Filter tickets:&nbsp;
+                    <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+                        <option value="open">Open</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="closed">Closed</option>
+                        <option value="all">All</option>
+                    </select>
+                </label>
+            </div>
+
             {tickets.length === 0 ? (
-            <p>No tickets available.</p>
+                <p className="staff-dashboard-empty">No tickets available.</p>
             ) : (
-            tickets.map(ticket => (
-            <Link key={ticket.id} to={`/staff/dashboard/${ticket.id}`}>
-            {/* <p>Type of issue:{ticket.type_of_issue}</p> */}
-            <p>Created by: {ticket.user?.first_name} {ticket.user?.last_name}</p>
-            {/* <p>Created: {ticket.created_at}</p> */}
-            {/* <p>Status: {ticket.is_overdue ? "Overdue" : ticket.status}</p> */}
-            </Link>
-            ))
+                <div className="staff-dashboard-tickets">
+                    {tickets.map((ticket) => (
+                        <Link
+                            key={ticket.id}
+                            to={`/staff/dashboard/${ticket.id}`}
+                            className="staff-dashboard-ticket"
+                        >
+                            <p>
+                                Created by: {ticket.user?.first_name} {ticket.user?.last_name}
+                            </p>
+                        </Link>
+                    ))}
+                </div>
             )}
         </div>
     );

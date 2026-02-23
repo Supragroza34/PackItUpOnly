@@ -30,7 +30,25 @@ export default function Login() {
     // Check for autofill after a short delay
     const timer = setTimeout(syncAutofill, 100);
     return () => clearTimeout(timer);
-  }, [username, password]);
+  }, []);
+
+  // Redirect when user is set in AuthContext
+  useEffect(() => {
+    if (user && loading) {
+      console.log("User loaded in context, redirecting...", user);
+      // Redirect based strictly on custom role (plus admin flag)
+      if (user.role === "admin" || user.is_superuser) {
+        console.log("Redirecting to admin dashboard");
+        nav("/admin/dashboard", { replace: true });
+      } else if (user.role === "staff" || user.role === "Staff") {
+        console.log("Redirecting to staff dashboard");
+        nav("/staff/dashboard", { replace: true });
+      } else {
+        console.log("Redirecting to user dashboard");
+        nav("/dashboard", { replace: true });
+      }
+    }
+  }, [user, loading, nav]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -81,38 +99,54 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "40px auto", padding: "20px" }}>
-      <h2>KCL Ticketing System - Login</h2>
-      {err && <p style={{ color: "crimson", background: "#ffe6e6", padding: "10px", borderRadius: "5px" }}>{err}</p>}
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }} autoComplete="on">
-        <input 
-          ref={usernameRef}
-          name="username"
-          value={username} 
-          onChange={(e) => setUsername(e.target.value)} 
-          placeholder="Username" 
-          disabled={loading}
-          autoComplete="username"
-          required
-        />
-        <input 
-          ref={passwordRef}
-          name="password"
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)} 
-          placeholder="Password" 
-          type="password"
-          disabled={loading}
-          autoComplete="current-password"
-          required
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
-      <p style={{ marginTop: "15px", textAlign: "center" }}>
-        Don't have an account? <a href="/signup">Sign up</a>
-      </p>
+    <div className="login-page">
+      <div className="login-card">
+        <h1 className="login-title">KCL Ticketing System</h1>
+        <p className="login-subtitle">Sign in to your account</p>
+
+        {err && <p className="login-error" role="alert">{err}</p>}
+
+        <form className="login-form" onSubmit={onSubmit} autoComplete="on">
+          <div className="login-field">
+            <label htmlFor="login-username">Username</label>
+            <input
+              id="login-username"
+              ref={usernameRef}
+              name="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
+              disabled={loading}
+              autoComplete="username"
+              className="login-input"
+              required
+            />
+          </div>
+          <div className="login-field">
+            <label htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              ref={passwordRef}
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              type="password"
+              disabled={loading}
+              autoComplete="current-password"
+              className="login-input"
+              required
+            />
+          </div>
+          <button type="submit" disabled={loading} className="login-submit">
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="login-footer">
+          Don&apos;t have an account? <a href="/signup">Sign up</a>
+        </p>
+      </div>
     </div>
   );
 }

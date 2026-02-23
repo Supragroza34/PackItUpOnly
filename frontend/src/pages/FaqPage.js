@@ -27,7 +27,7 @@ const FaqPage = ({ userRole, onNavigate }) => {
 
   const handleNavigateToCreateTicket = (event) => {
     if (onNavigate) {
-      onNavigate(event, '/');
+      onNavigate(event, '/create-ticket');
     }
   };
 
@@ -60,7 +60,7 @@ const FaqPage = ({ userRole, onNavigate }) => {
       <section className="faq-cta">
         <h2>Still need help?</h2>
         <p>Create a new ticket and our team will assist you directly.</p>
-        <a href="/" className="faq-cta-button" onClick={handleNavigateToCreateTicket}>
+        <a href="/create-ticket" className="faq-cta-button" onClick={handleNavigateToCreateTicket}>
           Create a new ticket
         </a>
       </section>

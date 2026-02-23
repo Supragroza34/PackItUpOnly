@@ -9,7 +9,7 @@ function StaffDashboardPage() {
     const [filter, setFilter] = useState("open");
     const navigate = useNavigate();
     useEffect(() => {
-    fetch('/api/staff/dashboard/?filtering=' + filter, {
+    fetch('/api/staff-dashboard/?filtering=' + filter, {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('access')}`
         }

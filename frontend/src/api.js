@@ -1,4 +1,5 @@
-const API_BASE = "http://localhost:8000/api";
+// Use the current hostname for API calls (works with localhost and IP addresses)
+const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
 
 export function authHeaders() {
   const token = localStorage.getItem("access");

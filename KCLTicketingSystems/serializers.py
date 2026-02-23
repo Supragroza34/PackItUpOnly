@@ -75,19 +75,41 @@ class TicketSerializer(serializers.ModelSerializer):
 
 
 class TicketListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for listing tickets"""
+    """Lightweight serializer for listing tickets (name/surname/k_number from ticket.user)"""
+    name = serializers.SerializerMethodField()
+    surname = serializers.SerializerMethodField()
+    k_number = serializers.SerializerMethodField()
     assigned_to_name = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Ticket
-        fields = ['id', 'name', 'surname', 'k_number', 'department', 
+        fields = ['id', 'name', 'surname', 'k_number', 'department',
                   'type_of_issue', 'status', 'priority', 'assigned_to_name',
                   'created_at', 'updated_at']
-    
+
+    def get_name(self, obj):
+        return obj.user.first_name if obj.user else None
+
+    def get_surname(self, obj):
+        return obj.user.last_name if obj.user else None
+
+    def get_k_number(self, obj):
+        return getattr(obj.user, 'k_number', None) if obj.user else None
+
     def get_assigned_to_name(self, obj):
         if obj.assigned_to:
             return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}"
         return None
+
+
+class TicketCreateSerializer(serializers.ModelSerializer):
+    """Serializer for authenticated users creating a ticket (user set on view)"""
+    class Meta:
+        model = Ticket
+        fields = ['department', 'type_of_issue', 'additional_details', 'priority']
+        extra_kwargs = {
+            'priority': {'required': False},
+        }
 
 
 class TicketUpdateSerializer(serializers.ModelSerializer):

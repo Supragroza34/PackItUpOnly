@@ -114,7 +114,7 @@ function UserDashboardPage() {
       <div className="dashboard-content">
         <div className="content-header">
           <h2>Your Tickets</h2>
-          <Link to="/ticket-form" className="create-ticket-btn">
+          <Link to="/create-ticket" className="create-ticket-btn">
             ＋ Create New Ticket
           </Link>
         </div>
@@ -123,7 +123,7 @@ function UserDashboardPage() {
           <div className="empty-state">
             <div className="empty-icon">🎫</div>
             <p>You haven't submitted any tickets yet.</p>
-            <Link to="/ticket-form" className="create-ticket-btn">
+            <Link to="/create-ticket" className="create-ticket-btn">
               ＋ Create Your First Ticket
             </Link>
           </div>

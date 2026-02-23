@@ -90,6 +90,16 @@ class TicketListSerializer(serializers.ModelSerializer):
         return None
 
 
+class TicketCreateSerializer(serializers.ModelSerializer):
+    """Serializer for authenticated users creating a ticket (user set on view)"""
+    class Meta:
+        model = Ticket
+        fields = ['department', 'type_of_issue', 'additional_details', 'priority']
+        extra_kwargs = {
+            'priority': {'required': False},
+        }
+
+
 class TicketUpdateSerializer(serializers.ModelSerializer):
     """Serializer for admin updating tickets"""
     class Meta:

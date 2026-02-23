@@ -1,5 +1,16 @@
 const API_BASE_URL = 'http://localhost:8000/api/admin';
 
+// Format DRF serializer errors { "field": ["msg"] } into a string
+function formatValidationErrors(obj) {
+    if (!obj || typeof obj !== 'object') return '';
+    const parts = [];
+    for (const [key, val] of Object.entries(obj)) {
+        const msg = Array.isArray(val) ? val.join(' ') : String(val);
+        if (msg) parts.push(`${key}: ${msg}`);
+    }
+    return parts.length ? parts.join('; ') : '';
+}
+
 // Helper to get auth headers with JWT token
 function getAuthHeaders() {
     const token = localStorage.getItem('access');
@@ -89,12 +100,15 @@ class AdminAPI {
             body: JSON.stringify(data),
         });
         
+        const body = await response.json().catch(() => ({}));
+        
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to update ticket');
+            // DRF validation errors: { "field": ["message"] } or backend { "error": "..." }
+            const msg = body.error || (typeof body === 'object' && body.detail) || formatValidationErrors(body);
+            throw new Error(msg || 'Failed to update ticket');
         }
         
-        return response.json();
+        return body;
     }
     
     async deleteTicket(ticketId) {

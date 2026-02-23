@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import store from "./store";
+import { AuthProvider } from "./context/AuthContext";
 
 import PrivateRoute from "./utils/PrivateRoute";
 
@@ -32,7 +33,8 @@ function Protected({ children }) {
 export default function App() {
   return (
     <Provider store={store}>
-      <BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           {/* User Authentication Routes */}
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -128,6 +130,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
+      </AuthProvider>
     </Provider>
   );
 }

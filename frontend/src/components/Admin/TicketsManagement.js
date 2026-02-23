@@ -83,6 +83,19 @@ const TicketsManagement = () => {
         }
     };
 
+    const handleAssignTicket = async (ticketId, assignedToId) => {
+        const value = assignedToId === '' ? null : parseInt(assignedToId, 10);
+        try {
+            await dispatch(updateTicket({
+                ticketId,
+                updates: { assigned_to: value },
+            })).unwrap();
+            refreshTickets();
+        } catch (err) {
+            alert('Failed to assign ticket: ' + err);
+        }
+    };
+
     const handleDeleteTicket = async (ticketId) => {
         if (!window.confirm('Are you sure you want to delete this ticket?')) return;
         
@@ -133,13 +146,17 @@ const TicketsManagement = () => {
                 </div>
 
                 <div className="filters-section">
-                    <input
-                        type="text"
-                        placeholder="Search by name, K-number, email, department..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
+                    <div className="search-by-name-wrap">
+                        <label htmlFor="admin-ticket-search" className="search-label">Search by name</label>
+                        <input
+                            id="admin-ticket-search"
+                            type="text"
+                            placeholder="Name, K-number, email, department..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input"
+                        />
+                    </div>
                     
                     <select
                         value={statusFilter}
@@ -208,7 +225,25 @@ const TicketsManagement = () => {
                                                     {ticket.priority}
                                                 </span>
                                             </td>
-                                            <td>{ticket.assigned_to_name || 'Unassigned'}</td>
+                                            <td className="assign-cell">
+                                                <select
+                                                    className="assign-select"
+                                                    value={ticket.assigned_to ?? ''}
+                                                    onChange={(e) => handleAssignTicket(ticket.id, e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    title="Assign to staff"
+                                                >
+                                                    <option value="">Unassigned</option>
+                                                    {staffList.map((staff) => (
+                                                        <option key={staff.id} value={staff.id}>
+                                                            {staff.first_name} {staff.last_name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {staffList.length === 0 && (
+                                                    <span className="assign-hint">No staff in list</span>
+                                                )}
+                                            </td>
                                             <td>{new Date(ticket.created_at).toLocaleDateString()}</td>
                                             <td className="actions-cell">
                                                 <button
@@ -302,10 +337,10 @@ const TicketsManagement = () => {
                                 <div className="form-group">
                                     <label>Assign To</label>
                                     <select
-                                        value={editedTicket.assigned_to || ''}
+                                        value={editedTicket.assigned_to ?? ''}
                                         onChange={(e) => setEditedTicket({ 
                                             ...editedTicket, 
-                                            assigned_to: e.target.value ? parseInt(e.target.value) : null 
+                                            assigned_to: e.target.value ? parseInt(e.target.value, 10) : null 
                                         })}
                                     >
                                         <option value="">Unassigned</option>
@@ -315,6 +350,7 @@ const TicketsManagement = () => {
                                             </option>
                                         ))}
                                     </select>
+                                    <small className="form-hint">Assigned staff will see this ticket in their dashboard.</small>
                                 </div>
 
                                 <div className="form-group">

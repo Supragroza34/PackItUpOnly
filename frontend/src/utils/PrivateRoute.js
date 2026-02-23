@@ -2,17 +2,24 @@ import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from '../store/slices/authSlice';
+import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
     const dispatch = useDispatch();
-    const { user, loading, error } = useSelector((state) => state.auth);
+    const { user: reduxUser, loading: reduxLoading } = useSelector((state) => state.auth);
+    const { user: contextUser } = useAuth();
+
+    // Use either Redux or AuthContext user so login via AuthContext still allows access
+    const user = reduxUser ?? contextUser;
 
     useEffect(() => {
-        // Only check auth if we don't already have a user
-        if (!user) {
+        if (!reduxUser && localStorage.getItem('access')) {
             dispatch(checkAuth());
         }
-    }, [dispatch, user]);
+    }, [dispatch, reduxUser]);
+
+    // Consider loading only if Redux is loading and we have no user from either source
+    const loading = reduxLoading && !user;
 
     if (loading) {
         return (
@@ -27,10 +34,6 @@ const PrivateRoute = ({ children }) => {
                 Loading...
             </div>
         );
-    }
-
-    if (error) {
-        console.error('Auth error in PrivateRoute:', error);
     }
 
     return user ? children : <Navigate to="/login" />;

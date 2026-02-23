@@ -114,7 +114,8 @@ class TicketCreateSerializer(serializers.ModelSerializer):
     """Serializer for authenticated users creating a ticket (user set on view)"""
     class Meta:
         model = Ticket
-        fields = ['department', 'type_of_issue', 'additional_details', 'priority']
+        fields = ['id', 'department', 'type_of_issue', 'additional_details', 'priority']
+        read_only_fields = ['id']
         extra_kwargs = {
             'priority': {'required': False},
         }

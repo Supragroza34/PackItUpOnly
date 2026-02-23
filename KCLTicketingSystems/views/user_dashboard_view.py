@@ -23,7 +23,7 @@ def user_dashboard(request):
             "department": t.department,
             "additional_details": t.additional_details,
             "status": t.status,
-            "created_at": t.created_at,
+            "created_at": t.created_at.isoformat() if t.created_at else None,
             "replies": replies_data,
         })
 

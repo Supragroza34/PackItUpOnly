@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { login as loginAction, checkAuth } from "./store/slices/authSlice";
+import "./Login.css";
 
 export default function Login() {
   const dispatch = useDispatch();

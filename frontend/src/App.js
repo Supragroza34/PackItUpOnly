@@ -13,6 +13,7 @@ import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
 import UserDashboardPage from './pages/UserDashboard';
+import TicketFormPage from './pages/TicketFormPage';
 import './App.css';
 
 import FaqPage from "./pages/FaqPage";
@@ -51,6 +52,16 @@ export default function App() {
             <UserDashboardPage />
             </Protected>
           }
+          />
+
+          {/* Ticket Form - React UI */}
+          <Route
+            path="/ticket-form"
+            element={
+              <Protected>
+                <TicketFormPage />
+              </Protected>
+            }
           />
           
           {/* Staff Routes */}

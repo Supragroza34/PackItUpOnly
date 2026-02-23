@@ -17,7 +17,7 @@ export async function apiFetch(path, options = {}) {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
+    throw new Error(`HTTP ${res.status}: ${text}`);
   }
   return res.json();
 }

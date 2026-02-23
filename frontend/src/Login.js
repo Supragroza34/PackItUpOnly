@@ -44,8 +44,8 @@ export default function Login() {
         nav("/staff/dashboard", { replace: true });
       }
       else {
-        console.log("Redirecting to profile");
-        nav("/profile", { replace: true });
+        console.log("Redirecting to user dashboard");
+        nav("/dashboard", { replace: true });
       }
     }
   }, [user, loading, nav]);
@@ -80,24 +80,8 @@ export default function Login() {
       }
       
       console.log("Login successful");
-      // Navigation will happen in the useEffect when user state is updated
+      // Navigation happens in the useEffect above when the user state is updated by AuthContext
       
-      // Redirect based on user role - don't setLoading(false) here!
-      if (user?.role === "admin" || user?.is_superuser) {
-        console.log("Redirecting to admin dashboard");
-        nav("/admin/dashboard", { replace: true });
-      }
-      else if(user?.role ==="staff" || user?.role === "Staff"){
-        console.log("Redirecting to staff dashboard");
-        nav("/staff/dashboard", { replace: true });
-      } 
-      else {
-        //console.log("Redirecting to profile");
-        //nav("/profile", { replace: true });
-
-        console.log("Redirecting to user dashboard");
-        nav("/dashboard", { replace: true });
-      }
     } catch (e2) {
       console.error("Login error:", e2);
       setErr("Login failed: " + (e2.message || "Please check your credentials."));

@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { checkAuth } from '../store/slices/authSlice';
 
 function TicketPage() {
     const { ticket_id } = useParams();
+    const dispatch = useDispatch();
+    const { user } = useSelector((state) => state.auth);
     const [ticket, setTicket] = useState([]);
     const [body, setBody] = useState("");
     const navigate = useNavigate();
+
+    // Check auth on mount
+    useEffect(() => {
+        dispatch(checkAuth());
+    }, [dispatch]);
     
     function fetchPost() {
         fetch(`/api/staff/dashboard/${ticket_id}/`)

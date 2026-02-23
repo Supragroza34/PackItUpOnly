@@ -16,8 +16,6 @@ import UserDashboardPage from './pages/UserDashboard';
 import './App.css';
 
 import FaqPage from "./pages/FaqPage";
-import StaffDashboardPage from "./pages/StaffDashboardPage";
-
 import "./App.css";
 
 function isAuthed() {

@@ -167,6 +167,49 @@
   overflow: hidden;
 }
 
+/* Staff responses on ticket */
+.ticket-responses {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e8eaf6;
+}
+
+.ticket-responses-title {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #3949ab;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ticket-response {
+  background: #f5f5ff;
+  border-left: 4px solid #3949ab;
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.ticket-response:last-child {
+  margin-bottom: 0;
+}
+
+.ticket-response-meta {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  color: #5c6bc0;
+}
+
+.ticket-response-body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #37474f;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .ticket-item-meta {
   text-align: right;
   display: flex;

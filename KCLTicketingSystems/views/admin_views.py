@@ -239,7 +239,8 @@ def admin_ticket_update(request, ticket_id):
         serializer = TicketUpdateSerializer(ticket, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            # Return full ticket data using TicketSerializer
+            ticket.refresh_from_db()
+            # Return full ticket data with nested user and assigned_to_details
             return Response(TicketSerializer(ticket).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Ticket.DoesNotExist:
@@ -409,7 +410,7 @@ def admin_user_delete(request, user_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_staff_list(request):
-    """Get list of staff users for ticket assignment"""
+    """Get list of staff and admin users for ticket assignment (dropdown: staff and admin only)."""
     try:
         staff = User.objects.filter(role__in=[User.Role.STAFF, User.Role.ADMIN]).values(
             'id', 'username', 'first_name', 'last_name', 'email', 'role'

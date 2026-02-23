@@ -90,8 +90,8 @@ class TicketListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ticket
-        fields = ['id', 'user_name', 'user_k_number', 'department', 
-                  'type_of_issue', 'status', 'priority', 'assigned_to_name',
+        fields = ['id', 'user_name', 'user_k_number', 'department',
+                  'type_of_issue', 'status', 'priority', 'assigned_to', 'assigned_to_name',
                   'created_at', 'updated_at']
     
     def get_user_name(self, obj):
@@ -122,6 +122,12 @@ class TicketCreateSerializer(serializers.ModelSerializer):
 
 class TicketUpdateSerializer(serializers.ModelSerializer):
     """Serializer for admin updating tickets"""
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True
+    )
+
     class Meta:
         model = Ticket
         fields = ['status', 'priority', 'assigned_to', 'admin_notes']

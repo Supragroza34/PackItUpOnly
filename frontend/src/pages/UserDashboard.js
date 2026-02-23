@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "../context/AuthContext";
+import { apiFetch, authHeaders } from "../api";
+import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
 import "./UserDashboard.css";
 
 const API_BASE = "http://localhost:8000/api";
@@ -13,9 +16,6 @@ function getAuthHeaders() {
 function statusClass(status) {
   return `status-badge status-${status || "pending"}`;
 }
-import { useDispatch, useSelector } from "react-redux";
-import { apiFetch, authHeaders } from "../api";
-import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
 
 function UserDashboardPage() {
   const dispatch = useDispatch();
@@ -59,7 +59,6 @@ function UserDashboardPage() {
           return;
         }
         const data = await res.json();
-        setUser(data.user);
         setTickets(data.tickets);
       } catch (err) {
         console.error("Dashboard fetch error:", err);
@@ -147,6 +146,21 @@ function UserDashboardPage() {
                   <h3>{ticket.type_of_issue}</h3>
                   <div className="ticket-dept">📁 {ticket.department}</div>
                   <div className="ticket-details">{ticket.additional_details}</div>
+                  {ticket.replies && ticket.replies.length > 0 && (
+                    <div className="ticket-responses">
+                      <h4 className="ticket-responses-title">Responses from staff</h4>
+                      {ticket.replies.map((reply) => (
+                        <div key={reply.id} className="ticket-response">
+                          <p className="ticket-response-meta">
+                            <strong>{reply.user_username}</strong>
+                            {' · '}
+                            {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}
+                          </p>
+                          <p className="ticket-response-body">{reply.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="ticket-item-meta">
                   <span className={statusClass(ticket.status)}>

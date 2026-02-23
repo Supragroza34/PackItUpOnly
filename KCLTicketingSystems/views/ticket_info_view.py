@@ -32,8 +32,7 @@ class TicketSerializer(serializers.ModelSerializer):
 
     def get_is_overdue(self, obj):
         cutoff = timezone.now() - timedelta(days=3)
-        is_overdue = (obj.status == "Open" and obj.created_at < cutoff)
-        return is_overdue
+        return obj.status in (Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS) and obj.created_at < cutoff
 
 class TicketDetailView(RetrieveAPIView):
     queryset = Ticket.objects.all()
@@ -43,8 +42,8 @@ class TicketDetailView(RetrieveAPIView):
 def ticket_info(request, ticket_id):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-    if request.user.role not in ["staff", "admin"] and not request.user.is_superuser:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    if request.user.role not in ("staff", "Staff", "admin") and not getattr(request.user, "is_superuser", False):
+        return Response(status=status.HTTP_403_FORBIDDEN)
     
     ticket = get_object_or_404(Ticket, pk=ticket_id)
     serializer = TicketSerializer(ticket)

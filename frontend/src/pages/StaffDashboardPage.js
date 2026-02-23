@@ -1,26 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useAuth } from '../context/AuthContext';
 import { logout as logoutAction } from '../store/slices/authSlice';
 import './StaffDashboardPage.css';
 
 function StaffDashboardPage() {
     const dispatch = useDispatch();
-    const { user } = useSelector((state) => state.auth);
+    const reduxUser = useSelector((state) => state.auth.user);
+    const { user: contextUser } = useAuth();
+    const user = reduxUser ?? contextUser;
     const [tickets, setTickets] = useState([]);
     const [filter, setFilter] = useState("open");
+    const [nameSearch, setNameSearch] = useState('');
     const navigate = useNavigate();
     
-    // Hard guard: only staff should ever see this page
+    // Hard guard: only staff (and admin) should see this page
     useEffect(() => {
         if (!user) return;
-        if (user.role !== 'staff' && user.role !== 'Staff') {
+        const role = (user.role || '').toLowerCase();
+        if (role !== 'staff' && role !== 'admin') {
             navigate('/dashboard', { replace: true });
         }
     }, [user, navigate]);
 
     useEffect(() => {
-        fetch('/api/staff-dashboard/?filtering=' + filter, {
+        const params = new URLSearchParams({ filtering: filter });
+        if (nameSearch.trim()) params.set('search', nameSearch.trim());
+        fetch('/api/staff-dashboard/?' + params.toString(), {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('access')}`
             }
@@ -50,7 +57,7 @@ function StaffDashboardPage() {
                 setTickets(ticketsArray);
             })
             .catch(err => console.error('Error:', err))
-    }, [filter, navigate]);
+    }, [filter, nameSearch, navigate]);
 
     const handleLogout = async () => {
         await dispatch(logoutAction());
@@ -80,10 +87,24 @@ function StaffDashboardPage() {
                         <option value="all">All</option>
                     </select>
                 </label>
+                <label className="staff-search-by-name">
+                    Search by name:&nbsp;
+                    <input
+                        type="text"
+                        placeholder="Submitter name..."
+                        value={nameSearch}
+                        onChange={(e) => setNameSearch(e.target.value)}
+                        className="staff-name-search-input"
+                    />
+                </label>
             </div>
 
             {tickets.length === 0 ? (
-                <p className="staff-dashboard-empty">No tickets available.</p>
+                <p className="staff-dashboard-empty">
+                    {filter === 'all'
+                        ? 'No tickets assigned to you.'
+                        : 'No tickets assigned to you for this filter. Try "All" or ask an admin to assign you a ticket.'}
+                </p>
             ) : (
                 <div className="staff-dashboard-tickets">
                     {tickets.map((ticket) => (

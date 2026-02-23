@@ -6,14 +6,16 @@ from rest_framework import status
 from django.utils import timezone
 from datetime import timedelta
 from ..models import Ticket
+from ..serializers import UserSerializer
 
 
 class TicketSerializer(serializers.ModelSerializer):
-    is_overdue = serializers.SerializerMethodField()
+    is_overdue = serializers.SerializerMethodField() 
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = Ticket
-        fields = ['id', 'type_of_issue', 'status', 'is_overdue', 'k_number', 'created_at']
+        fields = "__all__"
 
     def get_is_overdue(self, obj):
         cutoff = timezone.now() - timedelta(days=3)
@@ -30,6 +32,7 @@ def _check_staff_access(user):
         )
     return None
 
+    tickets = Ticket.objects.filter(assigned_to=request.user)
 
 def _apply_ticket_filter(tickets, filter_options):
     """Apply filtering to tickets based on filter option."""

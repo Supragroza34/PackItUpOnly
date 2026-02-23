@@ -6,10 +6,14 @@ import PrivateRoute from "./utils/PrivateRoute";
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import TicketsManagement from "./components/Admin/TicketsManagement";
 import UsersManagement from "./components/Admin/UsersManagement";
+import StaffDashboardPage from "./pages/StaffDashboardPage";
+import TicketPage from "./pages/TicketPage";
 
 import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
+import UserDashboardPage from './pages/UserDashboard';
+import './App.css';
 
 import FaqPage from "./pages/FaqPage";
 import StaffDashboardPage from "./pages/StaffDashboardPage";
@@ -41,6 +45,29 @@ export default function App() {
               </Protected>
             }
           />
+          
+          <Route
+          path="/dashboard"
+          element={
+            <Protected>
+            <UserDashboardPage />
+            </Protected>
+          }
+          />
+          
+          {/* Staff Routes */}
+
+          <Route path="/staff/dashboard/:ticket_id" element={
+            <PrivateRoute>
+              <TicketPage />
+            </PrivateRoute>
+          } />  
+
+          <Route path="/staff/dashboard" element={
+            <PrivateRoute>
+              <StaffDashboardPage />
+            </PrivateRoute>
+          } />  
 
           {/* FAQs (added) */}
           <Route

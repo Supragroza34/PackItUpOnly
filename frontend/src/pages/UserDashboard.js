@@ -1,5 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import "./UserDashboard.css";
+
+const API_BASE = "http://localhost:8000/api";
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("access");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function statusClass(status) {
+  return `status-badge status-${status || "pending"}`;
+}
 import { useDispatch, useSelector } from "react-redux";
 import { apiFetch, authHeaders } from "../api";
 import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
@@ -8,7 +21,9 @@ function UserDashboardPage() {
   const dispatch = useDispatch();
   const { user, loading } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
+  const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
+  const { logout } = useAuth();
 
   // Check auth on mount
   useEffect(() => {
@@ -20,85 +35,135 @@ function UserDashboardPage() {
     if (!user) return;
 
     const fetchDashboard = async () => {
+      const token = localStorage.getItem("access");
+      if (!token) {
+        nav("/login", { replace: true });
+        return;
+      }
       try {
-        // Call the dashboard API and include JWT token
-        const data = await apiFetch("/dashboard/", {
-          headers: authHeaders(), // pass token here
+        const res = await fetch(`${API_BASE}/dashboard/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
-
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("access");
+          localStorage.removeItem("refresh");
+          nav("/login", { replace: true });
+          return;
+        }
+        if (!res.ok) {
+          const text = await res.text();
+          setLoadError(`Server error (${res.status}): ${text}`);
+          return;
+        }
+        const data = await res.json();
+        setUser(data.user);
         setTickets(data.tickets);
       } catch (err) {
-        console.error("Error loading dashboard:", err);
-
-        // If 401 or 403, redirect to login
-        if (err.message.includes("401") || err.message.includes("403")) {
-          nav("/login", { replace: true });
-        }
+        console.error("Dashboard fetch error:", err);
+        setLoadError(`Could not connect to the server. Is Django running on port 8000? (${err.message})`);
       }
     };
-
     fetchDashboard();
   }, [user, nav]);
 
-  const handleLogout = () => {
-    dispatch(logoutAction());
+  async function handleLogout() {
+    await logout();
     nav("/login", { replace: true });
-  };
+  }
 
-  if (!user) {
+  if (loadError) {
     return (
-      <div className="container py-5 text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p className="mt-2 text-muted">Loading dashboard...</p>
+      <div className="dashboard-page">
+        <div className="error-state">{loadError}</div>
       </div>
     );
   }
 
-  return (
-    <div className="container py-4">
-      <div className="row justify-content-center">
-        <div className="col-12 col-lg-10 col-xl-8">
-          <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
-            <h1 className="h3 mb-0">Welcome, {user.k_number}</h1>
-            <div className="d-flex gap-2">
-              <Link to="/create-ticket" className="btn btn-primary">Create ticket</Link>
-              <button type="button" className="btn btn-outline-secondary" onClick={handleLogout}>
-                Logout
-              </button>
-            </div>
-          </div>
+  if (!user) {
+    return (
+      <div className="dashboard-page">
+        <div className="loading-state">Loading your dashboard…</div>
+      </div>
+    );
+  }
 
-          <div className="card shadow-sm border-0 mb-4">
-            <div className="card-header bg-white py-3">
-              <h2 className="h5 mb-0">Your Tickets</h2>
-            </div>
-            <div className="card-body p-0">
-              {tickets.length === 0 ? (
-                <div className="text-center py-5 text-muted">
-                  <p className="mb-0">No tickets yet.</p>
-                  <p className="small mt-1">Create a ticket when you need support.</p>
-                </div>
-              ) : (
-                <ul className="list-group list-group-flush">
-                  {tickets.map((ticket) => (
-                    <li key={ticket.id} className="list-group-item">
-                      <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
-                        <span className="badge bg-primary rounded-pill">{ticket.type_of_issue}</span>
-                        <small className="text-muted">
-                          {new Date(ticket.created_at).toLocaleString()}
-                        </small>
-                      </div>
-                      <p className="mb-1 small text-muted">Department: {ticket.department}</p>
-                      <p className="mb-0">{ticket.additional_details}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+  const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
+
+  return (
+    <div className="dashboard-page">
+      {/* Top bar */}
+      <div className="dashboard-topbar">
+        <h1>👋 Welcome, {user.k_number || "Student"}</h1>
+        <button className="logout-btn" onClick={handleLogout}>
+          Log Out
+        </button>
+      </div>
+
+      {/* Summary cards */}
+      <div className="dashboard-summary">
+        <div className="summary-card">
+          <div className="summary-count">{tickets.length}</div>
+          <div className="summary-label">Total Tickets</div>
         </div>
+        <div className="summary-card">
+          <div className="summary-count">{countByStatus("pending")}</div>
+          <div className="summary-label">Pending</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-count">{countByStatus("in_progress")}</div>
+          <div className="summary-label">In Progress</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-count">{countByStatus("resolved")}</div>
+          <div className="summary-label">Resolved</div>
+        </div>
+      </div>
+
+      {/* Ticket list */}
+      <div className="dashboard-content">
+        <div className="content-header">
+          <h2>Your Tickets</h2>
+          <Link to="/create-ticket" className="create-ticket-btn">
+            ＋ Create New Ticket
+          </Link>
+        </div>
+
+        {tickets.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">🎫</div>
+            <p>You haven't submitted any tickets yet.</p>
+            <Link to="/create-ticket" className="create-ticket-btn">
+              ＋ Create Your First Ticket
+            </Link>
+          </div>
+        ) : (
+          <div className="ticket-list">
+            {tickets.map((ticket) => (
+              <div key={ticket.id} className="ticket-item">
+                <div className="ticket-item-info">
+                  <h3>{ticket.type_of_issue}</h3>
+                  <div className="ticket-dept">📁 {ticket.department}</div>
+                  <div className="ticket-details">{ticket.additional_details}</div>
+                </div>
+                <div className="ticket-item-meta">
+                  <span className={statusClass(ticket.status)}>
+                    {(ticket.status || "pending").replace("_", " ")}
+                  </span>
+                  <span className="ticket-date">
+                    {new Date(ticket.created_at).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

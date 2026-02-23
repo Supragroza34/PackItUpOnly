@@ -45,7 +45,7 @@ def _get_user_stats():
 def _get_recent_tickets():
     """Get recent tickets from last 7 days."""
     week_ago = timezone.now() - timedelta(days=7)
-    return Ticket.objects.filter(created_at__gte=week_ago).order_by('-created_at')[:10]
+    return Ticket.objects.select_related('user').filter(created_at__gte=week_ago).order_by('-created_at')[:10]
 
 
 @api_view(['GET'])
@@ -93,14 +93,14 @@ def dashboard_stats(request):
 # ================= TICKET MANAGEMENT =================
 
 def _apply_ticket_search(tickets, search):
-    """Apply search filter to tickets."""
+    """Apply search filter to tickets (user fields via user relation)."""
     if not search:
         return tickets
     return tickets.filter(
-        Q(name__icontains=search) |
-        Q(surname__icontains=search) |
-        Q(k_number__icontains=search) |
-        Q(k_email__icontains=search) |
+        Q(user__first_name__icontains=search) |
+        Q(user__last_name__icontains=search) |
+        Q(user__k_number__icontains=search) |
+        Q(user__email__icontains=search) |
         Q(department__icontains=search) |
         Q(type_of_issue__icontains=search)
     )
@@ -160,7 +160,7 @@ def _paginate_tickets(tickets, request):
 def admin_tickets_list(request):
     """Get all tickets with filtering, searching, and pagination"""
     try:
-        tickets = Ticket.objects.all().order_by('-created_at')
+        tickets = Ticket.objects.select_related('user').all().order_by('-created_at')
         search = request.GET.get('search', '')
         if search:
             tickets = tickets.filter(

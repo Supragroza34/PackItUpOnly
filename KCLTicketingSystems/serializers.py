@@ -87,7 +87,7 @@ class TicketListSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField()
     user_k_number = serializers.SerializerMethodField()
     assigned_to_name = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Ticket
         fields = ['id', 'user_name', 'user_k_number', 'department', 

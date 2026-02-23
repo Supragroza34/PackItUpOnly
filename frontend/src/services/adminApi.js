@@ -34,7 +34,12 @@ class AdminAPI {
         });
         
         if (!response.ok) {
-            throw new Error('Failed to fetch dashboard stats');
+            const text = await response.text();
+            let message = 'Failed to fetch dashboard stats';
+            if (response.status === 401) message = 'Please log in again.';
+            else if (response.status === 403) message = 'Access denied. Admin only.';
+            else if (text) message = `${message}: ${text}`;
+            throw new Error(message);
         }
         
         return response.json();

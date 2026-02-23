@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { apiFetch, authHeaders } from "../api";
-import { checkAuth } from "../store/slices/authSlice";
+import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
 
 function UserDashboardPage() {
   const dispatch = useDispatch();
@@ -40,6 +40,11 @@ function UserDashboardPage() {
     fetchDashboard();
   }, [user, nav]);
 
+  const handleLogout = () => {
+    dispatch(logoutAction());
+    nav("/login", { replace: true });
+  };
+
   if (!user) {
     return (
       <div className="container py-5 text-center">
@@ -57,7 +62,12 @@ function UserDashboardPage() {
         <div className="col-12 col-lg-10 col-xl-8">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
             <h1 className="h3 mb-0">Welcome, {user.k_number}</h1>
-            <Link to="/create-ticket" className="btn btn-primary">Create ticket</Link>
+            <div className="d-flex gap-2">
+              <Link to="/create-ticket" className="btn btn-primary">Create ticket</Link>
+              <button type="button" className="btn btn-outline-secondary" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
           </div>
 
           <div className="card shadow-sm border-0 mb-4">

@@ -150,7 +150,7 @@ export default function TicketFormPage() {
       selectedFiles.forEach((file) => formData.append("attachments", file));
 
       const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
-      const res = await fetch(`${API_BASE}/tickets/create/`, {
+      const res = await fetch(`${API_BASE}/tickets/`, {
         method: "POST",
         headers: authHeaders(), // JWT token; no Content-Type so browser sets multipart boundary
         body: formData,
@@ -159,8 +159,11 @@ export default function TicketFormPage() {
       const data = await res.json();
 
       if (res.ok) {
+        const ticketId = data.id ?? data.ticket_id;
         setSuccessMessage(
-          `Ticket #${data.ticket_id} submitted successfully! Redirecting…`
+          ticketId
+            ? `Ticket #${ticketId} submitted successfully! Redirecting…`
+            : `Ticket submitted successfully! Redirecting…`
         );
         setDepartment("");
         setTypeOfIssue("");

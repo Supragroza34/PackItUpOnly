@@ -16,7 +16,7 @@ import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
 import UserDashboardPage from './pages/UserDashboard';
-import CreateTicketPage from './pages/CreateTicketPage';
+import TicketFormPage from './pages/TicketFormPage';
 import './App.css';
 
 import FaqPage from "./pages/FaqPage";
@@ -61,7 +61,7 @@ export default function App() {
             path="/create-ticket"
             element={
               <Protected>
-                <CreateTicketPage />
+                <TicketFormPage />
               </Protected>
             }
           />

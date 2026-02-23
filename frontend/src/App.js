@@ -18,7 +18,6 @@ import UserDashboardPage from './pages/UserDashboard';
 import './App.css';
 
 import FaqPage from "./pages/FaqPage";
-
 import "./App.css";
 
 function isAuthed() {
@@ -76,6 +75,16 @@ export default function App() {
             element={
               <Protected>
                 <FaqPage />
+              </Protected>
+            }
+          />
+
+          {/* Staff Dashboard */}
+          <Route
+            path="/staff-dashboard"
+            element={
+              <Protected>
+                <StaffDashboardPage />
               </Protected>
             }
           />

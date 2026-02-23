@@ -1,35 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import adminApi from '../../services/adminApi';
-import { useAuth } from '../../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDashboardStats } from '../../store/slices/adminSlice';
+import { logout } from '../../store/slices/authSlice';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const { user, logout } = useAuth();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
+    
+    const { user } = useSelector((state) => state.auth);
+    const { stats, statsLoading: loading, statsError: error } = useSelector((state) => state.admin);
 
     useEffect(() => {
-        fetchStats();
-    }, []);
-
-    const fetchStats = async () => {
-        try {
-            setLoading(true);
-            const data = await adminApi.getDashboardStats();
-            setStats(data);
-            setError(null);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+        dispatch(fetchDashboardStats());
+    }, [dispatch]);
 
     const handleLogout = async () => {
-        await logout();
+        await dispatch(logout());
         navigate('/login');
     };
 
@@ -39,6 +27,10 @@ const AdminDashboard = () => {
 
     if (error) {
         return <div className="admin-error">Error: {error}</div>;
+    }
+
+    if (!stats) {
+        return <div className="admin-loading">Loading dashboard...</div>;
     }
 
     return (
@@ -148,8 +140,8 @@ const AdminDashboard = () => {
                                     {stats.recent_tickets.map((ticket) => (
                                         <tr key={ticket.id}>
                                             <td>{ticket.id}</td>
-                                            <td>{ticket.name} {ticket.surname}</td>
-                                            <td>{ticket.k_number}</td>
+                                            <td>{ticket.user_name}</td>
+                                            <td>{ticket.user_k_number}</td>
                                             <td>{ticket.department}</td>
                                             <td>{ticket.type_of_issue}</td>
                                             <td>

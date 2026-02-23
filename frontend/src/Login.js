@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
+import { useDispatch, useSelector } from "react-redux";
+import { login as loginAction, checkAuth } from "./store/slices/authSlice";
 
 export default function Login() {
+  const dispatch = useDispatch();
   const nav = useNavigate();
-  const { login: authLogin, user } = useAuth();
+  const { user } = useSelector((state) => state.auth);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -28,27 +30,7 @@ export default function Login() {
     // Check for autofill after a short delay
     const timer = setTimeout(syncAutofill, 100);
     return () => clearTimeout(timer);
-  }, []);
-
-  // Redirect when user is set in AuthContext
-  useEffect(() => {
-    if (user && loading) {
-      console.log("User loaded in context, redirecting...");
-      // Redirect based on user role
-      if (user.role === "admin" || user.is_superuser) {
-        console.log("Redirecting to admin dashboard");
-        nav("/admin/dashboard", { replace: true });
-      } 
-      else if(user.role ==="staff" || user.role === "Staff"){
-        console.log("Redirecting to staff dashboard");
-        nav("/staff/dashboard", { replace: true });
-      }
-      else {
-        console.log("Redirecting to profile");
-        nav("/profile", { replace: true });
-      }
-    }
-  }, [user, loading, nav]);
+  }, [username, password]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -72,35 +54,28 @@ export default function Login() {
     try {
       console.log("Attempting login with:", usernameValue);
       
-      // Use AuthContext's login method which properly updates user state
-      const result = await authLogin(usernameValue, passwordValue);
+      // Dispatch Redux login action and get the user data
+      const userData = await dispatch(loginAction({ username: usernameValue, password: passwordValue })).unwrap();
       
-      if (!result.success) {
-        throw new Error(result.error || "Login failed");
-      }
+      console.log("Login successful, user data:", userData);
       
-      console.log("Login successful");
-      // Navigation will happen in the useEffect when user state is updated
-      
-      // Redirect based on user role - don't setLoading(false) here!
-      if (user?.role === "admin" || user?.is_superuser) {
+      // Redirect based on user role using the fresh userData
+      if (userData.role === "admin" || userData.is_superuser) {
         console.log("Redirecting to admin dashboard");
         nav("/admin/dashboard", { replace: true });
       }
-      else if(user?.role ==="staff" || user?.role === "Staff"){
+      else if(userData.role === "staff" || userData.role === "Staff"){
         console.log("Redirecting to staff dashboard");
         nav("/staff/dashboard", { replace: true });
       } 
       else {
-        //console.log("Redirecting to profile");
-        //nav("/profile", { replace: true });
-
         console.log("Redirecting to user dashboard");
         nav("/dashboard", { replace: true });
       }
     } catch (e2) {
       console.error("Login error:", e2);
-      setErr("Login failed: " + (e2.message || "Please check your credentials."));
+      // Display the error message (already user-friendly from Redux)
+      setErr(e2 || "Invalid username or password");
       setLoading(false);
     }
   }

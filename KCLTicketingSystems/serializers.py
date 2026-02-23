@@ -8,11 +8,19 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for User model"""
+    role = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 
                   'k_number', 'department', 'role', 'is_staff', 'is_superuser']
         read_only_fields = ['id', 'role', 'is_staff', 'is_superuser']
+    
+    def get_role(self, obj):
+        """Return 'admin' for superusers, otherwise return the actual role"""
+        if obj.is_superuser:
+            return 'admin'
+        return obj.role
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -76,13 +84,25 @@ class TicketSerializer(serializers.ModelSerializer):
 
 class TicketListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for listing tickets"""
+    user_name = serializers.SerializerMethodField()
+    user_k_number = serializers.SerializerMethodField()
     assigned_to_name = serializers.SerializerMethodField()
     
     class Meta:
         model = Ticket
-        fields = ['id', 'name', 'surname', 'k_number', 'department', 
+        fields = ['id', 'user_name', 'user_k_number', 'department', 
                   'type_of_issue', 'status', 'priority', 'assigned_to_name',
                   'created_at', 'updated_at']
+    
+    def get_user_name(self, obj):
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}"
+        return "Unknown"
+    
+    def get_user_k_number(self, obj):
+        if obj.user:
+            return obj.user.k_number
+        return "N/A"
     
     def get_assigned_to_name(self, obj):
         if obj.assigned_to:

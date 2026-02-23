@@ -1,13 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { apiFetch, authHeaders } from "../api";
+import { checkAuth } from "../store/slices/authSlice";
 
 function UserDashboardPage() {
-  const [user, setUser] = useState(null);
+  const dispatch = useDispatch();
+  const { user, loading } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const nav = useNavigate();
 
+  // Check auth on mount
   useEffect(() => {
+    dispatch(checkAuth());
+  }, [dispatch]);
+
+  // Fetch tickets when user is loaded
+  useEffect(() => {
+    if (!user) return;
+
     const fetchDashboard = async () => {
       try {
         // Call the dashboard API and include JWT token
@@ -15,7 +26,6 @@ function UserDashboardPage() {
           headers: authHeaders(), // pass token here
         });
 
-        setUser(data.user);
         setTickets(data.tickets);
       } catch (err) {
         console.error("Error loading dashboard:", err);
@@ -28,7 +38,7 @@ function UserDashboardPage() {
     };
 
     fetchDashboard();
-  }, [nav]);
+  }, [user, nav]);
 
   if (!user) {
     return (

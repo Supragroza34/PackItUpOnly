@@ -3,10 +3,15 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './StaffDashboardPage.css';
+import {useState, useEffect} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout as logoutAction, checkAuth } from '../store/slices/authSlice';
 
 function StaffDashboardPage() {
+    const dispatch = useDispatch();
+    const { user } = useSelector((state) => state.auth);
     const [tickets, setTickets] = useState([]);
-    const { user, logout } = useAuth();
     const [filter, setFilter] = useState("open");
     const navigate = useNavigate();
     
@@ -52,7 +57,7 @@ function StaffDashboardPage() {
     }, [filter, navigate]);
 
     const handleLogout = async () => {
-        await logout();
+        await dispatch(logoutAction());
         navigate('/login');
     };
 

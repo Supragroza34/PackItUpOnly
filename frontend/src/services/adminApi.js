@@ -184,5 +184,5 @@ class AdminAPI {
     }
 }
 
-const adminApi = new AdminAPI();
-export default adminApi;
+const adminApiInstance = new AdminAPI();
+export default adminApiInstance;

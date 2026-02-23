@@ -96,9 +96,12 @@ function UserDashboardPage() {
       {/* Top bar */}
       <div className="dashboard-topbar">
         <h1>👋 Welcome, {user.k_number || "Student"}</h1>
-        <button className="logout-btn" onClick={handleLogout}>
-          Log Out
-        </button>
+        <div className="dashboard-topbar-actions">
+          <Link to="/faqs" className="faq-btn">View FAQs</Link>
+          <button className="logout-btn" onClick={handleLogout}>
+            Log Out
+          </button>
+        </div>
       </div>
 
       {/* Summary cards */}

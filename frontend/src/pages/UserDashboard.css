@@ -24,6 +24,28 @@
   color: #1a237e;
 }
 
+.dashboard-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.faq-btn {
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.faq-btn:hover {
+  opacity: 0.9;
+}
+
 .logout-btn {
   padding: 8px 18px;
   background: transparent;

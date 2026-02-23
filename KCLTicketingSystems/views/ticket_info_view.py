@@ -43,7 +43,7 @@ class TicketDetailView(RetrieveAPIView):
 def ticket_info(request, ticket_id):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-    if not (request.user.role == "Staff" or request.user.role == "staff"):
+    if request.user.role not in ["staff", "admin"] and not request.user.is_superuser:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
     
     ticket = get_object_or_404(Ticket, pk=ticket_id)

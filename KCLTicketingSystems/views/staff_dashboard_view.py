@@ -22,15 +22,15 @@ class TicketSerializer(serializers.ModelSerializer):
         return obj.status == "Open" and obj.created_at < cutoff
 
 
-def _check_staff_access(user):
-    """Check if user has staff or admin role."""
-    user_role = getattr(user, 'role', None)
-    if user_role and user_role not in ["Staff", "admin"]:
-        return Response(
-            {"error": "Staff access required"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    return None
+@api_view(['GET'])
+def staff_dashboard(request):
+    if not request.user.is_authenticated:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    if request.user.role not in ["staff", "admin"] and not request.user.is_superuser:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    
+    filter_options = request.GET.get("filtering", "open")
+    cutoff = timezone.now() - timedelta(days=3)
 
     tickets = Ticket.objects.filter(assigned_to=request.user)
 

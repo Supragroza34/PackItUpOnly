@@ -53,8 +53,37 @@ def _get_recent_tickets():
 def dashboard_stats(request):
     """Get dashboard statistics"""
     try:
-        data = {**_get_ticket_stats(), **_get_user_stats()}
-        data['recent_tickets'] = _get_recent_tickets()
+        # Ticket statistics
+        total_tickets = Ticket.objects.count()
+        pending = Ticket.objects.filter(status=Ticket.Status.PENDING).count()
+        in_progress = Ticket.objects.filter(status=Ticket.Status.IN_PROGRESS).count()
+        resolved = Ticket.objects.filter(status=Ticket.Status.RESOLVED).count()
+        closed = Ticket.objects.filter(status=Ticket.Status.CLOSED).count()
+        
+        # User statistics
+        total_users = User.objects.count()
+        students = User.objects.filter(role=User.Role.STUDENT, is_superuser=False).count()
+        staff = User.objects.filter(role=User.Role.STAFF, is_superuser=False).count()
+        # Count users with admin role OR superusers
+        admins = User.objects.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True)).count()
+        
+        # Recent tickets (last 7 days)
+        week_ago = timezone.now() - timedelta(days=7)
+        recent = Ticket.objects.filter(created_at__gte=week_ago).order_by('-created_at')[:10]
+        
+        data = {
+            'total_tickets': total_tickets,
+            'pending_tickets': pending,
+            'in_progress_tickets': in_progress,
+            'resolved_tickets': resolved,
+            'closed_tickets': closed,
+            'total_users': total_users,
+            'total_students': students,
+            'total_staff': staff,
+            'total_admins': admins,
+            'recent_tickets': recent,  # Pass queryset, not serialized data
+        }
+        
         serializer = DashboardStatsSerializer(data)
         return Response(serializer.data)
     except Exception as e:
@@ -133,9 +162,54 @@ def admin_tickets_list(request):
     try:
         tickets = Ticket.objects.select_related('user').all().order_by('-created_at')
         search = request.GET.get('search', '')
-        tickets = _apply_ticket_search(tickets, search)
-        tickets = _apply_ticket_filters(tickets, request)
-        return Response(_paginate_tickets(tickets, request))
+        if search:
+            tickets = tickets.filter(
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search) |
+                Q(user__k_number__icontains=search) |
+                Q(user__email__icontains=search) |
+                Q(department__icontains=search) |
+                Q(type_of_issue__icontains=search)
+            )
+        
+        # Filters
+        status_filter = request.GET.get('status')
+        if status_filter:
+            tickets = tickets.filter(status=status_filter)
+        
+        priority_filter = request.GET.get('priority')
+        if priority_filter:
+            tickets = tickets.filter(priority=priority_filter)
+        
+        department_filter = request.GET.get('department')
+        if department_filter:
+            tickets = tickets.filter(department=department_filter)
+        
+        assigned_filter = request.GET.get('assigned_to')
+        if assigned_filter:
+            if assigned_filter == 'unassigned':
+                tickets = tickets.filter(assigned_to__isnull=True)
+            else:
+                tickets = tickets.filter(assigned_to_id=assigned_filter)
+        
+        # Pagination
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 20))
+        start = (page - 1) * page_size
+        end = start + page_size
+        
+        total_count = tickets.count()
+        tickets_page = tickets[start:end]
+        
+        serializer = TicketListSerializer(tickets_page, many=True)
+        
+        return Response({
+            'tickets': serializer.data,
+            'total': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total_count + page_size - 1) // page_size
+        })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -231,8 +305,36 @@ def admin_users_list(request):
         users = _apply_user_search(users, search)
         role_filter = request.GET.get('role')
         if role_filter:
-            users = users.filter(role=role_filter)
-        return Response(_paginate_users(users, request))
+            if role_filter == 'admin':
+                # Include users with role=admin OR superusers
+                users = users.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True))
+            elif role_filter == 'student':
+                # Only students, exclude superusers
+                users = users.filter(role=User.Role.STUDENT, is_superuser=False)
+            elif role_filter == 'staff':
+                # Only staff, exclude superusers (unless they also have staff role)
+                users = users.filter(role=User.Role.STAFF, is_superuser=False)
+            else:
+                users = users.filter(role=role_filter)
+        
+        # Pagination
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 20))
+        start = (page - 1) * page_size
+        end = start + page_size
+        
+        total_count = users.count()
+        users_page = users[start:end]
+        
+        serializer = UserSerializer(users_page, many=True)
+        
+        return Response({
+            'users': serializer.data,
+            'total': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total_count + page_size - 1) // page_size
+        })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

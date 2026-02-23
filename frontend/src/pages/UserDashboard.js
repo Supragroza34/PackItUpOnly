@@ -13,15 +13,27 @@ function getAuthHeaders() {
 function statusClass(status) {
   return `status-badge status-${status || "pending"}`;
 }
+import { useDispatch, useSelector } from "react-redux";
+import { apiFetch, authHeaders } from "../api";
+import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
 
 function UserDashboardPage() {
-  const [user, setUser] = useState(null);
+  const dispatch = useDispatch();
+  const { user, loading } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
   const { logout } = useAuth();
 
+  // Check auth on mount
   useEffect(() => {
+    dispatch(checkAuth());
+  }, [dispatch]);
+
+  // Fetch tickets when user is loaded
+  useEffect(() => {
+    if (!user) return;
+
     const fetchDashboard = async () => {
       const token = localStorage.getItem("access");
       if (!token) {
@@ -55,7 +67,7 @@ function UserDashboardPage() {
       }
     };
     fetchDashboard();
-  }, [nav]);
+  }, [user, nav]);
 
   async function handleLogout() {
     await logout();

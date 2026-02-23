@@ -171,6 +171,9 @@ class Command(BaseCommand):
             department=data['department'],
             role=data['role'],
         )
+        # Set is_staff flag for staff and admin users
+        if data['role'] in ['staff', 'admin']:
+            user.is_staff = True
         user.set_password(Command.DEFAULT_PASSWORD)
         user.save()
 

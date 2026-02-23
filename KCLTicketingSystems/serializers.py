@@ -8,11 +8,19 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for User model"""
+    role = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 
                   'k_number', 'department', 'role', 'is_staff', 'is_superuser']
         read_only_fields = ['id', 'role', 'is_staff', 'is_superuser']
+    
+    def get_role(self, obj):
+        """Return 'admin' for superusers, otherwise return the actual role"""
+        if obj.is_superuser:
+            return 'admin'
+        return obj.role
 
 
 class RegisterSerializer(serializers.ModelSerializer):

@@ -36,7 +36,19 @@ export const login = createAsyncThunk(
       const userData = await adminApi.getCurrentUser();
       return userData;
     } catch (error) {
-      return rejectWithValue(error.message);
+      // Provide user-friendly error message
+      let errorMessage = 'Invalid username or password';
+      
+      // Check if error contains specific messages
+      if (error.message.includes('401') || error.message.includes('No active account')) {
+        errorMessage = 'Invalid username or password';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );

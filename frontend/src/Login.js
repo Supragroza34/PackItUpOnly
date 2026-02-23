@@ -16,11 +16,6 @@ export default function Login() {
   const usernameRef = useRef(null);
   const passwordRef = useRef(null);
 
-  // Check auth on mount
-  useEffect(() => {
-    dispatch(checkAuth());
-  }, [dispatch]);
-
   // Sync autofilled values with state
   useEffect(() => {
     const syncAutofill = () => {
@@ -36,26 +31,6 @@ export default function Login() {
     const timer = setTimeout(syncAutofill, 100);
     return () => clearTimeout(timer);
   }, [username, password]);
-
-  // Redirect when user is set in Redux
-  useEffect(() => {
-    if (user && loading) {
-      console.log("User loaded in Redux, redirecting...");
-      // Redirect based on user role
-      if (user.role === "admin" || user.is_superuser) {
-        console.log("Redirecting to admin dashboard");
-        nav("/admin/dashboard", { replace: true });
-      } 
-      else if(user.role ==="staff" || user.role === "Staff"){
-        console.log("Redirecting to staff dashboard");
-        nav("/staff/dashboard", { replace: true });
-      }
-      else {
-        console.log("Redirecting to profile");
-        nav("/profile", { replace: true });
-      }
-    }
-  }, [user, loading, nav]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -79,31 +54,28 @@ export default function Login() {
     try {
       console.log("Attempting login with:", usernameValue);
       
-      // Dispatch Redux login action
-      await dispatch(loginAction({ username: usernameValue, password: passwordValue })).unwrap();
+      // Dispatch Redux login action and get the user data
+      const userData = await dispatch(loginAction({ username: usernameValue, password: passwordValue })).unwrap();
       
-      console.log("Login successful");
-      // Navigation will happen in the useEffect when user state is updated
+      console.log("Login successful, user data:", userData);
       
-      // Redirect based on user role - don't setLoading(false) here!
-      if (user?.role === "admin" || user?.is_superuser) {
+      // Redirect based on user role using the fresh userData
+      if (userData.role === "admin" || userData.is_superuser) {
         console.log("Redirecting to admin dashboard");
         nav("/admin/dashboard", { replace: true });
       }
-      else if(user?.role ==="staff" || user?.role === "Staff"){
+      else if(userData.role === "staff" || userData.role === "Staff"){
         console.log("Redirecting to staff dashboard");
         nav("/staff/dashboard", { replace: true });
       } 
       else {
-        //console.log("Redirecting to profile");
-        //nav("/profile", { replace: true });
-
         console.log("Redirecting to user dashboard");
         nav("/dashboard", { replace: true });
       }
     } catch (e2) {
       console.error("Login error:", e2);
-      setErr("Login failed: " + (e2 || "Please check your credentials."));
+      // Display the error message (already user-friendly from Redux)
+      setErr(e2 || "Invalid username or password");
       setLoading(false);
     }
   }

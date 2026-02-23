@@ -11,10 +11,6 @@ function StaffDashboardPage() {
     const [filter, setFilter] = useState("open");
     const navigate = useNavigate();
 
-    // Check auth on mount
-    useEffect(() => {
-        dispatch(checkAuth());
-    }, [dispatch]);
     useEffect(() => {
     fetch('/api/staff/dashboard/?filtering=' + filter, {
         headers: {

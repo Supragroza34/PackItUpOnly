@@ -35,9 +35,10 @@ def dashboard_stats(request):
         
         # User statistics
         total_users = User.objects.count()
-        students = User.objects.filter(role=User.Role.STUDENT).count()
-        staff = User.objects.filter(role=User.Role.STAFF).count()
-        admins = User.objects.filter(role=User.Role.ADMIN).count()
+        students = User.objects.filter(role=User.Role.STUDENT, is_superuser=False).count()
+        staff = User.objects.filter(role=User.Role.STAFF, is_superuser=False).count()
+        # Count users with admin role OR superusers
+        admins = User.objects.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True)).count()
         
         # Recent tickets (last 7 days)
         week_ago = timezone.now() - timedelta(days=7)
@@ -196,7 +197,17 @@ def admin_users_list(request):
         # Filter by role
         role_filter = request.GET.get('role')
         if role_filter:
-            users = users.filter(role=role_filter)
+            if role_filter == 'admin':
+                # Include users with role=admin OR superusers
+                users = users.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True))
+            elif role_filter == 'student':
+                # Only students, exclude superusers
+                users = users.filter(role=User.Role.STUDENT, is_superuser=False)
+            elif role_filter == 'staff':
+                # Only staff, exclude superusers (unless they also have staff role)
+                users = users.filter(role=User.Role.STAFF, is_superuser=False)
+            else:
+                users = users.filter(role=role_filter)
         
         # Pagination
         page = int(request.GET.get('page', 1))

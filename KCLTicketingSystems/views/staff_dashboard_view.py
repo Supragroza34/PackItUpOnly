@@ -25,7 +25,7 @@ class TicketSerializer(serializers.ModelSerializer):
 def staff_dashboard(request):
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-    if not request.user.role == "Staff":
+    if request.user.role not in ["staff", "admin"] and not request.user.is_superuser:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
     
     filter_options = request.GET.get("filtering", "open")

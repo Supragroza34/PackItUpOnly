@@ -5,11 +5,14 @@ import { checkAuth } from '../store/slices/authSlice';
 
 const PrivateRoute = ({ children }) => {
     const dispatch = useDispatch();
-    const { user, loading } = useSelector((state) => state.auth);
+    const { user, loading, error } = useSelector((state) => state.auth);
 
     useEffect(() => {
-        dispatch(checkAuth());
-    }, [dispatch]);
+        // Only check auth if we don't already have a user
+        if (!user) {
+            dispatch(checkAuth());
+        }
+    }, [dispatch, user]);
 
     if (loading) {
         return (
@@ -24,6 +27,10 @@ const PrivateRoute = ({ children }) => {
                 Loading...
             </div>
         );
+    }
+
+    if (error) {
+        console.error('Auth error in PrivateRoute:', error);
     }
 
     return user ? children : <Navigate to="/login" />;

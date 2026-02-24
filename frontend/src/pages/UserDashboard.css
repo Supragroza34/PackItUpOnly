@@ -283,8 +283,8 @@
   transition: width 0.3s ease;
 }
 
-.ticket-progress-fill.status-pending { background: #ffa000; }
-.ticket-progress-fill.status-in_progress { background: #1976d2; }
+.ticket-progress-fill.status-pending { background: #e65100; }
+.ticket-progress-fill.status-in_progress { background: #0277bd; }
 .ticket-progress-fill.status-resolved { background: #2e7d32; }
 .ticket-progress-fill.status-closed { background: #880e4f; }
 

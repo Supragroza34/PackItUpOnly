@@ -91,11 +91,46 @@ function UserDashboardPage() {
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
 
   return (
-    <>
-      <UserNavbar />
-      <div className="dashboard-page">
-        <div className="dashboard-topbar">
-          <h1>👋 Welcome, {user.k_number || "Student"}</h1>
+
+    <div className="dashboard-page">
+      {/* Top bar */}
+      <div className="dashboard-topbar">
+        <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
+        <div className="dashboard-topbar-actions">
+          <Link to="/faqs" className="faq-btn">View FAQs</Link>
+          <button className="logout-btn" onClick={handleLogout}>
+            Log Out
+          </button>
+        </div>
+      </div>
+
+      {/* Summary cards */}
+      <div className="dashboard-summary">
+        <div className="summary-card">
+          <div className="summary-count">{tickets.length}</div>
+          <div className="summary-label">Total Tickets</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-count">{countByStatus("pending")}</div>
+          <div className="summary-label">Pending</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-count">{countByStatus("in_progress")}</div>
+          <div className="summary-label">In Progress</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-count">{countByStatus("resolved")}</div>
+          <div className="summary-label">Resolved</div>
+        </div>
+      </div>
+
+      {/* Ticket list */}
+      <div className="dashboard-content">
+        <div className="content-header">
+          <h2>Your Tickets</h2>
+          <Link to="/create-ticket" className="create-ticket-btn">
+            ＋ Create New Ticket
+          </Link>
         </div>
 
         <div className="dashboard-summary">

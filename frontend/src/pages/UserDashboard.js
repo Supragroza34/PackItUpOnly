@@ -227,12 +227,18 @@ function UserDashboardPage() {
               </button>
 
               <h2>{selectedTicket.type_of_issue}</h2>
+
               {/* Progress Bar */}
-              <div className="ticket-progress-bar">
-                <div 
-                  className={`ticket-progress-fill status-${selectedTicket.status}`}
-                  style={{ width: getProgressWidth(selectedTicket.status) }}
-                ></div>
+              <div className="ticket-progress-container">
+                <div className="ticket-progress-bar">
+                  <div 
+                    className={`ticket-progress-fill status-${selectedTicket.status}`}
+                    style={{ width: getProgressWidth(selectedTicket.status) }}
+                  ></div>
+                  <span className="ticket-progress-text">
+                    {selectedTicket.status.replace("_", " ")} - {getProgressWidth(selectedTicket.status.toLowerCase())}
+                  </span>
+                </div>
               </div>
 
               <p>

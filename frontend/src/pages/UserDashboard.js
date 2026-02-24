@@ -204,12 +204,18 @@ function UserDashboardPage() {
             <div className="ticket-modal" onClick={(e) => e.stopPropagation()}>
               <button className="modal-close" onClick={() => setSelectedTicket(null)}>X</button>
               <h2>{selectedTicket.type_of_issue}</h2>
+
               {/* Progress Bar */}
-              <div className="ticket-progress-bar">
-                <div 
-                  className={`ticket-progress-fill status-${selectedTicket.status}`}
-                  style={{ width: getProgressWidth(selectedTicket.status) }}
-                ></div>
+              <div className="ticket-progress-container">
+                <div className="ticket-progress-bar">
+                  <div 
+                    className={`ticket-progress-fill status-${selectedTicket.status}`}
+                    style={{ width: getProgressWidth(selectedTicket.status) }}
+                  ></div>
+                  <span className="ticket-progress-text">
+                    {selectedTicket.status.replace("_", " ")} - {getProgressWidth(selectedTicket.status.toLowerCase())}
+                  </span>
+                </div>
               </div>
 
               <p><strong>Department: </strong>{selectedTicket.department}</p>

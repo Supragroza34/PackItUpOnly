@@ -264,37 +264,44 @@
 }
 
 /* Progress Bar */
+.ticket-progress-container {
+  margin-bottom: 16px;
+}
+
 .ticket-progress-bar {
+  position: relative;   
   width: 100%;
-  height: 8px;
-  background: #e0e0e0;           
-  border-radius: 4px;
-  margin-bottom: 16px;           
+  height: 24px;         
+  background: #e0e0e0;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .ticket-progress-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 12px;
   transition: width 0.3s ease;
 }
 
-/* Optional colors matching status */
-.ticket-progress-fill.status-pending {
-  background: #ffa000;   /* amber */
+.ticket-progress-fill.status-pending { background: #ffa000; }
+.ticket-progress-fill.status-in_progress { background: #1976d2; }
+.ticket-progress-fill.status-resolved { background: #2e7d32; }
+.ticket-progress-fill.status-closed { background: #880e4f; }
+
+/* Text on the bar */
+.ticket-progress-text {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #050505; 
+  line-height: 24px;
+  pointer-events: none; 
 }
 
-.ticket-progress-fill.status-in_progress {
-  background: #1976d2;   /* blue */
-}
-
-.ticket-progress-fill.status-resolved {
-  background: #2e7d32;   /* green */
-}
-
-.ticket-progress-fill.status-closed {
-  background: #880e4f;   /* deep red/pink */
-}
 
 /* Staff responses on ticket */
 .ticket-responses {

@@ -24,6 +24,7 @@ function UserDashboardPage() {
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
   const { logout } = useAuth();
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   // Check auth on mount
   useEffect(() => {
@@ -144,7 +145,7 @@ function UserDashboardPage() {
         ) : (
           <div className="ticket-list">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="ticket-item">
+              <div key={ticket.id} className="ticket-item" onClick={() => setSelectedTicket(ticket)}>
                 <div className="ticket-item-info">
                   <h3>{ticket.type_of_issue}</h3>
                   <div className="ticket-dept">📁 {ticket.department}</div>
@@ -181,6 +182,44 @@ function UserDashboardPage() {
             ))}
           </div>
         )}
+
+        {/* Ticket PopUp */}
+        {selectedTicket && (
+          <div className="modal-overlay" onClick={() => setSelectedTicket(null)}>
+            <div className="ticket-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setSelectedTicket(null)}>X</button>
+              <h2>{selectedTicket.type_of_issue}</h2>
+
+              <p><strong>Department: </strong>{selectedTicket.department}</p>
+              <p><strong>Status: </strong>{selectedTicket.status}</p>
+              <p><strong>Priority: </strong>{selectedTicket.priority}</p>
+
+              <p><strong>Created at: </strong>{" "} {new Date(selectedTicket.created_at).toLocaleString()}</p>
+
+              <p><strong>Description:</strong></p>
+              <p>{selectedTicket.additional_details}</p>
+
+              
+              {/* Responses */}
+              <div className="ticket-responses">
+                <h4 className="ticket-responses-title">Responses From Staff:</h4>
+                {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
+                  selectedTicket.replies.map((reply) => (
+                    <div key={reply.id} className="ticket-response">
+                      <p className="ticket-response-meta">
+                        <strong>{reply.user_username}</strong> · {new Date(reply.created_at).toLocaleString()}
+                      </p>
+                      <p className="ticket-response-body">{reply.body}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="ticket-response-none">No Responses Yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

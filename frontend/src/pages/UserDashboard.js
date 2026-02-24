@@ -11,6 +11,21 @@ function statusClass(status) {
   return `status-badge status-${status || "pending"}`;
 }
 
+function getProgressWidth(status) {
+  switch (status) {
+    case "pending":
+        return "20%";
+    case "in_progress":
+        return "60%";
+    case "resolved":
+        return "90%";
+    case "closed":
+        return "100%";
+    default:
+      return "0%";
+  }
+}
+
 function UserDashboardPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -212,6 +227,13 @@ function UserDashboardPage() {
               </button>
 
               <h2>{selectedTicket.type_of_issue}</h2>
+              {/* Progress Bar */}
+              <div className="ticket-progress-bar">
+                <div 
+                  className={`ticket-progress-fill status-${selectedTicket.status}`}
+                  style={{ width: getProgressWidth(selectedTicket.status) }}
+                ></div>
+              </div>
 
               <p>
                 <strong>Department: </strong>

@@ -135,12 +135,12 @@ class Command(BaseCommand):
 
         first_name = self.faker.first_name()
         last_name = self.faker.last_name()
-        k_number = str(self.faker.random_number(digits=8, fix_len = True))
-        username = create_username(k_number)
-        email = create_email(k_number)
+        staff_number = str(self.faker.random_number(digits=8, fix_len = True))
+        email = create_staff_email(first_name, last_name)
         department = self.faker.job()
+        username = create_staff_username(staff_number)
         role = "staff"
-        self.try_create_user({'username': username, 'email': email, 'k_number': k_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
+        self.try_create_user({'username': username, 'email': email, 'k_number': staff_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
        
     def try_create_user(self, data):
         """
@@ -183,13 +183,24 @@ def create_username(k_number):
     Construct a simple username from first and last names.
 
     Args:
-        first_name (str): Given name.
-        last_name (str): Family name.
+        k_number (str): random UNIQUE number.
 
     Returns:
-        str: A username in the form ``@{firstname}{lastname}`` (lowercased).
+        str: A username in the form ``@{k_number}``.
     """
     return '@' + k_number
+
+def create_staff_username(staff_number):
+    """
+    Construct a staff username from department and staff_number.
+
+    Args:
+        staff_number (str):  random UNIQUE number.
+
+    Returns:
+        str: A username in the form ``Staff{staff_number}``.
+    """
+    return "Staff" + staff_number    
 
 def create_email(k_number):
     """
@@ -202,3 +213,15 @@ def create_email(k_number):
         str: An email in the form ``k{k_number}@kcl.ac.uk``.
     """
     return 'k' + k_number + '@kcl.ac.uk'
+
+def create_staff_email(first_name, last_name):
+    """
+    Construct email address for staff.
+
+    Args:
+        staff_number (str): random UNIQUE number
+
+    Returns:
+        str: An email in the form ``Staff{staff_number}@kcl.ac.uk``.
+    """
+    return first_name.lower() + "." + last_name.lower() + '@kcl.ac.uk'

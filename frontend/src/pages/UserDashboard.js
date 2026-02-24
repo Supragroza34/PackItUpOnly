@@ -16,6 +16,7 @@ function UserDashboardPage() {
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [loadError, setLoadError] = useState("");
+  const [selectedTicket, setSelectedTicket] = useState(null);
   const nav = useNavigate();
 
   useEffect(() => {
@@ -66,6 +67,12 @@ function UserDashboardPage() {
     fetchDashboard();
   }, [user, nav]);
 
+  const handleLogout = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    nav("/login", { replace: true });
+  };
+
   if (loadError) {
     return (
       <>
@@ -91,46 +98,25 @@ function UserDashboardPage() {
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
 
   return (
+    <>
+      <UserNavbar />
 
-    <div className="dashboard-page">
-      {/* Top bar */}
-      <div className="dashboard-topbar">
-        <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
-        <div className="dashboard-topbar-actions">
-          <Link to="/faqs" className="faq-btn">View FAQs</Link>
-          <button className="logout-btn" onClick={handleLogout}>
-            Log Out
-          </button>
-        </div>
-      </div>
-
-      {/* Summary cards */}
-      <div className="dashboard-summary">
-        <div className="summary-card">
-          <div className="summary-count">{tickets.length}</div>
-          <div className="summary-label">Total Tickets</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-count">{countByStatus("pending")}</div>
-          <div className="summary-label">Pending</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-count">{countByStatus("in_progress")}</div>
-          <div className="summary-label">In Progress</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-count">{countByStatus("resolved")}</div>
-          <div className="summary-label">Resolved</div>
-        </div>
-      </div>
-
-      {/* Ticket list */}
-      <div className="dashboard-content">
-        <div className="content-header">
-          <h2>Your Tickets</h2>
-          <Link to="/create-ticket" className="create-ticket-btn">
-            ＋ Create New Ticket
-          </Link>
+      <div className="dashboard-page">
+        <div className="dashboard-topbar">
+          <h1>
+            👋 Welcome,{" "}
+            {user.first_name || user.last_name
+              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+              : user.k_number || "Student"}
+          </h1>
+          <div className="dashboard-topbar-actions">
+            <Link to="/faqs" className="faq-btn">
+              View FAQs
+            </Link>
+            <button className="logout-btn" onClick={handleLogout}>
+              Log Out
+            </button>
+          </div>
         </div>
 
         <div className="dashboard-summary">
@@ -171,7 +157,11 @@ function UserDashboardPage() {
           ) : (
             <div className="ticket-list">
               {tickets.map((ticket) => (
-                <div key={ticket.id} className="ticket-item">
+                <div
+                  key={ticket.id}
+                  className="ticket-item"
+                  onClick={() => setSelectedTicket(ticket)}
+                >
                   <div className="ticket-item-info">
                     <h3>{ticket.type_of_issue}</h3>
                     <div className="ticket-dept">📁 {ticket.department}</div>
@@ -213,6 +203,57 @@ function UserDashboardPage() {
             </div>
           )}
         </div>
+
+        {selectedTicket && (
+          <div className="modal-overlay" onClick={() => setSelectedTicket(null)}>
+            <div className="ticket-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setSelectedTicket(null)}>
+                X
+              </button>
+
+              <h2>{selectedTicket.type_of_issue}</h2>
+
+              <p>
+                <strong>Department: </strong>
+                {selectedTicket.department}
+              </p>
+              <p>
+                <strong>Status: </strong>
+                {selectedTicket.status}
+              </p>
+              <p>
+                <strong>Priority: </strong>
+                {selectedTicket.priority}
+              </p>
+              <p>
+                <strong>Created at: </strong>
+                {new Date(selectedTicket.created_at).toLocaleString()}
+              </p>
+
+              <p>
+                <strong>Description:</strong>
+              </p>
+              <p>{selectedTicket.additional_details}</p>
+
+              <div className="ticket-responses">
+                <h4 className="ticket-responses-title">Responses From Staff:</h4>
+                {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
+                  selectedTicket.replies.map((reply) => (
+                    <div key={reply.id} className="ticket-response">
+                      <p className="ticket-response-meta">
+                        <strong>{reply.user_username}</strong> ·{" "}
+                        {new Date(reply.created_at).toLocaleString()}
+                      </p>
+                      <p className="ticket-response-body">{reply.body}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="ticket-response-none">No Responses Yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

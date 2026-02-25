@@ -320,8 +320,8 @@ class TicketListSerializerTest(TestCase):
         
         expected_fields = [
             'id', 'user_name', 'user_k_number', 'department',
-            'type_of_issue', 'status', 'priority', 'assigned_to_name',
-            'created_at', 'updated_at'
+            'type_of_issue', 'status', 'priority', 'assigned_to',
+            'assigned_to_name', 'created_at', 'updated_at'
         ]
         
         self.assertEqual(set(serializer.data.keys()), set(expected_fields))

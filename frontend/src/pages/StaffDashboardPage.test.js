@@ -1,7 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import StaffDashboardPage from './StaffDashboardPage';
+import { renderWithProviders } from '../utils/testUtils';
 
 // Mock useNavigate
 const mockNavigate = jest.fn();
@@ -30,11 +30,6 @@ const mockTickets = [
     },
 ];
 
-// Helper to render component with router
-const renderWithRouter = (component) => {
-    return render(<BrowserRouter>{component}</BrowserRouter>);
-};
-
 describe('StaffDashboardPage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -54,7 +49,7 @@ describe('StaffDashboardPage', () => {
             })
         );
 
-        renderWithRouter(<StaffDashboardPage />);
+        renderWithProviders(<StaffDashboardPage />);
 
         expect(screen.getByText('Staff Dashboard')).toBeInTheDocument();
     });
@@ -67,7 +62,7 @@ describe('StaffDashboardPage', () => {
             })
         );
 
-        renderWithRouter(<StaffDashboardPage />);
+        renderWithProviders(<StaffDashboardPage />);
 
         const select = screen.getByRole('combobox');
         expect(select).toBeInTheDocument();
@@ -86,7 +81,7 @@ describe('StaffDashboardPage', () => {
             })
         );
 
-        renderWithRouter(<StaffDashboardPage />);
+        renderWithProviders(<StaffDashboardPage />);
 
         await waitFor(() => {
             expect(screen.getByText('No tickets available.')).toBeInTheDocument();
@@ -101,7 +96,7 @@ describe('StaffDashboardPage', () => {
             })
         );
 
-        renderWithRouter(<StaffDashboardPage />);
+        renderWithProviders(<StaffDashboardPage />);
 
         await waitFor(() => {
             expect(screen.getByText('Type of issue:Login Problem')).toBeInTheDocument();
@@ -122,7 +117,7 @@ describe('StaffDashboardPage', () => {
             })
         );
 
-        renderWithRouter(<StaffDashboardPage />);
+        renderWithProviders(<StaffDashboardPage />);
 
         await waitFor(() => {
             // First ticket is not overdue

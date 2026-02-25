@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../store/slices/authSlice';
 import adminReducer from '../store/slices/adminSlice';
+import { AuthProvider } from '../context/AuthContext';
 
 export const createMockStore = (initialState = {}) => {
   return configureStore({
@@ -49,9 +50,11 @@ export const renderWithProviders = (component, initialState = {}) => {
   const store = createMockStore(initialState);
   return render(
     <Provider store={store}>
-      <BrowserRouter>
-        {component}
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          {component}
+        </BrowserRouter>
+      </AuthProvider>
     </Provider>
   );
 };

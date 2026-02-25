@@ -18,6 +18,7 @@ user_fixtures = [
     {'username': 'johndoe', 'email': 'john.doe@example.org', 'k_number': '12345678', 'first_name': 'John', 'last_name': 'Doe', 'department': 'Informatics', 'role': 'student'},
     {'username': 'janedee', 'email': 'jane.dee@example.org', 'k_number': '45678123', 'first_name': 'Jane', 'last_name': 'Dee', 'department': 'Informatics', 'role': 'staff'},
     {'username': 'Chrisdoo', 'email': 'chris.doo@example.org', 'k_number': '03472783', 'first_name': 'Chris', 'last_name': 'Doo', 'department': 'Informatics', 'role': 'student'},
+    {'username': 'alexadmin', 'email': 'alex.admin@example.org', 'k_number': '', 'first_name': '', 'last_name': '', 'department': '', 'role': 'admin'},
 ]
 
 
@@ -54,7 +55,21 @@ class Command(BaseCommand):
         Runs the full seeding workflow and stores ``self.users`` for any
         post-processing or debugging (not required for operation).
         """
-        User.objects.create_superuser('spr_usr', 'spr.usr@example.org', 'SuperUser8^]')
+        # Try to create superuser if it doesn't exist
+        try:
+            if not User.objects.filter(username='spr_usr').exists():
+                spr_user = User.objects.create_superuser(
+                    username='spr_usr',
+                    email='spr.usr@example.org',
+                    password='SuperUser8^]',
+                    k_number=''  # Admins don't have k_numbers
+                )
+                spr_user.role = User.Role.ADMIN
+                spr_user.save()
+                print("Created superuser 'spr_usr'")
+        except Exception as e:
+            print(f"Superuser creation skipped: {e}")
+        
         self.create_users()
         self.users = User.objects.all()
 
@@ -94,11 +109,11 @@ class Command(BaseCommand):
 
         Prints a simple progress indicator to stdout during generation.
         """
-        user_count = User.objects.count()
-        while  user_count < self.STAFF_COUNT*2:
+        user_count = User.objects.count()-self.STUDENT_COUNT
+        while  user_count < self.STAFF_COUNT:
             print(f"Seeding staff {user_count}/{self.STAFF_COUNT}", end='\r')
             self.generate_staff()
-            user_count = User.objects.count()
+            user_count = User.objects.count()-self.STUDENT_COUNT
         print("Staff seeding complete.      ")        
 
     def generate_student(self):
@@ -113,7 +128,7 @@ class Command(BaseCommand):
         username = create_username(k_number)
         email = create_email(k_number)
         department = self.faker.job()
-        role = "Student"
+        role = "student"
         self.try_create_user({'username': username, 'email': email, 'k_number': k_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
 
     def generate_staff(self):
@@ -124,7 +139,7 @@ class Command(BaseCommand):
         username = create_username(k_number)
         email = create_email(k_number)
         department = self.faker.job()
-        role = "Staff"
+        role = "staff"
         self.try_create_user({'username': username, 'email': email, 'k_number': k_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
        
     def try_create_user(self, data):
@@ -148,7 +163,7 @@ class Command(BaseCommand):
             data (dict): Mapping with keys ``username``, ``email``,
                 ``first_name``, and ``last_name``.
         """
-        User.objects.create(
+        user = User.objects.create(
             username=data['username'],
             first_name=data['first_name'],
             last_name=data['last_name'],
@@ -156,8 +171,12 @@ class Command(BaseCommand):
             k_number=data['k_number'],
             department=data['department'],
             role=data['role'],
-            password=Command.DEFAULT_PASSWORD,
         )
+        # Set is_staff flag for staff and admin users
+        if data['role'] in ['staff', 'admin']:
+            user.is_staff = True
+        user.set_password(Command.DEFAULT_PASSWORD)
+        user.save()
 
 def create_username(k_number):
     """

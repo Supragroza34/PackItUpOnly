@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -35,6 +36,7 @@ ALLOWED_HOSTS = [
     'unprotective-ungrieved-cheryle.ngrok-free.dev',
     'localhost',
     '127.0.0.1',
+    '192.168.1.120',
 ]
 
 # CSRF trusted origins (for ngrok and localhost)
@@ -42,6 +44,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://unprotective-ungrieved-cheryle.ngrok-free.dev',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://192.168.1.120:8000',
 ]
 
 
@@ -153,9 +156,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://192.168.1.120:3000",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # REST Framework settings
 '''
@@ -172,8 +188,19 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
+        "rest_framework.permissions.AllowAny",
     ),
+}
+
+# JWT Settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
+    'ALGORITHM': 'HS256',
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 #AUTH_USER_MODEL = "KCLTicketingSystems.User"  # Commented out to fix migration issues

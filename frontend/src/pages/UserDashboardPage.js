@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+<<<<<<< HEAD:frontend/src/pages/UserDashboard.js
 import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboard.css";
 import UserNavbar from "../components/UserNavbar";
+=======
+import { useAuth } from "../context/AuthContext";
+import { apiFetch, authHeaders } from "../api";
+import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
+import "./UserDashboardPage.css";
+>>>>>>> 729f35f (Add tests for User Dashboard Page):frontend/src/pages/UserDashboardPage.js
 
 const API_BASE = "http://localhost:8000/api";
 

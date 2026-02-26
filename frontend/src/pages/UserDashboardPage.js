@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch, authHeaders } from "../api";
 import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
-import "./UserDashboard.css";
+import "./UserDashboardPage.css";
 
 const API_BASE = "http://localhost:8000/api";
 

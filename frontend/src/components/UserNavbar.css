@@ -1,0 +1,180 @@
+/* ===== UserNavbar.css ===== */
+
+.user-navbar {
+  width: 100%;
+  background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.user-navbar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Brand */
+.navbar-brand {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.navbar-brand:hover {
+  opacity: 0.85;
+}
+
+/* Nav links container */
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+/* Shared style for <a> and <button> nav items */
+.navbar-link {
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 8px 13px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.navbar-link:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+/* Reset for <button> elements styled as nav links */
+.navbar-plain-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Staff Office Hours — disabled state */
+.navbar-office-btn:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.navbar-office-btn:disabled:hover {
+  background: transparent;
+}
+
+/* Dropdown caret */
+.dropdown-caret {
+  font-size: 0.72rem;
+  line-height: 1;
+  margin-left: 2px;
+}
+
+/* Profile dropdown wrapper */
+.navbar-dropdown-wrapper {
+  position: relative;
+}
+
+/* Dropdown menu panel */
+.navbar-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+  min-width: 170px;
+  padding: 6px 0;
+  z-index: 600;
+  animation: navDropIn 0.13s ease-out;
+}
+
+@keyframes navDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar-dropdown-item {
+  display: block;
+  padding: 10px 18px;
+  font-size: 0.875rem;
+  color: #263238;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.navbar-dropdown-item:hover {
+  background: #eef1ff;
+  color: #1a237e;
+}
+
+/* Log Out button */
+.navbar-logout-btn {
+  margin-left: 8px;
+  padding: 7px 16px;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.92);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.navbar-logout-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  .user-navbar-inner {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .navbar-links {
+    width: 100%;
+    gap: 4px;
+  }
+
+  .navbar-link,
+  .navbar-logout-btn {
+    font-size: 0.78rem;
+    padding: 6px 10px;
+  }
+
+  .navbar-logout-btn {
+    margin-left: 0;
+  }
+}

@@ -70,6 +70,7 @@ class ReplyCreateSerializer(serializers.ModelSerializer):
 class TicketSerializer(serializers.ModelSerializer):
     """Serializer for Ticket model - Admin view"""
     user = UserSerializer(read_only=True)
+    replies = ReplySerializer(many=True, read_only=True)
     assigned_to_details = UserSerializer(source='assigned_to', read_only=True)
     assigned_to = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),

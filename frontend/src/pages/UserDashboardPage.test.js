@@ -144,4 +144,19 @@ describe("UserDashboardPage", () => {
 
     expect(await screen.findByText(/server error/i)).toBeInTheDocument();
   });
+
+  test("navigates to FAQs and Create Ticket pages", () => {
+    const preloadedState = { auth: { user: { first_name: "John", last_name: "Doe" }, loading: false } };
+    renderWithStore(preloadedState);
+
+    // FAQs link
+    const faqsLink = screen.getByText(/view faqs/i);
+    expect(faqsLink).toBeInTheDocument();
+    expect(faqsLink.getAttribute("href")).toBe("/faqs");
+
+    // Create ticket link
+    const createLink = screen.getByText(/create new ticket/i);
+    expect(createLink).toBeInTheDocument();
+    expect(createLink.getAttribute("href")).toBe("/create-ticket");
+  });
 });

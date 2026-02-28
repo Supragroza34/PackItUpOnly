@@ -9,7 +9,11 @@ export default function UserNavbar() {
   const [profileOpen, setProfileOpen] = useState(false);
 
   async function handleLogout() {
-    await logout();
+    try {
+      await logout();
+    } catch {
+      // ignore logout errors — always redirect
+    }
     navigate("/login", { replace: true });
   }
 

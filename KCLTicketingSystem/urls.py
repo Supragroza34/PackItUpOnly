@@ -19,17 +19,20 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from KCLTicketingSystems import views
-from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view
+from AIChatbot.views import chat_page
+from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view
 from KCLTicketingSystems.views.email_webhook import email_webhook
 
 urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
+    path('chat/', chat_page, name='chat_page'),
     path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
     
     # API Routes (includes JWT auth: /api/auth/token/, /api/auth/register/, /api/users/me/)
     path("api/", include("KCLTicketingSystems.urls")),
+    path("api/ai-chatbot/", include("AIChatbot.urls")),
     
     # Admin Dashboard API
     path('api/admin/dashboard/stats/', admin_views.dashboard_stats, name='admin_dashboard_stats'),

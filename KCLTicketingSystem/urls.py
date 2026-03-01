@@ -20,7 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from KCLTicketingSystems import views
 from AIChatbot.views import chat_page
-from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view
+from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view
 from KCLTicketingSystems.views.email_webhook import email_webhook
 
 urlpatterns = [

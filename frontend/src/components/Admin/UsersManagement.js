@@ -125,6 +125,12 @@ const UsersManagement = () => {
                     >
                         Users
                     </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/statistics')}
+                    >
+                        Statistics
+                    </button>
                     <button className="logout-btn" onClick={handleLogout}>
                         Log Out
                     </button>

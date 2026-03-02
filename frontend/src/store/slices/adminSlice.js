@@ -125,6 +125,19 @@ export const fetchStaffList = createAsyncThunk(
   }
 );
 
+// Statistics
+export const fetchStatistics = createAsyncThunk(
+  'admin/fetchStatistics',
+  async (params, { rejectWithValue }) => {
+    try {
+      const data = await adminApi.getStatistics(params);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const adminSlice = createSlice({
   name: 'admin',
   initialState: {
@@ -153,6 +166,11 @@ const adminSlice = createSlice({
     staffList: [],
     staffListLoading: false,
     staffListError: null,
+    
+    // Statistics
+    statistics: null,
+    statisticsLoading: false,
+    statisticsError: null,
   },
   reducers: {
     clearTicketsError: (state) => {
@@ -279,6 +297,20 @@ const adminSlice = createSlice({
       .addCase(fetchStaffList.rejected, (state, action) => {
         state.staffListLoading = false;
         state.staffListError = action.payload;
+      })
+      
+      // Statistics
+      .addCase(fetchStatistics.pending, (state) => {
+        state.statisticsLoading = true;
+      })
+      .addCase(fetchStatistics.fulfilled, (state, action) => {
+        state.statisticsLoading = false;
+        state.statistics = action.payload;
+        state.statisticsError = null;
+      })
+      .addCase(fetchStatistics.rejected, (state, action) => {
+        state.statisticsLoading = false;
+        state.statisticsError = action.payload;
       });
   },
 });

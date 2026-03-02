@@ -1,5 +1,16 @@
 const API_BASE_URL = 'http://localhost:8000/api/admin';
 
+// Format DRF serializer errors { "field": ["msg"] } into a string
+function formatValidationErrors(obj) {
+    if (!obj || typeof obj !== 'object') return '';
+    const parts = [];
+    for (const [key, val] of Object.entries(obj)) {
+        const msg = Array.isArray(val) ? val.join(' ') : String(val);
+        if (msg) parts.push(`${key}: ${msg}`);
+    }
+    return parts.length ? parts.join('; ') : '';
+}
+
 // Helper to get auth headers with JWT token
 function getAuthHeaders() {
     const token = localStorage.getItem('access');
@@ -34,7 +45,12 @@ class AdminAPI {
         });
         
         if (!response.ok) {
-            throw new Error('Failed to fetch dashboard stats');
+            const text = await response.text();
+            let message = 'Failed to fetch dashboard stats';
+            if (response.status === 401) message = 'Please log in again.';
+            else if (response.status === 403) message = 'Access denied. Admin only.';
+            else if (text) message = `${message}: ${text}`;
+            throw new Error(message);
         }
         
         return response.json();
@@ -84,12 +100,15 @@ class AdminAPI {
             body: JSON.stringify(data),
         });
         
+        const body = await response.json().catch(() => ({}));
+        
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to update ticket');
+            // DRF validation errors: { "field": ["message"] } or backend { "error": "..." }
+            const msg = body.error || (typeof body === 'object' && body.detail) || formatValidationErrors(body);
+            throw new Error(msg || 'Failed to update ticket');
         }
         
-        return response.json();
+        return body;
     }
     
     async deleteTicket(ticketId) {
@@ -182,6 +201,28 @@ class AdminAPI {
         
         return response.json();
     }
+    
+    // ================= STATISTICS =================
+    
+    async getStatistics(params = {}) {
+        const queryParams = new URLSearchParams();
+        
+        if (params.days) queryParams.append('days', params.days);
+        if (params.start_date) queryParams.append('start_date', params.start_date);
+        if (params.end_date) queryParams.append('end_date', params.end_date);
+        
+        const url = `${API_BASE_URL}/statistics/?${queryParams.toString()}`;
+        const response = await fetch(url, {
+            headers: getAuthHeaders(),
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch statistics');
+        }
+        
+        return response.json();
+    }
 }
 
-export default new AdminAPI();
+const adminApiInstance = new AdminAPI();
+export default adminApiInstance;

@@ -169,7 +169,8 @@ class RegisterSerializerTest(TestCase):
 
     def test_register_serializer_missing_required_fields(self):
         """Test that missing required fields are rejected"""
-        required_fields = ['username', 'email', 'password', 'k_number']
+        # k_number is not required as it has blank=True in the model
+        required_fields = ['username', 'email', 'password']
         
         for field in required_fields:
             data = self.valid_data.copy()
@@ -201,6 +202,17 @@ class TicketSerializerTest(TestCase):
 
     def setUp(self):
         """Set up test data"""
+        # Create ticket user
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser',
+            email='ticketuser@test.com',
+            password='testpass123',
+            k_number='12345678',
+            first_name='John',
+            last_name='Doe',
+            role=User.Role.STUDENT
+        )
+        
         self.staff = User.objects.create_user(
             username='staff',
             email='staff@test.com',
@@ -212,10 +224,7 @@ class TicketSerializerTest(TestCase):
         )
         
         self.ticket = Ticket.objects.create(
-            name='John',
-            surname='Doe',
-            k_number='12345678',
-            k_email='K12345678@kcl.ac.uk',
+            user=self.ticket_user,
             department='Informatics',
             type_of_issue='Software Installation Issues',
             additional_details='Need help',
@@ -228,9 +237,9 @@ class TicketSerializerTest(TestCase):
         """Test that TicketSerializer includes all fields"""
         serializer = TicketSerializer(self.ticket)
         
-        # Should include all model fields plus assigned_to_details
+        # Should include all model fields plus user and assigned_to_details
         self.assertIn('id', serializer.data)
-        self.assertIn('name', serializer.data)
+        self.assertIn('user', serializer.data)
         self.assertIn('assigned_to', serializer.data)
         self.assertIn('assigned_to_details', serializer.data)
 
@@ -244,13 +253,20 @@ class TicketSerializerTest(TestCase):
 
     def test_ticket_serializer_unassigned(self):
         """Test TicketSerializer with unassigned ticket"""
-        ticket = Ticket.objects.create(
-            name='Jane',
-            surname='Smith',
+        user = User.objects.create_user(
+            username='user2',
+            email='user2@test.com',
+            password='testpass123',
             k_number='87654321',
-            k_email='K87654321@kcl.ac.uk',
+            first_name='Jane',
+            last_name='Smith',
+            role=User.Role.STUDENT
+        )
+        ticket = Ticket.objects.create(
+            user=user,
             department='Engineering',
-            type_of_issue='Hardware Issues'
+            type_of_issue='Hardware Issues',
+            additional_details='Hardware problem'
         )
         
         serializer = TicketSerializer(ticket)
@@ -269,6 +285,17 @@ class TicketListSerializerTest(TestCase):
 
     def setUp(self):
         """Set up test data"""
+        # Create ticket user
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser',
+            email='ticketuser@test.com',
+            password='testpass123',
+            k_number='12345678',
+            first_name='John',
+            last_name='Doe',
+            role=User.Role.STUDENT
+        )
+        
         self.staff = User.objects.create_user(
             username='staff',
             email='staff@test.com',
@@ -280,12 +307,10 @@ class TicketListSerializerTest(TestCase):
         )
         
         self.ticket = Ticket.objects.create(
-            name='John',
-            surname='Doe',
-            k_number='12345678',
-            k_email='K12345678@kcl.ac.uk',
+            user=self.ticket_user,
             department='Informatics',
             type_of_issue='Software Installation Issues',
+            additional_details='Test details',
             assigned_to=self.staff
         )
 
@@ -294,9 +319,9 @@ class TicketListSerializerTest(TestCase):
         serializer = TicketListSerializer(self.ticket)
         
         expected_fields = [
-            'id', 'name', 'surname', 'k_number', 'department',
-            'type_of_issue', 'status', 'priority', 'assigned_to_name',
-            'created_at', 'updated_at'
+            'id', 'user_name', 'user_k_number', 'department',
+            'type_of_issue', 'status', 'priority', 'assigned_to',
+            'assigned_to_name', 'created_at', 'updated_at'
         ]
         
         self.assertEqual(set(serializer.data.keys()), set(expected_fields))
@@ -309,13 +334,20 @@ class TicketListSerializerTest(TestCase):
 
     def test_ticket_list_serializer_unassigned(self):
         """Test assigned_to_name with unassigned ticket"""
-        ticket = Ticket.objects.create(
-            name='Jane',
-            surname='Smith',
+        user = User.objects.create_user(
+            username='user2',
+            email='user2@test.com',
+            password='testpass123',
             k_number='87654321',
-            k_email='K87654321@kcl.ac.uk',
+            first_name='Jane',
+            last_name='Smith',
+            role=User.Role.STUDENT
+        )
+        ticket = Ticket.objects.create(
+            user=user,
             department='Engineering',
-            type_of_issue='Hardware Issues'
+            type_of_issue='Hardware Issues',
+            additional_details='Hardware problem'
         )
         
         serializer = TicketListSerializer(ticket)
@@ -324,13 +356,20 @@ class TicketListSerializerTest(TestCase):
 
     def test_ticket_list_serializer_multiple_tickets(self):
         """Test serializing multiple tickets"""
-        ticket2 = Ticket.objects.create(
-            name='Jane',
-            surname='Smith',
+        user2 = User.objects.create_user(
+            username='user2',
+            email='user2@test.com',
+            password='testpass123',
             k_number='87654321',
-            k_email='K87654321@kcl.ac.uk',
+            first_name='Jane',
+            last_name='Smith',
+            role=User.Role.STUDENT
+        )
+        ticket2 = Ticket.objects.create(
+            user=user2,
             department='Engineering',
-            type_of_issue='Hardware Issues'
+            type_of_issue='Hardware Issues',
+            additional_details='Hardware problem'
         )
         
         tickets = Ticket.objects.all()
@@ -377,24 +416,41 @@ class DashboardStatsSerializerTest(TestCase):
 
     def setUp(self):
         """Set up test data"""
+        # Create ticket users
+        self.user1 = User.objects.create_user(
+            username='user1',
+            email='user1@test.com',
+            password='testpass123',
+            k_number='12345678',
+            first_name='John',
+            last_name='Doe',
+            role=User.Role.STUDENT
+        )
+        
+        self.user2 = User.objects.create_user(
+            username='user2',
+            email='user2@test.com',
+            password='testpass123',
+            k_number='87654321',
+            first_name='Jane',
+            last_name='Smith',
+            role=User.Role.STUDENT
+        )
+        
         # Create some tickets
         self.ticket1 = Ticket.objects.create(
-            name='John',
-            surname='Doe',
-            k_number='12345678',
-            k_email='K12345678@kcl.ac.uk',
+            user=self.user1,
             department='Informatics',
             type_of_issue='Software Installation Issues',
+            additional_details='Need help',
             status=Ticket.Status.PENDING
         )
         
         self.ticket2 = Ticket.objects.create(
-            name='Jane',
-            surname='Smith',
-            k_number='87654321',
-            k_email='K87654321@kcl.ac.uk',
+            user=self.user2,
             department='Engineering',
             type_of_issue='Hardware Issues',
+            additional_details='Hardware problem',
             status=Ticket.Status.IN_PROGRESS
         )
 

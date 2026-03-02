@@ -1,10 +1,90 @@
+/* TicketsManagement.css - Updated to match AdminDashboard style */
+
+/* Admin dashboard wrapper */
+.admin-dashboard {
+    min-height: 100vh;
+    background: #f0f2f5;
+    padding: 40px 20px;
+}
+
+/* Top bar - matching admin dashboard */
+.dashboard-topbar {
+    max-width: 1200px;
+    margin: 0 auto 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.dashboard-topbar h1 {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #1a237e;
+}
+
+.dashboard-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-tab {
+    padding: 8px 18px;
+    background: transparent;
+    color: #546e7a;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nav-tab:hover {
+    color: #1a237e;
+    border-color: #1a237e;
+}
+
+.nav-tab.active {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    color: #ffffff;
+    border-color: #1a237e;
+}
+
+.logout-btn {
+    padding: 8px 18px;
+    background: transparent;
+    border: 2px solid #e53935;
+    color: #e53935;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+.logout-btn:hover {
+    background: #e53935;
+    color: #fff;
+}
+
+/* Main content */
+.dashboard-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
 .page-header {
     margin-bottom: 30px;
 }
 
 .page-header h2 {
-    color: #333;
+    color: #1a237e;
     font-size: 24px;
+    font-weight: 700;
     margin: 0;
 }
 
@@ -13,6 +93,20 @@
     gap: 15px;
     margin-bottom: 25px;
     flex-wrap: wrap;
+}
+
+.search-by-name-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a237e;
 }
 
 .search-input {
@@ -26,7 +120,7 @@
 
 .search-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #1a237e;
 }
 
 .filter-select {
@@ -40,27 +134,57 @@
 
 .filter-select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #1a237e;
 }
 
 .btn-refresh {
     padding: 10px 20px;
-    background-color: #667eea;
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
-    transition: background-color 0.3s;
+    font-weight: 600;
+    transition: opacity 0.2s, transform 0.1s;
 }
 
 .btn-refresh:hover {
-    background-color: #5568d3;
+    opacity: 0.88;
+    transform: translateY(-1px);
 }
 
 .actions-cell {
     display: flex;
     gap: 8px;
+}
+
+.assign-cell {
+    min-width: 140px;
+}
+
+.assign-select {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    background-color: #fff;
+    cursor: pointer;
+    width: 100%;
+    max-width: 160px;
+}
+
+.assign-select:hover,
+.assign-select:focus {
+    border-color: #1a237e;
+    outline: none;
+}
+
+.assign-hint {
+    font-size: 11px;
+    color: #6b7280;
+    display: block;
+    margin-top: 2px;
 }
 
 .btn-action {
@@ -77,12 +201,12 @@
 }
 
 .btn-view {
-    background-color: #3b82f6;
+    background-color: #1a237e;
     color: white;
 }
 
 .btn-delete {
-    background-color: #ef4444;
+    background-color: #e53935;
     color: white;
 }
 
@@ -96,12 +220,18 @@
 
 .btn-page {
     padding: 8px 16px;
-    background-color: #667eea;
+    background-color: #1a237e;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+
+.btn-page:hover:not(:disabled) {
+    opacity: 0.88;
 }
 
 .btn-page:disabled {
@@ -110,8 +240,9 @@
 }
 
 .page-info {
-    color: #666;
+    color: #546e7a;
     font-size: 14px;
+    font-weight: 500;
 }
 
 .modal-overlay {
@@ -139,9 +270,10 @@
 
 .modal-content h2 {
     margin-top: 0;
-    color: #333;
-    border-bottom: 2px solid #667eea;
+    color: #1a237e;
+    border-bottom: 2px solid #1a237e;
     padding-bottom: 10px;
+    font-weight: 700;
 }
 
 .modal-section {
@@ -149,14 +281,15 @@
 }
 
 .modal-section h3 {
-    color: #667eea;
+    color: #1a237e;
     margin-bottom: 15px;
     font-size: 18px;
+    font-weight: 700;
 }
 
 .modal-section p {
     margin: 8px 0;
-    color: #555;
+    color: #546e7a;
     line-height: 1.6;
 }
 
@@ -167,8 +300,8 @@
 .form-group label {
     display: block;
     margin-bottom: 5px;
-    color: #333;
-    font-weight: 500;
+    color: #1a237e;
+    font-weight: 600;
 }
 
 .form-group select,
@@ -185,7 +318,14 @@
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #1a237e;
+}
+
+.form-group .form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
 }
 
 .modal-actions {
@@ -199,40 +339,197 @@
 
 .btn-save {
     padding: 10px 20px;
-    background-color: #10b981;
+    background-color: #2e7d32;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
+    transition: opacity 0.2s;
 }
 
 .btn-save:hover {
-    background-color: #059669;
+    opacity: 0.88;
 }
 
 .btn-cancel {
     padding: 10px 20px;
-    background-color: #6b7280;
+    background-color: #78909c;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 600;
+    transition: opacity 0.2s;
 }
 
 .btn-cancel:hover {
-    background-color: #4b5563;
+    opacity: 0.88;
 }
 
 .loading,
 .error {
     text-align: center;
     padding: 40px;
-    color: #666;
+    color: #546e7a;
+    font-size: 16px;
 }
 
 .error {
-    color: #dc2626;
+    color: #e53935;
 }
+
+/* Replies section in modal */
+.replies-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #f9fafb;
+}
+
+.reply-item {
+    background-color: white;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border-left: 3px solid #1a237e;
+}
+
+.reply-item:last-child {
+    margin-bottom: 0;
+}
+
+.reply-meta {
+    font-size: 13px;
+    color: #546e7a;
+    margin: 0 0 8px 0;
+}
+
+.reply-body {
+    margin: 0;
+    font-size: 14px;
+    color: #263238;
+    line-height: 1.5;
+}
+
+.no-replies {
+    color: #78909c;
+    font-style: italic;
+    margin: 10px 0;
+}
+
+.reply-form {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.reply-form textarea {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.reply-form textarea:focus {
+    outline: none;
+    border-color: #1a237e;
+    box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
+}
+
+.btn-send-reply {
+    align-self: flex-end;
+    padding: 8px 20px;
+    background-color: #1a237e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-send-reply:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+.btn-send-reply:active {
+    transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .dashboard-topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .dashboard-topbar-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-dashboard {
+        padding: 20px 15px;
+    }
+
+    .dashboard-topbar h1 {
+        font-size: 1.4rem;
+    }
+
+    .nav-tab,
+    .logout-btn {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    .filters-section {
+        flex-direction: column;
+    }
+
+    .search-input,
+    .filter-select {
+        width: 100%;
+    }
+
+    .tickets-table-container {
+        overflow-x: auto;
+    }
+
+    .tickets-table {
+        font-size: 13px;
+    }
+
+    .tickets-table th,
+    .tickets-table td {
+        padding: 10px 8px;
+    }
+
+    .modal-content {
+        padding: 20px;
+        width: 95%;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .btn-save,
+    .btn-cancel {
+        width: 100%;
+    }
+}
+

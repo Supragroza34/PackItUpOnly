@@ -1,84 +1,135 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import adminApi from '../../services/adminApi';
-import { useAuth } from '../../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { 
+    fetchTickets, 
+    fetchStaffList, 
+    fetchTicketDetail, 
+    updateTicket,
+    deleteTicket as deleteTicketAction 
+} from '../../store/slices/adminSlice';
+import { logout } from '../../store/slices/authSlice';
 import './TicketsManagement.css';
 
 const TicketsManagement = () => {
-    const [tickets, setTickets] = useState([]);
-    const [staffList, setStaffList] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedTicket, setSelectedTicket] = useState(null);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    
+    const { user } = useSelector((state) => state.auth);
+    const { 
+        tickets, 
+        ticketsTotalPages, 
+        ticketsLoading: loading, 
+        ticketsError: error,
+        selectedTicket,
+        staffList 
+    } = useSelector((state) => state.admin);
+    
     const [showModal, setShowModal] = useState(false);
-    const [pagination, setPagination] = useState({ page: 1, total: 0, page_size: 20 });
+    const [pagination, setPagination] = useState({ page: 1, page_size: 20 });
+    const [editedTicket, setEditedTicket] = useState(null);
+    const [replyBody, setReplyBody] = useState('');
     
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [priorityFilter, setPriorityFilter] = useState('');
-    
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
 
     useEffect(() => {
-        fetchTickets();
-        fetchStaffList();
-    }, [pagination.page, searchTerm, statusFilter, priorityFilter]);
+        dispatch(fetchTickets({
+            page: pagination.page,
+            page_size: pagination.page_size,
+            search: searchTerm,
+            status: statusFilter,
+            priority: priorityFilter,
+        }));
+    }, [dispatch, pagination.page, pagination.page_size, searchTerm, statusFilter, priorityFilter]);
 
-    const fetchTickets = async () => {
-        try {
-            setLoading(true);
-            const data = await adminApi.getTickets({
-                page: pagination.page,
-                page_size: pagination.page_size,
-                search: searchTerm,
-                status: statusFilter,
-                priority: priorityFilter,
-            });
-            setTickets(data.tickets);
-            setPagination(prev => ({ ...prev, total: data.total, total_pages: data.total_pages }));
-            setError(null);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchStaffList = async () => {
-        try {
-            const data = await adminApi.getStaffList();
-            setStaffList(data.staff);
-        } catch (err) {
-            console.error('Failed to fetch staff list:', err);
-        }
-    };
+    useEffect(() => {
+        dispatch(fetchStaffList());
+    }, [dispatch]);
 
     const handleViewTicket = async (ticketId) => {
         try {
-            const ticketData = await adminApi.getTicketDetail(ticketId);
-            setSelectedTicket(ticketData);
+            await dispatch(fetchTicketDetail(ticketId)).unwrap();
+            setEditedTicket(selectedTicket);
             setShowModal(true);
         } catch (err) {
-            alert('Failed to load ticket details: ' + err.message);
+            alert('Failed to load ticket details: ' + err);
         }
     };
+
+    useEffect(() => {
+        if (selectedTicket) {
+            setEditedTicket(selectedTicket);
+        }
+    }, [selectedTicket]);
 
     const handleUpdateTicket = async (e) => {
         e.preventDefault();
         try {
-            await adminApi.updateTicket(selectedTicket.id, {
-                status: selectedTicket.status,
-                priority: selectedTicket.priority,
-                assigned_to: selectedTicket.assigned_to,
-                admin_notes: selectedTicket.admin_notes,
-            });
+            await dispatch(updateTicket({
+                ticketId: editedTicket.id,
+                updates: {
+                    status: editedTicket.status,
+                    priority: editedTicket.priority,
+                    assigned_to: editedTicket.assigned_to,
+                    admin_notes: editedTicket.admin_notes,
+                }
+            })).unwrap();
             alert('Ticket updated successfully!');
-            setShowModal(false);
-            fetchTickets();
+            closeModal();
         } catch (err) {
-            alert('Failed to update ticket: ' + err.message);
+            alert('Failed to update ticket: ' + err);
+        }
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
+        setReplyBody('');
+    };
+
+    const handleSubmitReply = async (e) => {
+        e.preventDefault();
+        if (!replyBody.trim()) return;
+        
+        try {
+            const token = localStorage.getItem('access');
+            const response = await fetch('/api/replies/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    ticket: editedTicket.id,
+                    body: replyBody.trim(),
+                }),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to send reply');
+            }
+            
+            setReplyBody('');
+            // Refresh ticket details to show the new reply
+            await dispatch(fetchTicketDetail(editedTicket.id)).unwrap();
+            alert('Reply sent successfully!');
+        } catch (err) {
+            alert('Failed to send reply: ' + err.message);
+        }
+    };
+
+    const handleAssignTicket = async (ticketId, assignedToId) => {
+        const value = assignedToId === '' ? null : parseInt(assignedToId, 10);
+        try {
+            await dispatch(updateTicket({
+                ticketId,
+                updates: { assigned_to: value },
+            })).unwrap();
+            refreshTickets();
+        } catch (err) {
+            alert('Failed to assign ticket: ' + err);
         }
     };
 
@@ -86,36 +137,63 @@ const TicketsManagement = () => {
         if (!window.confirm('Are you sure you want to delete this ticket?')) return;
         
         try {
-            await adminApi.deleteTicket(ticketId);
+            await dispatch(deleteTicketAction(ticketId)).unwrap();
             alert('Ticket deleted successfully!');
-            fetchTickets();
         } catch (err) {
-            alert('Failed to delete ticket: ' + err.message);
+            alert('Failed to delete ticket: ' + err);
         }
     };
 
     const handleLogout = async () => {
-        await logout();
+        await dispatch(logout());
         navigate('/login');
+    };
+
+    const refreshTickets = () => {
+        dispatch(fetchTickets({
+            page: pagination.page,
+            page_size: pagination.page_size,
+            search: searchTerm,
+            status: statusFilter,
+            priority: priorityFilter,
+        }));
     };
 
     return (
         <div className="admin-dashboard">
-            <header className="admin-header">
-                <div className="header-content">
-                    <h1>Admin Dashboard - Tickets</h1>
-                    <div className="header-actions">
-                        <span className="user-info">Welcome, {user?.first_name || user?.username}</span>
-                        <button onClick={handleLogout} className="btn-logout">Logout</button>
-                    </div>
+            {/* Top bar - matching admin dashboard style */}
+            <div className="dashboard-topbar">
+                <h1>👋 Welcome, {user?.first_name || user?.username || 'Admin'}</h1>
+                <div className="dashboard-topbar-actions">
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/dashboard')}
+                    >
+                        Dashboard
+                    </button>
+                    <button 
+                        className="nav-tab active"
+                        onClick={() => navigate('/admin/tickets')}
+                    >
+                        Tickets
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/users')}
+                    >
+                        Users
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/statistics')}
+                    >
+                        Statistics
+                    </button>
+                    <button className="logout-btn" onClick={handleLogout}>
+                        Log Out
+                    </button>
                 </div>
-            </header>
-
-            <nav className="admin-nav">
-                <button className="nav-btn" onClick={() => navigate('/admin/dashboard')}>Dashboard</button>
-                <button className="nav-btn active" onClick={() => navigate('/admin/tickets')}>Tickets</button>
-                <button className="nav-btn" onClick={() => navigate('/admin/users')}>Users</button>
-            </nav>
+            </div>
 
             <main className="dashboard-content">
                 <div className="page-header">
@@ -123,13 +201,17 @@ const TicketsManagement = () => {
                 </div>
 
                 <div className="filters-section">
-                    <input
-                        type="text"
-                        placeholder="Search by name, K-number, email, department..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
+                    <div className="search-by-name-wrap">
+                        <label htmlFor="admin-ticket-search" className="search-label">Search by name</label>
+                        <input
+                            id="admin-ticket-search"
+                            type="text"
+                            placeholder="Name, K-number, email, department..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input"
+                        />
+                    </div>
                     
                     <select
                         value={statusFilter}
@@ -155,7 +237,7 @@ const TicketsManagement = () => {
                         <option value="urgent">Urgent</option>
                     </select>
                     
-                    <button onClick={fetchTickets} className="btn-refresh">Refresh</button>
+                    <button onClick={refreshTickets} className="btn-refresh">Refresh</button>
                 </div>
 
                 {loading ? (
@@ -184,8 +266,8 @@ const TicketsManagement = () => {
                                     {tickets.map((ticket) => (
                                         <tr key={ticket.id}>
                                             <td>{ticket.id}</td>
-                                            <td>{ticket.name} {ticket.surname}</td>
-                                            <td>{ticket.k_number}</td>
+                                            <td>{ticket.user_name}</td>
+                                            <td>{ticket.user_k_number}</td>
                                             <td>{ticket.department}</td>
                                             <td>{ticket.type_of_issue}</td>
                                             <td>
@@ -198,7 +280,25 @@ const TicketsManagement = () => {
                                                     {ticket.priority}
                                                 </span>
                                             </td>
-                                            <td>{ticket.assigned_to_name || 'Unassigned'}</td>
+                                            <td className="assign-cell">
+                                                <select
+                                                    className="assign-select"
+                                                    value={ticket.assigned_to ?? ''}
+                                                    onChange={(e) => handleAssignTicket(ticket.id, e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    title="Assign to staff"
+                                                >
+                                                    <option value="">Unassigned</option>
+                                                    {staffList.map((staff) => (
+                                                        <option key={staff.id} value={staff.id}>
+                                                            {staff.first_name} {staff.last_name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {staffList.length === 0 && (
+                                                    <span className="assign-hint">No staff in list</span>
+                                                )}
+                                            </td>
                                             <td>{new Date(ticket.created_at).toLocaleDateString()}</td>
                                             <td className="actions-cell">
                                                 <button
@@ -229,11 +329,11 @@ const TicketsManagement = () => {
                                 Previous
                             </button>
                             <span className="page-info">
-                                Page {pagination.page} of {pagination.total_pages || 1}
+                                Page {pagination.page} of {ticketsTotalPages || 1}
                             </span>
                             <button
                                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                                disabled={pagination.page >= pagination.total_pages}
+                                disabled={pagination.page >= ticketsTotalPages}
                                 className="btn-page"
                             >
                                 Next
@@ -243,21 +343,52 @@ const TicketsManagement = () => {
                 )}
             </main>
 
-            {showModal && selectedTicket && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            {showModal && editedTicket && (
+                <div className="modal-overlay" onClick={closeModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h2>Edit Ticket #{selectedTicket.id}</h2>
+                        <h2>Edit Ticket #{editedTicket.id}</h2>
                         
                         <form onSubmit={handleUpdateTicket}>
                             <div className="modal-section">
                                 <h3>Ticket Information</h3>
-                                <p><strong>Name:</strong> {selectedTicket.name} {selectedTicket.surname}</p>
-                                <p><strong>K-Number:</strong> {selectedTicket.k_number}</p>
-                                <p><strong>Email:</strong> {selectedTicket.k_email}</p>
-                                <p><strong>Department:</strong> {selectedTicket.department}</p>
-                                <p><strong>Issue Type:</strong> {selectedTicket.type_of_issue}</p>
-                                <p><strong>Details:</strong> {selectedTicket.additional_details}</p>
-                                <p><strong>Created:</strong> {new Date(selectedTicket.created_at).toLocaleString()}</p>
+                                <p><strong>Name:</strong> {editedTicket.user?.first_name} {editedTicket.user?.last_name}</p>
+                                <p><strong>K-Number:</strong> {editedTicket.user?.k_number}</p>
+                                <p><strong>Email:</strong> {editedTicket.user?.email}</p>
+                                <p><strong>Department:</strong> {editedTicket.department}</p>
+                                <p><strong>Issue Type:</strong> {editedTicket.type_of_issue}</p>
+                                <p><strong>Details:</strong> {editedTicket.additional_details}</p>
+                                <p><strong>Created:</strong> {new Date(editedTicket.created_at).toLocaleString()}</p>
+                            </div>
+
+                            <div className="modal-section">
+                                <h3>Replies</h3>
+                                {editedTicket.replies && editedTicket.replies.length > 0 ? (
+                                    <div className="replies-list">
+                                        {editedTicket.replies.map((reply) => (
+                                            <div key={reply.id} className="reply-item">
+                                                <p className="reply-meta">
+                                                    <strong>{reply.user_username}</strong>
+                                                    {' · '}
+                                                    {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}
+                                                </p>
+                                                <p className="reply-body">{reply.body}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="no-replies">No replies yet.</p>
+                                )}
+                                
+                                <div className="reply-form">
+                                    <textarea
+                                        value={replyBody}
+                                        onChange={(e) => setReplyBody(e.target.value)}
+                                        placeholder="Write a reply..."
+                                        rows={3}
+                                        required
+                                    />
+                                    <button type="button" onClick={handleSubmitReply} className="btn-send-reply">Send Reply</button>
+                                </div>
                             </div>
 
                             <div className="modal-section">
@@ -266,8 +397,8 @@ const TicketsManagement = () => {
                                 <div className="form-group">
                                     <label>Status</label>
                                     <select
-                                        value={selectedTicket.status}
-                                        onChange={(e) => setSelectedTicket({ ...selectedTicket, status: e.target.value })}
+                                        value={editedTicket.status}
+                                        onChange={(e) => setEditedTicket({ ...editedTicket, status: e.target.value })}
                                     >
                                         <option value="pending">Pending</option>
                                         <option value="in_progress">In Progress</option>
@@ -279,8 +410,8 @@ const TicketsManagement = () => {
                                 <div className="form-group">
                                     <label>Priority</label>
                                     <select
-                                        value={selectedTicket.priority}
-                                        onChange={(e) => setSelectedTicket({ ...selectedTicket, priority: e.target.value })}
+                                        value={editedTicket.priority}
+                                        onChange={(e) => setEditedTicket({ ...editedTicket, priority: e.target.value })}
                                     >
                                         <option value="low">Low</option>
                                         <option value="medium">Medium</option>
@@ -292,10 +423,10 @@ const TicketsManagement = () => {
                                 <div className="form-group">
                                     <label>Assign To</label>
                                     <select
-                                        value={selectedTicket.assigned_to || ''}
-                                        onChange={(e) => setSelectedTicket({ 
-                                            ...selectedTicket, 
-                                            assigned_to: e.target.value ? parseInt(e.target.value) : null 
+                                        value={editedTicket.assigned_to ?? ''}
+                                        onChange={(e) => setEditedTicket({ 
+                                            ...editedTicket, 
+                                            assigned_to: e.target.value ? parseInt(e.target.value, 10) : null 
                                         })}
                                     >
                                         <option value="">Unassigned</option>
@@ -305,13 +436,14 @@ const TicketsManagement = () => {
                                             </option>
                                         ))}
                                     </select>
+                                    <small className="form-hint">Assigned staff will see this ticket in their dashboard.</small>
                                 </div>
 
                                 <div className="form-group">
                                     <label>Admin Notes</label>
                                     <textarea
-                                        value={selectedTicket.admin_notes}
-                                        onChange={(e) => setSelectedTicket({ ...selectedTicket, admin_notes: e.target.value })}
+                                        value={editedTicket.admin_notes || ''}
+                                        onChange={(e) => setEditedTicket({ ...editedTicket, admin_notes: e.target.value })}
                                         rows={4}
                                     />
                                 </div>
@@ -319,7 +451,7 @@ const TicketsManagement = () => {
 
                             <div className="modal-actions">
                                 <button type="submit" className="btn-save">Save Changes</button>
-                                <button type="button" onClick={() => setShowModal(false)} className="btn-cancel">
+                                <button type="button" onClick={closeModal} className="btn-cancel">
                                     Cancel
                                 </button>
                             </div>

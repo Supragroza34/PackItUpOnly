@@ -5,6 +5,7 @@ import FaqSearchBar from '../components/FaqSearchBar';
 import { FAQ_CATEGORIES, faqItems } from '../data/faqs';
 import { filterFaqs, getCategoryCounts } from '../utils/faqFilters';
 import './FaqPage.css';
+import UserNavbar from '../components/UserNavbar';
 
 const FaqPage = ({ userRole, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,13 +28,15 @@ const FaqPage = ({ userRole, onNavigate }) => {
 
   const handleNavigateToCreateTicket = (event) => {
     if (onNavigate) {
-      onNavigate(event, '/');
+      onNavigate(event, '/create-ticket');
     }
   };
 
   return (
-    <div className="faq-page">
-      <header className="faq-header">
+    <>
+      <UserNavbar />
+      <div className="faq-page">
+        <header className="faq-header">
         <h1>FAQs</h1>
         <p>Answers to common questions about tickets, tracking, and using the platform.</p>
       </header>
@@ -60,11 +63,12 @@ const FaqPage = ({ userRole, onNavigate }) => {
       <section className="faq-cta">
         <h2>Still need help?</h2>
         <p>Create a new ticket and our team will assist you directly.</p>
-        <a href="/" className="faq-cta-button" onClick={handleNavigateToCreateTicket}>
+        <a href="/create-ticket" className="faq-cta-button" onClick={handleNavigateToCreateTicket}>
           Create a new ticket
         </a>
       </section>
-    </div>
+      </div>
+    </>
   );
 };
 

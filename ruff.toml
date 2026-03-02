@@ -1,0 +1,11 @@
+# ruff.toml
+line-length = 88
+target-version = "py312"
+
+[lint]
+# PLR0915 is the code for "Too many statements in a function"
+select = ["PLR0915"]
+
+[lint.pylint]
+# Set your limit here (statements roughly equate to lines of code)
+max-statements = 15

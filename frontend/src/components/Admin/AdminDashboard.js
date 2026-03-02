@@ -35,86 +35,79 @@ const AdminDashboard = () => {
 
     return (
         <div className="admin-dashboard">
-            <header className="admin-header">
-                <div className="header-content">
-                    <h1>Admin Dashboard</h1>
-                    <div className="header-actions">
-                        <span className="user-info">
-                            Welcome, {user?.first_name || user?.username}
-                        </span>
-                        <button onClick={handleLogout} className="btn-logout">
-                            Logout
-                        </button>
-                    </div>
+            {/* Top bar - matching user dashboard style */}
+            <div className="dashboard-topbar">
+                <h1>👋 Welcome, {user?.first_name || user?.username || 'alexadmin'}</h1>
+                <div className="dashboard-topbar-actions">
+                    <button 
+                        className={`nav-tab ${window.location.pathname === '/admin/dashboard' ? 'active' : ''}`}
+                        onClick={() => navigate('/admin/dashboard')}
+                    >
+                        Dashboard
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/tickets')}
+                    >
+                        Tickets
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/users')}
+                    >
+                        Users
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/statistics')}
+                    >
+                        Statistics
+                    </button>
+                    <button className="logout-btn" onClick={handleLogout}>
+                        Log Out
+                    </button>
                 </div>
-            </header>
+            </div>
 
-            <nav className="admin-nav">
-                <button 
-                    className="nav-btn active"
-                    onClick={() => navigate('/admin/dashboard')}
-                >
-                    Dashboard
-                </button>
-                <button 
-                    className="nav-btn"
-                    onClick={() => navigate('/admin/tickets')}
-                >
-                    Tickets
-                </button>
-                <button 
-                    className="nav-btn"
-                    onClick={() => navigate('/admin/users')}
-                >
-                    Users
-                </button>
-            </nav>
+            {/* Summary cards for ticket statistics */}
+            <div className="dashboard-summary">
+                <div className="summary-card">
+                    <div className="summary-count">{stats.total_tickets}</div>
+                    <div className="summary-label">Total Tickets</div>
+                </div>
+                <div className="summary-card">
+                    <div className="summary-count">{stats.pending_tickets}</div>
+                    <div className="summary-label">Pending</div>
+                </div>
+                <div className="summary-card">
+                    <div className="summary-count">{stats.in_progress_tickets}</div>
+                    <div className="summary-label">In Progress</div>
+                </div>
+                <div className="summary-card">
+                    <div className="summary-count">{stats.resolved_tickets}</div>
+                    <div className="summary-label">Resolved</div>
+                </div>
+                <div className="summary-card">
+                    <div className="summary-count">{stats.closed_tickets}</div>
+                    <div className="summary-label">Closed</div>
+                </div>
+            </div>
 
             <main className="dashboard-content">
                 <section className="stats-section">
-                    <h2>Ticket Statistics</h2>
-                    <div className="stats-grid">
-                        <div className="stat-card total">
-                            <h3>Total Tickets</h3>
-                            <p className="stat-number">{stats.total_tickets}</p>
-                        </div>
-                        <div className="stat-card pending">
-                            <h3>Pending</h3>
-                            <p className="stat-number">{stats.pending_tickets}</p>
-                        </div>
-                        <div className="stat-card progress">
-                            <h3>In Progress</h3>
-                            <p className="stat-number">{stats.in_progress_tickets}</p>
-                        </div>
-                        <div className="stat-card resolved">
-                            <h3>Resolved</h3>
-                            <p className="stat-number">{stats.resolved_tickets}</p>
-                        </div>
-                        <div className="stat-card closed">
-                            <h3>Closed</h3>
-                            <p className="stat-number">{stats.closed_tickets}</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="stats-section">
                     <h2>User Statistics</h2>
                     <div className="stats-grid">
-                        <div className="stat-card users">
-                            <h3>Total Users</h3>
-                            <p className="stat-number">{stats.total_users}</p>
+                        <div className="stat-card">
+                            <div className="summary-count">{stats.total_users}</div>
+                            <div className="summary-label">Total Users</div>
                         </div>
-                        <div className="stat-card students">
-                            <h3>Students</h3>
-                            <p className="stat-number">{stats.total_students}</p>
+                        <div className="stat-card">
+                            <div className="summary-count">{stats.total_students}</div>
+                            <div className="summary-label">Students</div>
                         </div>
-                        <div className="stat-card staff">
-                            <h3>Staff</h3>
-                            <p className="stat-number">{stats.total_staff}</p>
-                        </div>
-                        <div className="stat-card admins">
-                            <h3>Admins</h3>
-                            <p className="stat-number">{stats.total_admins}</p>
+                        <div className="stat-card">
+                            <div className="summary-count">{stats.total_staff}</div>
+                            <div className="summary-label">Staff</div>
                         </div>
                     </div>
                 </section>

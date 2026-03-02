@@ -1,10 +1,14 @@
-/* Page background — wraps the faq card to give a consistent background */
-.faq-page-bg {
-  min-height: 100vh;
-  background: #f0f2f5;
-  display: flex;
-  justify-content: center;
-  padding: 40px 20px;
+.faq-back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #1a237e;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.faq-back-link:hover {
+  text-decoration: underline;
 }
 
 .faq-page {

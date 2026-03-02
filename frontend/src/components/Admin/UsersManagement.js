@@ -103,21 +103,39 @@ const UsersManagement = () => {
 
     return (
         <div className="admin-dashboard">
-            <header className="admin-header">
-                <div className="header-content">
-                    <h1>Admin Dashboard - Users</h1>
-                    <div className="header-actions">
-                        <span className="user-info">Welcome, {user?.first_name || user?.username}</span>
-                        <button onClick={handleLogout} className="btn-logout">Logout</button>
-                    </div>
+            {/* Top bar - matching admin dashboard style */}
+            <div className="dashboard-topbar">
+                <h1>👋 Welcome, {user?.first_name || user?.username || 'Admin'}</h1>
+                <div className="dashboard-topbar-actions">
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/dashboard')}
+                    >
+                        Dashboard
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/tickets')}
+                    >
+                        Tickets
+                    </button>
+                    <button 
+                        className="nav-tab active"
+                        onClick={() => navigate('/admin/users')}
+                    >
+                        Users
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/statistics')}
+                    >
+                        Statistics
+                    </button>
+                    <button className="logout-btn" onClick={handleLogout}>
+                        Log Out
+                    </button>
                 </div>
-            </header>
-
-            <nav className="admin-nav">
-                <button className="nav-btn" onClick={() => navigate('/admin/dashboard')}>Dashboard</button>
-                <button className="nav-btn" onClick={() => navigate('/admin/tickets')}>Tickets</button>
-                <button className="nav-btn active" onClick={() => navigate('/admin/users')}>Users</button>
-            </nav>
+            </div>
 
             <main className="dashboard-content">
                 <div className="page-header">

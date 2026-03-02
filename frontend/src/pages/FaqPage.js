@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import FaqAccordion from '../components/FaqAccordion';
 import FaqCategoryFilter from '../components/FaqCategoryFilter';
 import FaqSearchBar from '../components/FaqSearchBar';
@@ -35,9 +36,8 @@ const FaqPage = ({ userRole, onNavigate }) => {
   return (
     <>
       <UserNavbar />
-      <div className="faq-page-bg">
       <div className="faq-page">
-      <header className="faq-header">
+        <header className="faq-header">
         <h1>FAQs</h1>
         <p>Answers to common questions about tickets, tracking, and using the platform.</p>
       </header>
@@ -68,8 +68,7 @@ const FaqPage = ({ userRole, onNavigate }) => {
           Create a new ticket
         </a>
       </section>
-    </div>
-    </div>
+      </div>
     </>
   );
 };

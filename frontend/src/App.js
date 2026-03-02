@@ -9,6 +9,7 @@ import PrivateRoute from "./utils/PrivateRoute";
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import TicketsManagement from "./components/Admin/TicketsManagement";
 import UsersManagement from "./components/Admin/UsersManagement";
+import Statistics from "./components/Admin/Statistics";
 import StaffDashboardPage from "./pages/StaffDashboardPage";
 import TicketPage from "./pages/TicketPage";
 import StaffDirectory from "./pages/StaffDirectory";
@@ -22,6 +23,7 @@ import TicketFormPage from './pages/TicketFormPage';
 import './App.css';
 
 import FaqPage from "./pages/FaqPage";
+import ChatbotPage from "./AIChatbot/ChatbotPage";
 import "./App.css";
 
 function isAuthed() {
@@ -110,6 +112,16 @@ export default function App() {
             }
           />
 
+          {/* AI Chatbot */}
+          <Route
+            path="/ai-chatbot"
+            element={
+              <Protected>
+                <ChatbotPage />
+              </Protected>
+            }
+          />
+
           {/* Staff Dashboard */}
           <Route
             path="/staff-dashboard"
@@ -142,6 +154,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <UsersManagement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/statistics"
+            element={
+              <PrivateRoute>
+                <Statistics />
               </PrivateRoute>
             }
           />

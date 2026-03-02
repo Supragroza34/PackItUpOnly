@@ -36,7 +36,9 @@ def _chat_with_ollama(messages, model="llama2", system_prompt=None):
             ollama_messages.append({"role": role, "content": str(content).strip()})
     if len(ollama_messages) <= 1:
         raise ValueError("At least one user message required.")
-    response = ollama.chat(model=model, messages=ollama_messages)
+    # Create client with longer timeout (120 seconds for model loading)
+    client = ollama.Client(timeout=120.0)
+    response = client.chat(model=model, messages=ollama_messages)
     reply = response.get("message") or {}
     return (reply.get("content") or "").strip()
 

@@ -97,7 +97,7 @@ function UserDashboardPage() {
       <div className="dashboard-topbar">
         <h1>👋 Welcome, {user.k_number || "Student"}</h1>
         <div className="dashboard-topbar-actions">
-          <a href={`${window.location.protocol}//${window.location.hostname}:8000/chat/`} className="ai-helper-btn">AI Helper</a>
+          <Link to="/ai-chatbot" className="ai-helper-btn">AI Helper</Link>
           <Link to="/faqs" className="faq-btn">View FAQs</Link>
           <button className="logout-btn" onClick={handleLogout}>
             Log Out

@@ -85,19 +85,15 @@ function UserDashboardPage() {
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
 
   return (
-    <div className="dashboard-page">
-      {/* Top bar */}
-      <div className="dashboard-topbar">
-        <h1>👋 Welcome, {user.k_number || "Student"}</h1>
-        <div className="dashboard-topbar-actions">
-          <Link to="/ai-chatbot" className="ai-helper-btn">AI Helper</Link>
-          <Link to="/faqs" className="faq-btn">View FAQs</Link>
-          <button className="logout-btn" onClick={handleLogout}>
-            Log Out
-          </button>
+    <>
+      <UserNavbar />
+      <div className="dashboard-page">
+        {/* Top bar */}
+        <div className="dashboard-topbar">
+          <h1>👋 Welcome, {user.k_number || "Student"}</h1>
         </div>
 
-      {/* Summary cards */}
+        {/* Summary cards */}
       <div className="dashboard-summary">
         <div className="summary-card">
           <div className="summary-count">{tickets.length}</div>
@@ -175,7 +171,7 @@ function UserDashboardPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
     </>
   );
 }

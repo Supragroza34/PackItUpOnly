@@ -34,11 +34,10 @@ const FaqPage = ({ userRole, onNavigate }) => {
   };
 
   return (
-    <div className="faq-page">
-      <Link to="/dashboard" className="faq-back-link">
-        ← Back to Dashboard
-      </Link>
-      <header className="faq-header">
+    <>
+      <UserNavbar />
+      <div className="faq-page">
+        <header className="faq-header">
         <h1>FAQs</h1>
         <p>Answers to common questions about tickets, tracking, and using the platform.</p>
       </header>
@@ -69,8 +68,7 @@ const FaqPage = ({ userRole, onNavigate }) => {
           Create a new ticket
         </a>
       </section>
-    </div>
-    </div>
+      </div>
     </>
   );
 };

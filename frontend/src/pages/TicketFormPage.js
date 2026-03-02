@@ -151,7 +151,7 @@ export default function TicketFormPage() {
       selectedFiles.forEach((file) => formData.append("attachments", file));
 
       const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
-      const res = await fetch(`${API_BASE}/tickets/`, {
+      const res = await fetch(`${API_BASE}/tickets/create/`, {
         method: "POST",
         headers: authHeaders(), // JWT token; no Content-Type so browser sets multipart boundary
         body: formData,

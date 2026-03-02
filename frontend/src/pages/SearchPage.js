@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { apiFetch, authHeaders } from '../api';
 import { faqItems } from '../data/faqs';
 import { filterFaqs } from '../utils/faqFilters';
+import UserNavbar from '../components/UserNavbar';
 import './FaqPage.css';
 
 const STATUS_OPTIONS = [
@@ -216,11 +217,13 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="faq-page">
-      <header className="faq-header">
-        <h1>Search</h1>
-        <p>Search across tickets and FAQs.</p>
-      </header>
+    <>
+      <UserNavbar />
+      <div className="faq-page">
+        <header className="faq-header">
+          <h1>Search</h1>
+          <p>Search across tickets and FAQs.</p>
+        </header>
 
       <section className="faq-controls">
         <div className="faq-search">
@@ -280,7 +283,8 @@ const SearchPage = () => {
       </section>
 
       {isTickets ? renderTickets() : renderFaqs()}
-    </div>
+      </div>
+    </>
   );
 };
 

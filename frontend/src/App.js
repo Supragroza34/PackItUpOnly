@@ -94,30 +94,22 @@ export default function App() {
             }
           />
 
-<<<<<<< HEAD
+          {/* Search */}
           <Route
             path="/search"
             element={
               <Protected>
                 <SearchPage />
-=======
+              </Protected>
+            }
+          />
+
           {/* AI Chatbot */}
           <Route
             path="/ai-chatbot"
             element={
               <Protected>
                 <ChatbotPage />
-              </Protected>
-            }
-          />
-
-          {/* Staff Dashboard */}
-          <Route
-            path="/staff-dashboard"
-            element={
-              <Protected>
-                <StaffDashboardPage />
->>>>>>> 8049d747c2fca05b5e8b52b6c38b5cabfb54104b
               </Protected>
             }
           />

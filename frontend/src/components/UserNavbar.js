@@ -80,6 +80,7 @@ function NavLinks({ onLogout }) {
       <Link to="/ai-chatbot" className="navbar-link">AI Helper</Link>
       <OfficeHoursButton />
       <ProfileDropdown />
+      <Link to="/search" className="navbar-link">Search</Link>
       <button className="navbar-logout-btn" onClick={onLogout}>Log Out</button>
     </div>
   );

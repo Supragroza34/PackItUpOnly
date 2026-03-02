@@ -118,6 +118,16 @@ class TicketSearchSerializer(serializers.ModelSerializer):
         fields = ['id', 'type_of_issue', 'status', 'created_at']
 
 
+class TicketCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating new tickets"""
+    class Meta:
+        model = Ticket
+        fields = ['department', 'type_of_issue', 'additional_details', 'priority']
+        extra_kwargs = {
+            'priority': {'required': False, 'default': 'medium'}
+        }
+
+
 class TicketUpdateSerializer(serializers.ModelSerializer):
     """Serializer for admin updating tickets"""
     assigned_to = serializers.PrimaryKeyRelatedField(

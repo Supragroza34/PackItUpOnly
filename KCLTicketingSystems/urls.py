@@ -15,11 +15,11 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view()),
     path("users/me/", MeView.as_view()),
     path("tickets/", ticket_search, name="ticket_search"),
+    path("tickets/create/", TicketCreateView.as_view(), name="ticket_create"),
+    path('tickets/<int:pk>/', TicketDetailView.as_view(), name="ticket_detail"),
     path("staff-dashboard/", staff_dashboard, name="staff_dashboard"),
     path("replies/create/", ReplyCreateView.as_view()),
     path('reply/<int:ticket_id>/', ReplyView.as_view()),
-    path("tickets/", TicketCreateView.as_view()),
-    path('tickets/<int:pk>', TicketDetailView.as_view()),
 ]
 
 

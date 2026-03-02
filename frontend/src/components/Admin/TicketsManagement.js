@@ -379,7 +379,7 @@ const TicketsManagement = () => {
                                     <p className="no-replies">No replies yet.</p>
                                 )}
                                 
-                                <form onSubmit={handleSubmitReply} className="reply-form">
+                                <div className="reply-form">
                                     <textarea
                                         value={replyBody}
                                         onChange={(e) => setReplyBody(e.target.value)}
@@ -387,8 +387,8 @@ const TicketsManagement = () => {
                                         rows={3}
                                         required
                                     />
-                                    <button type="submit" className="btn-send-reply">Send Reply</button>
-                                </form>
+                                    <button type="button" onClick={handleSubmitReply} className="btn-send-reply">Send Reply</button>
+                                </div>
                             </div>
 
                             <div className="modal-section">

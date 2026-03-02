@@ -17,7 +17,16 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-echo   ✓ Python found
+
+REM Check if Python version is at least 3.8
+python -c "import sys; sys.exit(0 if sys.version_info >= (3,8) else 1)" >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] Python 3.8+ is required, but an older version is installed!
+    echo Please install Python 3.8+ from: https://www.python.org/downloads/
+    pause
+    exit /b 1
+)
+echo   ✓ Python 3.8+ found
 
 REM Check if Node.js is installed
 node --version >nul 2>&1
@@ -52,7 +61,7 @@ echo.
 
 echo [2/4] Setting up Backend...
 echo Installing Python dependencies...
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 if errorlevel 1 (
     echo [ERROR] Failed to install Python dependencies!
     pause

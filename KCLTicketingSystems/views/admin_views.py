@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.db.models import Q, Count, Avg, F
+from django.db.models import Q, Count, Avg, F, Case, When, ExpressionWrapper, DurationField, IntegerField
 from django.utils import timezone
 from django.http import HttpResponse
 from datetime import timedelta, datetime
@@ -430,70 +430,83 @@ def get_ticket_statistics(request):
     """Get detailed ticket statistics by department with date filtering."""
     try:
         # Get date range from query params (default: last 30 days)
-        days = int(request.GET.get('days', 30))
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
         
         # Calculate date range
         if start_date_str and end_date_str:
-            start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
-            end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+            try:
+                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+                end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': 'Invalid start_date or end_date format. Expected ISO 8601 format.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         else:
+            days_param = request.GET.get('days', '30')
+            try:
+                days = int(days_param)
+                if days <= 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': 'Invalid "days" parameter. Must be a positive integer.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             end_date = timezone.now()
             start_date = end_date - timedelta(days=days)
         
         # Filter tickets by date range
         tickets = Ticket.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
         
-        # Get all departments
-        departments = tickets.values_list('department', flat=True).distinct()
-        
-        department_stats = []
-        for dept in departments:
-            dept_tickets = tickets.filter(department=dept)
-            
+        # Aggregate statistics by department using conditional counts
+        department_stats = tickets.values('department').annotate(
+            total_tickets=Count('id'),
             # Count by status
-            pending = dept_tickets.filter(status=Ticket.Status.PENDING).count()
-            in_progress = dept_tickets.filter(status=Ticket.Status.IN_PROGRESS).count()
-            resolved = dept_tickets.filter(status=Ticket.Status.RESOLVED).count()
-            closed = dept_tickets.filter(status=Ticket.Status.CLOSED).count()
-            
+            pending=Count('id', filter=Q(status=Ticket.Status.PENDING)),
+            in_progress=Count('id', filter=Q(status=Ticket.Status.IN_PROGRESS)),
+            resolved=Count('id', filter=Q(status=Ticket.Status.RESOLVED)),
+            closed=Count('id', filter=Q(status=Ticket.Status.CLOSED)),
             # Count by priority
-            low = dept_tickets.filter(priority=Ticket.Priority.LOW).count()
-            medium = dept_tickets.filter(priority=Ticket.Priority.MEDIUM).count()
-            high = dept_tickets.filter(priority=Ticket.Priority.HIGH).count()
-            urgent = dept_tickets.filter(priority=Ticket.Priority.URGENT).count()
-            
-            # Calculate average resolution time (for closed tickets)
-            closed_tickets = dept_tickets.filter(status=Ticket.Status.CLOSED, updated_at__isnull=False)
+            low=Count('id', filter=Q(priority=Ticket.Priority.LOW)),
+            medium=Count('id', filter=Q(priority=Ticket.Priority.MEDIUM)),
+            high=Count('id', filter=Q(priority=Ticket.Priority.HIGH)),
+            urgent=Count('id', filter=Q(priority=Ticket.Priority.URGENT)),
+            # Average resolution time in seconds for closed tickets
+            avg_resolution_seconds=Avg(
+                ExpressionWrapper(
+                    F('updated_at') - F('created_at'),
+                    output_field=DurationField()
+                ),
+                filter=Q(status=Ticket.Status.CLOSED, updated_at__isnull=False)
+            )
+        ).order_by('-total_tickets')
+        
+        # Format the results
+        formatted_stats = []
+        for stat in department_stats:
             avg_resolution_hours = None
-            if closed_tickets.exists():
-                total_seconds = sum([
-                    (ticket.updated_at - ticket.created_at).total_seconds()
-                    for ticket in closed_tickets
-                ])
-                avg_resolution_hours = round(total_seconds / 3600 / closed_tickets.count(), 2)
+            if stat['avg_resolution_seconds']:
+                avg_resolution_hours = round(stat['avg_resolution_seconds'].total_seconds() / 3600, 2)
             
-            department_stats.append({
-                'department': dept,
-                'total_tickets': dept_tickets.count(),
+            formatted_stats.append({
+                'department': stat['department'],
+                'total_tickets': stat['total_tickets'],
                 'status_breakdown': {
-                    'pending': pending,
-                    'in_progress': in_progress,
-                    'resolved': resolved,
-                    'closed': closed,
+                    'pending': stat['pending'],
+                    'in_progress': stat['in_progress'],
+                    'resolved': stat['resolved'],
+                    'closed': stat['closed'],
                 },
                 'priority_breakdown': {
-                    'low': low,
-                    'medium': medium,
-                    'high': high,
-                    'urgent': urgent,
+                    'low': stat['low'],
+                    'medium': stat['medium'],
+                    'high': stat['high'],
+                    'urgent': stat['urgent'],
                 },
                 'avg_resolution_time_hours': avg_resolution_hours,
             })
-        
-        # Sort by total tickets descending
-        department_stats.sort(key=lambda x: x['total_tickets'], reverse=True)
         
         return Response({
             'date_range': {
@@ -501,7 +514,7 @@ def get_ticket_statistics(request):
                 'end_date': end_date.isoformat(),
             },
             'total_tickets': tickets.count(),
-            'department_statistics': department_stats,
+            'department_statistics': formatted_stats,
         })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -513,23 +526,29 @@ def export_statistics_csv(request):
     """Export statistics summary as CSV."""
     try:
         # Get date range from query params
-        days = int(request.GET.get('days', 30))
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
         
         # Calculate date range
         if start_date_str and end_date_str:
-            start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
-            end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+            try:
+                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+                end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+            except (ValueError, TypeError):
+                return HttpResponse('Invalid date format. Expected ISO 8601 format.', status=400)
         else:
+            days_param = request.GET.get('days', '30')
+            try:
+                days = int(days_param)
+                if days <= 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                return HttpResponse('Invalid "days" parameter. Must be a positive integer.', status=400)
             end_date = timezone.now()
             start_date = end_date - timedelta(days=days)
         
         # Filter tickets by date range
         tickets = Ticket.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
-        
-        # Get all departments
-        departments = tickets.values_list('department', flat=True).distinct()
         
         # Create CSV response
         response = HttpResponse(content_type='text/csv')
@@ -550,42 +569,45 @@ def export_statistics_csv(request):
             'Avg Resolution Time (hours)'
         ])
         
-        for dept in departments:
-            dept_tickets = tickets.filter(department=dept)
-            
+        # Aggregate statistics by department using conditional counts
+        department_stats = tickets.values('department').annotate(
+            total_tickets=Count('id'),
             # Count by status
-            pending = dept_tickets.filter(status=Ticket.Status.PENDING).count()
-            in_progress = dept_tickets.filter(status=Ticket.Status.IN_PROGRESS).count()
-            resolved = dept_tickets.filter(status=Ticket.Status.RESOLVED).count()
-            closed = dept_tickets.filter(status=Ticket.Status.CLOSED).count()
-            
+            pending=Count('id', filter=Q(status=Ticket.Status.PENDING)),
+            in_progress=Count('id', filter=Q(status=Ticket.Status.IN_PROGRESS)),
+            resolved=Count('id', filter=Q(status=Ticket.Status.RESOLVED)),
+            closed=Count('id', filter=Q(status=Ticket.Status.CLOSED)),
             # Count by priority
-            low = dept_tickets.filter(priority=Ticket.Priority.LOW).count()
-            medium = dept_tickets.filter(priority=Ticket.Priority.MEDIUM).count()
-            high = dept_tickets.filter(priority=Ticket.Priority.HIGH).count()
-            urgent = dept_tickets.filter(priority=Ticket.Priority.URGENT).count()
-            
-            # Calculate average resolution time
-            closed_tickets = dept_tickets.filter(status=Ticket.Status.CLOSED, updated_at__isnull=False)
+            low=Count('id', filter=Q(priority=Ticket.Priority.LOW)),
+            medium=Count('id', filter=Q(priority=Ticket.Priority.MEDIUM)),
+            high=Count('id', filter=Q(priority=Ticket.Priority.HIGH)),
+            urgent=Count('id', filter=Q(priority=Ticket.Priority.URGENT)),
+            # Average resolution time in seconds for closed tickets
+            avg_resolution_seconds=Avg(
+                ExpressionWrapper(
+                    F('updated_at') - F('created_at'),
+                    output_field=DurationField()
+                ),
+                filter=Q(status=Ticket.Status.CLOSED, updated_at__isnull=False)
+            )
+        ).order_by('-total_tickets')
+        
+        for stat in department_stats:
             avg_resolution_hours = ''
-            if closed_tickets.exists():
-                total_seconds = sum([
-                    (ticket.updated_at - ticket.created_at).total_seconds()
-                    for ticket in closed_tickets
-                ])
-                avg_resolution_hours = round(total_seconds / 3600 / closed_tickets.count(), 2)
+            if stat['avg_resolution_seconds']:
+                avg_resolution_hours = round(stat['avg_resolution_seconds'].total_seconds() / 3600, 2)
             
             writer.writerow([
-                dept,
-                dept_tickets.count(),
-                pending,
-                in_progress,
-                resolved,
-                closed,
-                low,
-                medium,
-                high,
-                urgent,
+                stat['department'],
+                stat['total_tickets'],
+                stat['pending'],
+                stat['in_progress'],
+                stat['resolved'],
+                stat['closed'],
+                stat['low'],
+                stat['medium'],
+                stat['high'],
+                stat['urgent'],
                 avg_resolution_hours,
             ])
         
@@ -600,15 +622,24 @@ def export_tickets_csv(request):
     """Export all individual tickets as CSV."""
     try:
         # Get date range from query params
-        days = int(request.GET.get('days', 30))
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
         
         # Calculate date range
         if start_date_str and end_date_str:
-            start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
-            end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+            try:
+                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+                end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+            except (ValueError, TypeError):
+                return HttpResponse('Invalid date format. Expected ISO 8601 format.', status=400)
         else:
+            days_param = request.GET.get('days', '30')
+            try:
+                days = int(days_param)
+                if days <= 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                return HttpResponse('Invalid "days" parameter. Must be a positive integer.', status=400)
             end_date = timezone.now()
             start_date = end_date - timedelta(days=days)
         

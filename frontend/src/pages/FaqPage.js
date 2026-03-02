@@ -6,6 +6,7 @@ import FaqSearchBar from '../components/FaqSearchBar';
 import { FAQ_CATEGORIES, faqItems } from '../data/faqs';
 import { filterFaqs, getCategoryCounts } from '../utils/faqFilters';
 import './FaqPage.css';
+import UserNavbar from '../components/UserNavbar';
 
 const FaqPage = ({ userRole, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,6 +70,8 @@ const FaqPage = ({ userRole, onNavigate }) => {
         </a>
       </section>
     </div>
+    </div>
+    </>
   );
 };
 

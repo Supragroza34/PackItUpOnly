@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import FaqAccordion from '../components/FaqAccordion';
 import FaqCategoryFilter from '../components/FaqCategoryFilter';
 import FaqSearchBar from '../components/FaqSearchBar';

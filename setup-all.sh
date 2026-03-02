@@ -14,7 +14,21 @@ if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
     echo "Please install Python 3.8+ from: https://www.python.org/downloads/"
     exit 1
 fi
-echo "  ✓ Python found"
+
+# Determine Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD=python3
+else
+    PYTHON_CMD=python
+fi
+
+# Check if Python version is at least 3.8
+if ! $PYTHON_CMD -c "import sys; sys.exit(0 if sys.version_info >= (3,8) else 1)" &> /dev/null; then
+    echo "[ERROR] Python 3.8+ is required, but an older version is installed!"
+    echo "Please install Python 3.8+ from: https://www.python.org/downloads/"
+    exit 1
+fi
+echo "  ✓ Python 3.8+ found"
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
@@ -36,9 +50,14 @@ if ! command -v ollama &> /dev/null; then
     echo "  2. Install the application"
     echo "  3. Re-run this setup script"
     echo ""
-    echo "Press any key to continue WITHOUT AI Chatbot support..."
-    read -n 1 -s
-    echo ""
+    if [ -z "${NO_PROMPT:-}" ] && [ -t 0 ]; then
+        echo "Press any key to continue WITHOUT AI Chatbot support..."
+        read -n 1 -s
+        echo ""
+    else
+        echo "Continuing WITHOUT AI Chatbot support (non-interactive mode or NO_PROMPT set)..."
+        echo ""
+    fi
 else
     echo "  ✓ Ollama found"
     OLLAMA_INSTALLED=1
@@ -47,15 +66,8 @@ echo ""
 
 echo "[2/4] Setting up Backend..."
 echo "Installing Python dependencies..."
-if command -v python3 &> /dev/null; then
-    PYTHON_CMD=python3
-    PIP_CMD=pip3
-else
-    PYTHON_CMD=python
-    PIP_CMD=pip
-fi
 
-$PIP_CMD install -r requirements.txt
+$PYTHON_CMD -m pip install -r requirements.txt
 if [ $? -ne 0 ]; then
     echo "[ERROR] Failed to install Python dependencies!"
     exit 1

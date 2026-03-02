@@ -61,14 +61,19 @@ const Statistics = () => {
     
     const handleExportStatistics = () => {
         const token = localStorage.getItem('access');
-        const url = `http://localhost:8000/api/admin/export/statistics-csv/?start_date=${new Date(dateFilter.startDate).toISOString()}&end_date=${new Date(dateFilter.endDate + 'T23:59:59').toISOString()}`;
+        const url = `/api/admin/export/statistics-csv/?start_date=${new Date(dateFilter.startDate).toISOString()}&end_date=${new Date(dateFilter.endDate + 'T23:59:59').toISOString()}`;
         
         fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
             },
         })
-        .then(response => response.blob())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+            }
+            return response.blob();
+        })
         .then(blob => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -83,14 +88,19 @@ const Statistics = () => {
     
     const handleExportAllTickets = () => {
         const token = localStorage.getItem('access');
-        const url = `http://localhost:8000/api/admin/export/tickets-csv/?start_date=${new Date(dateFilter.startDate).toISOString()}&end_date=${new Date(dateFilter.endDate + 'T23:59:59').toISOString()}`;
+        const url = `/api/admin/export/tickets-csv/?start_date=${new Date(dateFilter.startDate).toISOString()}&end_date=${new Date(dateFilter.endDate + 'T23:59:59').toISOString()}`;
         
         fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
             },
         })
-        .then(response => response.blob())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+            }
+            return response.blob();
+        })
         .then(blob => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

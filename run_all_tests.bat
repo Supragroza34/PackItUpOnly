@@ -21,8 +21,9 @@ echo.
 echo === Running frontend (React) tests ===
 cd frontend
 
-REM Run Jest tests once (no watch mode)
-call npm test -- --watchAll=false
+REM Run Jest tests once (no watch mode, CI environment)
+set CI=true
+call npm test -- --watch=false
 if errorlevel 1 (
     echo Frontend tests failed!
     exit /b 1

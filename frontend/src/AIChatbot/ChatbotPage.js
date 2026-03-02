@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import Chatbot from "./Chatbot";
 import "./ChatbotPage.css";
 import UserNavbar from "../components/UserNavbar";

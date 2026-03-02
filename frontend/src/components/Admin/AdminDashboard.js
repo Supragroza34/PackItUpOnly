@@ -37,7 +37,7 @@ const AdminDashboard = () => {
         <div className="admin-dashboard">
             {/* Top bar - matching user dashboard style */}
             <div className="dashboard-topbar">
-                <h1>👋 Welcome, {user?.first_name || user?.username || 'alexadmin'}</h1>
+                <h1>👋 Welcome, {user?.first_name || user?.username || 'Admin'}</h1>
                 <div className="dashboard-topbar-actions">
                     <button 
                         className={`nav-tab ${window.location.pathname === '/admin/dashboard' ? 'active' : ''}`}

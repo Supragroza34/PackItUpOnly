@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authHeaders } from "../api";
 import "./TicketFormPage.css";
+import UserNavbar from "../components/UserNavbar";
 
 const ISSUE_TYPES = {
   Informatics: [
@@ -192,7 +193,9 @@ export default function TicketFormPage() {
   const issueOptions = ISSUE_TYPES[department] || [];
 
   return (
-    <div className="ticket-form-page">
+    <>
+      <UserNavbar />
+      <div className="ticket-form-page">
       <div className="ticket-form-card">
         {/* Header */}
         <div className="ticket-form-header">
@@ -358,5 +361,6 @@ export default function TicketFormPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

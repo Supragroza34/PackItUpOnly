@@ -1,3 +1,12 @@
+/* Page background — wraps the faq card to give a consistent background */
+.faq-page-bg {
+  min-height: 100vh;
+  background: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
 .faq-page {
   width: 100%;
   max-width: 980px;

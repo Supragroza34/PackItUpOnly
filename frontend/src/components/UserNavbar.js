@@ -77,6 +77,7 @@ function NavLinks({ onLogout }) {
     <div className="navbar-links">
       <Link to="/dashboard" className="navbar-link">Home</Link>
       <Link to="/faqs" className="navbar-link">View FAQs</Link>
+      <Link to="/ai-chatbot" className="navbar-link">AI Helper</Link>
       <OfficeHoursButton />
       <ProfileDropdown />
       <button className="navbar-logout-btn" onClick={onLogout}>Log Out</button>

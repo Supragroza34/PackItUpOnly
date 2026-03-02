@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import FaqAccordion from '../components/FaqAccordion';
 import FaqCategoryFilter from '../components/FaqCategoryFilter';
 import FaqSearchBar from '../components/FaqSearchBar';
+import UserNavbar from '../components/UserNavbar';
 import { FAQ_CATEGORIES, faqItems } from '../data/faqs';
 import { filterFaqs, getCategoryCounts } from '../utils/faqFilters';
 import './FaqPage.css';
-import UserNavbar from '../components/UserNavbar';
 
 const FaqPage = ({ userRole, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,7 +22,7 @@ const FaqPage = ({ userRole, onNavigate }) => {
       filterFaqs(faqItems, {
         category: selectedCategory,
         role: userRole,
-        searchTerm
+        searchTerm,
       }),
     [searchTerm, selectedCategory, userRole]
   );
@@ -34,54 +34,54 @@ const FaqPage = ({ userRole, onNavigate }) => {
   };
 
   return (
+    <div className="faq-page-wrapper">
+      <Link to="/dashboard" className="faq-back-link">
+        ← Back to Dashboard
+      </Link>
 
-  <div className="faq-page-wrapper">
-    <Link to="/dashboard" className="faq-back-link">
-      ← Back to Dashboard
-    </Link>
+      <UserNavbar />
 
-    <UserNavbar />
-    <div className="faq-page-bg">
-      <div className="faq-page">
-        <header className="faq-header">
-          <h1>FAQs</h1>
-          <p>Answers to common questions about tickets, tracking, and using the platform.</p>
-        </header>
+      <div className="faq-page-bg">
+        <div className="faq-page">
+          <header className="faq-header">
+            <h1>FAQs</h1>
+            <p>Answers to common questions about tickets, tracking, and using the platform.</p>
+          </header>
 
-        <section className="faq-controls">
-          <FaqSearchBar value={searchTerm} onChange={setSearchTerm} />
-          <FaqCategoryFilter
-            categories={FAQ_CATEGORIES}
-            selectedCategory={selectedCategory}
-            counts={categoryCounts}
-            onSelect={setSelectedCategory}
-          />
-        </section>
-
-        {filteredFaqs.length > 0 ? (
-          <FaqAccordion items={filteredFaqs} />
-        ) : (
-          <section className="faq-empty-state">
-            <h2>No FAQs found</h2>
-            <p>Try a different keyword or category, or create a ticket for direct support.</p>
+          <section className="faq-controls">
+            <FaqSearchBar value={searchTerm} onChange={setSearchTerm} />
+            <FaqCategoryFilter
+              categories={FAQ_CATEGORIES}
+              selectedCategory={selectedCategory}
+              counts={categoryCounts}
+              onSelect={setSelectedCategory}
+            />
           </section>
-        )}
 
-        <section className="faq-cta">
-          <h2>Still need help?</h2>
-          <p>Create a new ticket and our team will assist you directly.</p>
-          <a
-            href="/create-ticket"
-            className="faq-cta-button"
-            onClick={handleNavigateToCreateTicket}
-          >
-            Create a new ticket
-          </a>
-        </section>
+          {filteredFaqs.length > 0 ? (
+            <FaqAccordion items={filteredFaqs} />
+          ) : (
+            <section className="faq-empty-state">
+              <h2>No FAQs found</h2>
+              <p>Try a different keyword or category, or create a ticket for direct support.</p>
+            </section>
+          )}
+
+          <section className="faq-cta">
+            <h2>Still need help?</h2>
+            <p>Create a new ticket and our team will assist you directly.</p>
+            <a
+              href="/create-ticket"
+              className="faq-cta-button"
+              onClick={handleNavigateToCreateTicket}
+            >
+              Create a new ticket
+            </a>
+          </section>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-}
 export default FaqPage;

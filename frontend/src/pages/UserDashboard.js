@@ -17,12 +17,11 @@ function UserDashboardPage() {
   const [tickets, setTickets] = useState([]);
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
-  // Check auth on mount
+
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
 
-  // Fetch tickets when user is loaded
   useEffect(() => {
     if (!user) return;
 
@@ -32,6 +31,7 @@ function UserDashboardPage() {
         nav("/login", { replace: true });
         return;
       }
+
       try {
         const res = await fetch(`${API_BASE}/dashboard/`, {
           headers: {
@@ -39,24 +39,30 @@ function UserDashboardPage() {
             "Content-Type": "application/json",
           },
         });
+
         if (res.status === 401 || res.status === 403) {
           localStorage.removeItem("access");
           localStorage.removeItem("refresh");
           nav("/login", { replace: true });
           return;
         }
+
         if (!res.ok) {
           const text = await res.text();
           setLoadError(`Server error (${res.status}): ${text}`);
           return;
         }
+
         const data = await res.json();
         setTickets(data.tickets);
       } catch (err) {
         console.error("Dashboard fetch error:", err);
-        setLoadError(`Could not connect to the server. Is Django running on port 8000? (${err.message})`);
+        setLoadError(
+          `Could not connect to the server. Is Django running on port 8000? (${err.message})`
+        );
       }
     };
+
     fetchDashboard();
   }, [user, nav]);
 
@@ -85,98 +91,95 @@ function UserDashboardPage() {
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
 
   return (
-    <div className="dashboard-page">
-      {/* Top bar */}
-      <div className="dashboard-topbar">
-        <h1>👋 Welcome, {user.k_number || "Student"}</h1>
-        <div className="dashboard-topbar-actions">
-          <Link to="/ai-chatbot" className="ai-helper-btn">AI Helper</Link>
-          <Link to="/faqs" className="faq-btn">View FAQs</Link>
-          <button className="logout-btn" onClick={handleLogout}>
-            Log Out
-          </button>
-        </div>
-      </div>
-
-      {/* Summary cards */}
-      <div className="dashboard-summary">
-        <div className="summary-card">
-          <div className="summary-count">{tickets.length}</div>
-          <div className="summary-label">Total Tickets</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-count">{countByStatus("pending")}</div>
-          <div className="summary-label">Pending</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-count">{countByStatus("in_progress")}</div>
-          <div className="summary-label">In Progress</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-count">{countByStatus("resolved")}</div>
-          <div className="summary-label">Resolved</div>
-        </div>
-      </div>
-
-      {/* Ticket list */}
-      <div className="dashboard-content">
-        <div className="content-header">
-          <h2>Your Tickets</h2>
-          <Link to="/create-ticket" className="create-ticket-btn">
-            ＋ Create New Ticket
-          </Link>
+    <>
+      <UserNavbar />
+      <div className="dashboard-page">
+        <div className="dashboard-topbar">
+          <h1>👋 Welcome, {user.k_number || "Student"}</h1>
         </div>
 
-        {tickets.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🎫</div>
-            <p>You haven't submitted any tickets yet.</p>
+        <div className="dashboard-summary">
+          <div className="summary-card">
+            <div className="summary-count">{tickets.length}</div>
+            <div className="summary-label">Total Tickets</div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-count">{countByStatus("pending")}</div>
+            <div className="summary-label">Pending</div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-count">{countByStatus("in_progress")}</div>
+            <div className="summary-label">In Progress</div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-count">{countByStatus("resolved")}</div>
+            <div className="summary-label">Resolved</div>
+          </div>
+        </div>
+
+        <div className="dashboard-content">
+          <div className="content-header">
+            <h2>Your Tickets</h2>
             <Link to="/create-ticket" className="create-ticket-btn">
-              ＋ Create Your First Ticket
+              ＋ Create New Ticket
             </Link>
           </div>
-        ) : (
-          <div className="ticket-list">
-            {tickets.map((ticket) => (
-              <div key={ticket.id} className="ticket-item">
-                <div className="ticket-item-info">
-                  <h3>{ticket.type_of_issue}</h3>
-                  <div className="ticket-dept">📁 {ticket.department}</div>
-                  <div className="ticket-details">{ticket.additional_details}</div>
-                  {ticket.replies && ticket.replies.length > 0 && (
-                    <div className="ticket-responses">
-                      <h4 className="ticket-responses-title">Responses from staff</h4>
-                      {ticket.replies.map((reply) => (
-                        <div key={reply.id} className="ticket-response">
-                          <p className="ticket-response-meta">
-                            <strong>{reply.user_username}</strong>
-                            {' · '}
-                            {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}
-                          </p>
-                          <p className="ticket-response-body">{reply.body}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+
+          {tickets.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">🎫</div>
+              <p>You haven't submitted any tickets yet.</p>
+              <Link to="/create-ticket" className="create-ticket-btn">
+                ＋ Create Your First Ticket
+              </Link>
+            </div>
+          ) : (
+            <div className="ticket-list">
+              {tickets.map((ticket) => (
+                <div key={ticket.id} className="ticket-item">
+                  <div className="ticket-item-info">
+                    <h3>{ticket.type_of_issue}</h3>
+                    <div className="ticket-dept">📁 {ticket.department}</div>
+                    <div className="ticket-details">{ticket.additional_details}</div>
+
+                    {ticket.replies && ticket.replies.length > 0 && (
+                      <div className="ticket-responses">
+                        <h4 className="ticket-responses-title">Responses from staff</h4>
+                        {ticket.replies.map((reply) => (
+                          <div key={reply.id} className="ticket-response">
+                            <p className="ticket-response-meta">
+                              <strong>{reply.user_username}</strong>
+                              {" · "}
+                              {reply.created_at
+                                ? new Date(reply.created_at).toLocaleString()
+                                : ""}
+                            </p>
+                            <p className="ticket-response-body">{reply.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="ticket-item-meta">
+                    <span className={statusClass(ticket.status)}>
+                      {(ticket.status || "pending").replace("_", " ")}
+                    </span>
+                    <span className="ticket-date">
+                      {new Date(ticket.created_at).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
                 </div>
-                <div className="ticket-item-meta">
-                  <span className={statusClass(ticket.status)}>
-                    {(ticket.status || "pending").replace("_", " ")}
-                  </span>
-                  <span className="ticket-date">
-                    {new Date(ticket.created_at).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

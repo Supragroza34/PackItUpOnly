@@ -28,6 +28,7 @@ const TicketsManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const [pagination, setPagination] = useState({ page: 1, page_size: 20 });
     const [editedTicket, setEditedTicket] = useState(null);
+    const [replyBody, setReplyBody] = useState('');
     
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -77,9 +78,45 @@ const TicketsManagement = () => {
                 }
             })).unwrap();
             alert('Ticket updated successfully!');
-            setShowModal(false);
+            closeModal();
         } catch (err) {
             alert('Failed to update ticket: ' + err);
+        }
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
+        setReplyBody('');
+    };
+
+    const handleSubmitReply = async (e) => {
+        e.preventDefault();
+        if (!replyBody.trim()) return;
+        
+        try {
+            const token = localStorage.getItem('access');
+            const response = await fetch('/api/replies/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    ticket: editedTicket.id,
+                    body: replyBody.trim(),
+                }),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to send reply');
+            }
+            
+            setReplyBody('');
+            // Refresh ticket details to show the new reply
+            await dispatch(fetchTicketDetail(editedTicket.id)).unwrap();
+            alert('Reply sent successfully!');
+        } catch (err) {
+            alert('Failed to send reply: ' + err.message);
         }
     };
 
@@ -124,21 +161,39 @@ const TicketsManagement = () => {
 
     return (
         <div className="admin-dashboard">
-            <header className="admin-header">
-                <div className="header-content">
-                    <h1>Admin Dashboard - Tickets</h1>
-                    <div className="header-actions">
-                        <span className="user-info">Welcome, {user?.first_name || user?.username}</span>
-                        <button onClick={handleLogout} className="btn-logout">Logout</button>
-                    </div>
+            {/* Top bar - matching admin dashboard style */}
+            <div className="dashboard-topbar">
+                <h1>👋 Welcome, {user?.first_name || user?.username || 'Admin'}</h1>
+                <div className="dashboard-topbar-actions">
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/dashboard')}
+                    >
+                        Dashboard
+                    </button>
+                    <button 
+                        className="nav-tab active"
+                        onClick={() => navigate('/admin/tickets')}
+                    >
+                        Tickets
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/users')}
+                    >
+                        Users
+                    </button>
+                    <button 
+                        className="nav-tab"
+                        onClick={() => navigate('/admin/statistics')}
+                    >
+                        Statistics
+                    </button>
+                    <button className="logout-btn" onClick={handleLogout}>
+                        Log Out
+                    </button>
                 </div>
-            </header>
-
-            <nav className="admin-nav">
-                <button className="nav-btn" onClick={() => navigate('/admin/dashboard')}>Dashboard</button>
-                <button className="nav-btn active" onClick={() => navigate('/admin/tickets')}>Tickets</button>
-                <button className="nav-btn" onClick={() => navigate('/admin/users')}>Users</button>
-            </nav>
+            </div>
 
             <main className="dashboard-content">
                 <div className="page-header">
@@ -289,7 +344,7 @@ const TicketsManagement = () => {
             </main>
 
             {showModal && editedTicket && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                <div className="modal-overlay" onClick={closeModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <h2>Edit Ticket #{editedTicket.id}</h2>
                         
@@ -303,6 +358,37 @@ const TicketsManagement = () => {
                                 <p><strong>Issue Type:</strong> {editedTicket.type_of_issue}</p>
                                 <p><strong>Details:</strong> {editedTicket.additional_details}</p>
                                 <p><strong>Created:</strong> {new Date(editedTicket.created_at).toLocaleString()}</p>
+                            </div>
+
+                            <div className="modal-section">
+                                <h3>Replies</h3>
+                                {editedTicket.replies && editedTicket.replies.length > 0 ? (
+                                    <div className="replies-list">
+                                        {editedTicket.replies.map((reply) => (
+                                            <div key={reply.id} className="reply-item">
+                                                <p className="reply-meta">
+                                                    <strong>{reply.user_username}</strong>
+                                                    {' · '}
+                                                    {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}
+                                                </p>
+                                                <p className="reply-body">{reply.body}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="no-replies">No replies yet.</p>
+                                )}
+                                
+                                <div className="reply-form">
+                                    <textarea
+                                        value={replyBody}
+                                        onChange={(e) => setReplyBody(e.target.value)}
+                                        placeholder="Write a reply..."
+                                        rows={3}
+                                        required
+                                    />
+                                    <button type="button" onClick={handleSubmitReply} className="btn-send-reply">Send Reply</button>
+                                </div>
                             </div>
 
                             <div className="modal-section">
@@ -365,7 +451,7 @@ const TicketsManagement = () => {
 
                             <div className="modal-actions">
                                 <button type="submit" className="btn-save">Save Changes</button>
-                                <button type="button" onClick={() => setShowModal(false)} className="btn-cancel">
+                                <button type="button" onClick={closeModal} className="btn-cancel">
                                     Cancel
                                 </button>
                             </div>

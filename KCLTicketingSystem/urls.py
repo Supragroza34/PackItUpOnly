@@ -51,6 +51,11 @@ urlpatterns = [
     
     # Staff List for Assignment
     path('api/admin/staff/', admin_views.admin_staff_list, name='admin_staff_list'),
+    
+    # Admin Statistics and Analytics
+    path('api/admin/statistics/', admin_views.get_ticket_statistics, name='admin_statistics'),
+    path('api/admin/export/statistics-csv/', admin_views.export_statistics_csv, name='export_statistics_csv'),
+    path('api/admin/export/tickets-csv/', admin_views.export_tickets_csv, name='export_tickets_csv'),
 
     # Staff Dashboard
     path('api/staff/dashboard/', staff_dashboard_view.staff_dashboard, name='staff_dashboard'),

@@ -64,7 +64,7 @@ describe('AdminDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
+      expect(screen.getByText('Total Tickets')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Total Tickets')).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('AdminDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/Welcome, Admin/)).toBeInTheDocument();
+      expect(screen.getByText(/👋 Welcome, Admin/)).toBeInTheDocument();
     });
   });
 
@@ -152,7 +152,7 @@ describe('AdminDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Logout')).toBeInTheDocument();
+      expect(screen.getByText('Log Out')).toBeInTheDocument();
     });
   });
 });

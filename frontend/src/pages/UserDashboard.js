@@ -1,17 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useAuth } from "../context/AuthContext";
-import { apiFetch, authHeaders } from "../api";
-import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
+import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboard.css";
+import UserNavbar from "../components/UserNavbar";
 
 const API_BASE = "http://localhost:8000/api";
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("access");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 function statusClass(status) {
   return `status-badge status-${status || "pending"}`;
@@ -19,12 +13,10 @@ function statusClass(status) {
 
 function UserDashboardPage() {
   const dispatch = useDispatch();
-  const { user, loading } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
-  const { logout } = useAuth();
-
   // Check auth on mount
   useEffect(() => {
     dispatch(checkAuth());
@@ -68,43 +60,40 @@ function UserDashboardPage() {
     fetchDashboard();
   }, [user, nav]);
 
-  async function handleLogout() {
-    await logout();
-    nav("/login", { replace: true });
-  }
-
   if (loadError) {
     return (
-      <div className="dashboard-page">
-        <div className="error-state">{loadError}</div>
-      </div>
+      <>
+        <UserNavbar />
+        <div className="dashboard-page">
+          <div className="error-state">{loadError}</div>
+        </div>
+      </>
     );
   }
 
   if (!user) {
     return (
-      <div className="dashboard-page">
-        <div className="loading-state">Loading your dashboard…</div>
-      </div>
+      <>
+        <UserNavbar />
+        <div className="dashboard-page">
+          <div className="loading-state">Loading your dashboard…</div>
+        </div>
+      </>
     );
   }
 
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
 
   return (
-    <div className="dashboard-page">
-      {/* Top bar */}
-      <div className="dashboard-topbar">
-        <h1>👋 Welcome, {user.k_number || "Student"}</h1>
-        <div className="dashboard-topbar-actions">
-          <Link to="/faqs" className="faq-btn">View FAQs</Link>
-          <button className="logout-btn" onClick={handleLogout}>
-            Log Out
-          </button>
+    <>
+      <UserNavbar />
+      <div className="dashboard-page">
+        {/* Top bar */}
+        <div className="dashboard-topbar">
+          <h1>👋 Welcome, {user.k_number || "Student"}</h1>
         </div>
-      </div>
 
-      {/* Summary cards */}
+        {/* Summary cards */}
       <div className="dashboard-summary">
         <div className="summary-card">
           <div className="summary-count">{tickets.length}</div>
@@ -182,7 +171,8 @@ function UserDashboardPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

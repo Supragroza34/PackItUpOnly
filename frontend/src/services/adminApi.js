@@ -201,6 +201,27 @@ class AdminAPI {
         
         return response.json();
     }
+    
+    // ================= STATISTICS =================
+    
+    async getStatistics(params = {}) {
+        const queryParams = new URLSearchParams();
+        
+        if (params.days) queryParams.append('days', params.days);
+        if (params.start_date) queryParams.append('start_date', params.start_date);
+        if (params.end_date) queryParams.append('end_date', params.end_date);
+        
+        const url = `${API_BASE_URL}/statistics/?${queryParams.toString()}`;
+        const response = await fetch(url, {
+            headers: getAuthHeaders(),
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch statistics');
+        }
+        
+        return response.json();
+    }
 }
 
 const adminApiInstance = new AdminAPI();

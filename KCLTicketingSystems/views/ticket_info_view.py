@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 from ..models import Ticket, User
-from ..serializers import ReplySerializer
+from ..serializers import ReplySerializer, StaffReassignTicket
 
 class UserSerializer(serializers.ModelSerializer):
         class Meta:
@@ -49,3 +49,28 @@ def ticket_info(request, ticket_id):
     serializer = TicketSerializer(ticket)
 
     return Response(serializer.data)
+
+
+@api_view(['PATCH', 'PUT'])
+def staff_ticket_reassign(request, ticket_id):
+    """Staff option to reassign ticket"""
+    if not request.user.is_authenticated:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    if request.user.role not in ("staff", "Staff", "admin") and not getattr(request.user, "is_superuser", False):
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        ticket = Ticket.objects.get(id=ticket_id)
+        
+        # Use serializer for partial update
+        serializer = StaffReassignTicket(ticket, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            ticket.refresh_from_db()
+            # Return full ticket data with nested user and assigned_to_details
+            return Response(TicketSerializer(ticket).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Ticket.DoesNotExist:
+        return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

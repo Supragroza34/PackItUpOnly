@@ -134,6 +134,17 @@ class TicketUpdateSerializer(serializers.ModelSerializer):
         model = Ticket
         fields = ['status', 'priority', 'assigned_to', 'admin_notes']
 
+class StaffReassignTicket(serializers.ModelSerializer):
+    """Serializer for staff to reassign tickets"""
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="staff"),
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Ticket
+        fields = ['assigned_to']            
 
 class DashboardStatsSerializer(serializers.Serializer):
     """Serializer for dashboard statistics"""

@@ -15,7 +15,7 @@ import TicketPage from "./pages/TicketPage";
 import Login from "./Login";
 import Signup from "./Signup";
 import Profile from "./Profile";
-import UserDashboardPage from './pages/UserDashboard';
+import UserDashboardPage from './pages/UserDashboardPage';
 import TicketFormPage from './pages/TicketFormPage';
 import './App.css';
 

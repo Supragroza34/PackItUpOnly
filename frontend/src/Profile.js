@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { apiFetch, authHeaders } from "./api";
-import { logout as logoutAction, checkAuth } from "./store/slices/authSlice";
-import { useNavigate } from "react-router-dom";
+import { checkAuth } from "./store/slices/authSlice";
+import UserNavbar from "./components/UserNavbar";
 
 export default function Profile() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { user: reduxUser, loading } = useSelector((state) => state.auth);
   const [editedUser, setEditedUser] = useState(null);
   const [err, setErr] = useState("");
@@ -43,17 +42,21 @@ export default function Profile() {
     }
   }
 
-  const handleLogout = async () => {
-    await dispatch(logoutAction());
-    navigate("/login");
-  };
-
   if (loading || !editedUser) {
-    return <div style={{ maxWidth: 520, margin: "40px auto" }}>{err || "Loading..."}</div>;
+    return (
+      <>
+        <UserNavbar />
+        <div style={{ maxWidth: 520, margin: "40px auto", padding: "0 20px" }}>
+          {err || "Loading..."}
+        </div>
+      </>
+    );
   }
 
   return (
-    <div style={{ maxWidth: 520, margin: "40px auto" }}>
+    <>
+      <UserNavbar />
+      <div style={{ maxWidth: 520, margin: "40px auto", padding: "0 20px" }}>
       <h2>Profile</h2>
       {err && <p style={{ color: "crimson" }}>{err}</p>}
 
@@ -79,10 +82,8 @@ export default function Profile() {
         />
 
         <button onClick={save}>Save</button>
-        <button onClick={handleLogout}>
-          Logout
-        </button>
       </div>
     </div>
+    </>
   );
 }

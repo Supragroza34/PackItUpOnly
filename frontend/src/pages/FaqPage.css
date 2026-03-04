@@ -1,3 +1,16 @@
+.faq-back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #1a237e;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.faq-back-link:hover {
+  text-decoration: underline;
+}
+
 .faq-page {
   width: 100%;
   max-width: 980px;

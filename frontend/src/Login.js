@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { login as loginAction, checkAuth } from "./store/slices/authSlice";
 import "./Login.css";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 export default function Login() {
   const dispatch = useDispatch();
@@ -12,6 +13,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Refs to handle autofill properly
   const usernameRef = useRef(null);
@@ -123,8 +125,9 @@ export default function Login() {
               required
             />
           </div>
-          <div className="login-field">
+          <div className="login-field password-wrapper">
             <label htmlFor="login-password">Password</label>
+            <div className="password-input-wrapper">
             <input
               id="login-password"
               ref={passwordRef}
@@ -132,12 +135,21 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               disabled={loading}
               autoComplete="current-password"
               className="login-input"
               required
             />
+            <button
+              type="button"
+              className="show-password-btn"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <FiEye /> : <FiEyeOff />}
+            </button>
+            </div>
           </div>
           <button type="submit" disabled={loading} className="login-submit">
             {loading ? "Logging in..." : "Login"}

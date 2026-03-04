@@ -30,6 +30,7 @@ function UserDashboardPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
   // Check auth on mount

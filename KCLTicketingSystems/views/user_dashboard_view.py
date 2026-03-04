@@ -14,9 +14,11 @@ def user_dashboard(request):
     user = request.user
     tickets = Ticket.objects.filter(user=user).select_related('user').prefetch_related('replies').order_by('-created_at')
 
+    # Prepare list to hold ticket data
     tickets_data = []
     for t in tickets:
         replies_data = ReplySerializer(t.replies.all(), many=True).data
+        # Build a dictionary for each ticket including relevant fields
         tickets_data.append({
             "id": t.id,
             "type_of_issue": t.type_of_issue,
@@ -32,6 +34,7 @@ def user_dashboard(request):
         "k_number": user.k_number,
     }
 
+    # Return the final JSON response containing user and tickets data
     return JsonResponse({
         "user": user_data,
         "tickets": tickets_data

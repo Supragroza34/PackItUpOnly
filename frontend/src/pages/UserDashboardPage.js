@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { checkAuth } from "../store/slices/authSlice";
-import "./UserDashboard.css";
+import "./UserDashboardPage.css";
 import UserNavbar from "../components/UserNavbar";
 
 const API_BASE = "http://localhost:8000/api";
@@ -11,10 +11,26 @@ function statusClass(status) {
   return `status-badge status-${status || "pending"}`;
 }
 
+function getProgressWidth(status) {
+  switch (status) {
+    case "pending":
+        return "20%";
+    case "in_progress":
+        return "60%";
+    case "resolved":
+        return "90%";
+    case "closed":
+        return "100%";
+    default:
+      return "0%";
+  }
+}
+
 function UserDashboardPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
   // Check auth on mount
@@ -90,7 +106,7 @@ function UserDashboardPage() {
       <div className="dashboard-page">
         {/* Top bar */}
         <div className="dashboard-topbar">
-          <h1>👋 Welcome, {user.k_number || "Student"}</h1>
+          <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
         </div>
 
         {/* Summary cards */}
@@ -133,7 +149,7 @@ function UserDashboardPage() {
         ) : (
           <div className="ticket-list">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="ticket-item">
+              <div key={ticket.id} className="ticket-item" onClick={() => setSelectedTicket(ticket)}>
                 <div className="ticket-item-info">
                   <h3>{ticket.type_of_issue}</h3>
                   <div className="ticket-dept">📁 {ticket.department}</div>
@@ -170,6 +186,57 @@ function UserDashboardPage() {
             ))}
           </div>
         )}
+
+        {/* Ticket PopUp */}
+        {selectedTicket && (
+          <div className="modal-overlay" onClick={() => setSelectedTicket(null)}>
+            <div className="ticket-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setSelectedTicket(null)}>X</button>
+              <h2>{selectedTicket.type_of_issue}</h2>
+
+              {/* Progress Bar */}
+              <div className="ticket-progress-container">
+                <div className="ticket-progress-bar">
+                  <div 
+                    className={`ticket-progress-fill status-${selectedTicket.status}`}
+                    style={{ width: getProgressWidth(selectedTicket.status) }}
+                  ></div>
+                  <span className="ticket-progress-text">
+                    {selectedTicket.status.replace("_", " ")} - {getProgressWidth(selectedTicket.status.toLowerCase())}
+                  </span>
+                </div>
+              </div>
+
+              <p><strong>Department: </strong>{selectedTicket.department}</p>
+              <p><strong>Status: </strong>{selectedTicket.status}</p>
+              <p><strong>Priority: </strong>{selectedTicket.priority}</p>
+
+              <p><strong>Created at: </strong>{" "} {new Date(selectedTicket.created_at).toLocaleString()}</p>
+
+              <p><strong>Description:</strong></p>
+              <p>{selectedTicket.additional_details}</p>
+
+              
+              {/* Responses */}
+              <div className="ticket-responses">
+                <h4 className="ticket-responses-title">Responses From Staff:</h4>
+                {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
+                  selectedTicket.replies.map((reply) => (
+                    <div key={reply.id} className="ticket-response">
+                      <p className="ticket-response-meta">
+                        <strong>{reply.user_username}</strong> · {new Date(reply.created_at).toLocaleString()}
+                      </p>
+                      <p className="ticket-response-body">{reply.body}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="ticket-response-none">No Responses Yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
       </div>
     </>

@@ -32,12 +32,6 @@ function UserDashboardPage() {
   const [tickets, setTickets] = useState([]);
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
-<<<<<<< HEAD:frontend/src/pages/UserDashboardPage.js
-  const { logout } = useAuth();
-  const [selectedTicket, setSelectedTicket] = useState(null);
-
-=======
->>>>>>> main:frontend/src/pages/UserDashboard.js
   // Check auth on mount
   useEffect(() => {
     dispatch(checkAuth());
@@ -106,24 +100,12 @@ function UserDashboardPage() {
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
 
   return (
-<<<<<<< HEAD:frontend/src/pages/UserDashboardPage.js
-    <div className="dashboard-page">
-      {/* Top bar */}
-      <div className="dashboard-topbar">
-        <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
-        <div className="dashboard-topbar-actions">
-          <Link to="/faqs" className="faq-btn">View FAQs</Link>
-          <button className="logout-btn" onClick={handleLogout}>
-            Log Out
-          </button>
-=======
     <>
       <UserNavbar />
       <div className="dashboard-page">
         {/* Top bar */}
         <div className="dashboard-topbar">
-          <h1>👋 Welcome, {user.k_number || "Student"}</h1>
->>>>>>> main:frontend/src/pages/UserDashboard.js
+          <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
         </div>
 
         {/* Summary cards */}

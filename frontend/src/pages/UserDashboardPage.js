@@ -38,9 +38,14 @@ function UserDashboardPage() {
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [loadError, setLoadError] = useState("");
+<<<<<<< HEAD
   const [selectedTicket, setSelectedTicket] = useState(null);
   const nav = useNavigate();
 
+=======
+  const nav = useNavigate();
+  // Check auth on mount
+>>>>>>> 367b58e (Fix conflicts)
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
@@ -125,6 +130,7 @@ function UserDashboardPage() {
 
       <div className="dashboard-page">
         <div className="dashboard-topbar">
+<<<<<<< HEAD
           <h1>
             👋 Welcome,{" "}
             {user.first_name || user.last_name
@@ -139,6 +145,9 @@ function UserDashboardPage() {
               Log Out
             </button>
           </div>
+=======
+          <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
+>>>>>>> 367b58e (Fix conflicts)
         </div>
 
         <div className="dashboard-summary">

@@ -10,9 +10,9 @@ is swallowed and generation continues.
 
 from faker import Faker
 from faker.providers import job
-from random import randint, random
+from random import randint, random, choice
 from django.core.management.base import BaseCommand, CommandError
-from ...models import User
+from ...models import User, Ticket
 
 user_fixtures = [
     {'username': 'johndoe', 'email': 'john.doe@example.org', 'k_number': '12345678', 'first_name': 'John', 'last_name': 'Doe', 'department': 'Informatics', 'role': 'student'},
@@ -37,6 +37,7 @@ class Command(BaseCommand):
         faker (Faker): Locale-specific Faker instance used for random data.
     """
 
+    TICKET_COUNT_PER_STUDENT = 5
     STUDENT_COUNT = 100
     STAFF_COUNT = 100
     DEFAULT_PASSWORD = 'Password123'
@@ -72,6 +73,38 @@ class Command(BaseCommand):
         
         self.create_users()
         self.users = User.objects.all()
+        self.create_student_tickets()
+        self.tickets = Ticket.objects.all()
+
+    def get_random_department(self):
+
+        departments = [
+            "Informatics",
+            "Engineering",
+            "Medicine",
+            "Law",
+            "Finance",
+            "Mathematics",
+            "English",
+            "Foreign Languages",
+            "Arts and Music",
+            "Media"
+        ]
+
+        return choice(departments)    
+
+    def create_student_tickets(self):
+        """
+        Create some tickets for all generated students.
+        """
+        students = User.objects.filter(role="student")
+        ticket_count = Ticket.objects.count()
+        for student in students:
+            print(f"Seeding ticket {ticket_count}/{self.STUDENT_COUNT * self.TICKET_COUNT_PER_STUDENT}", end='\r')
+            self.generate_n_tickets(self.TICKET_COUNT_PER_STUDENT, student)
+            ticket_count = Ticket.objects.count()  
+        
+        print("Ticket seeding complete.        ")                 
 
     def create_users(self):
         """
@@ -84,6 +117,21 @@ class Command(BaseCommand):
         self.generate_random_students()
         self.generate_random_staff()
 
+    def generate_n_tickets(self, number_of_tickets, student):
+        for i in range(number_of_tickets):
+            self.generate_one_ticket(student)
+
+    def generate_one_ticket(self, student):
+        department = self.get_random_department()
+        issue = "Problem in the " + department + " department."        
+        ticket_data = {
+            'user': student,
+            'department': department,
+            'type_of_issue': issue,
+            'additional_details': 'Everything is broken.'
+        }
+        self.try_create_ticket(ticket_data)   
+    
     def generate_user_fixtures(self):
         """Attempt to create each predefined fixture user."""
         for data in user_fixtures:
@@ -127,7 +175,7 @@ class Command(BaseCommand):
         k_number = str(self.faker.random_number(digits=8, fix_len = True))
         username = create_username(k_number)
         email = create_email(k_number)
-        department = self.faker.job()
+        department = self.get_random_department()
         role = "student"
         self.try_create_user({'username': username, 'email': email, 'k_number': k_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
 
@@ -135,13 +183,31 @@ class Command(BaseCommand):
 
         first_name = self.faker.first_name()
         last_name = self.faker.last_name()
-        k_number = str(self.faker.random_number(digits=8, fix_len = True))
-        username = create_username(k_number)
-        email = create_email(k_number)
-        department = self.faker.job()
+        staff_number = str(self.faker.random_number(digits=8, fix_len = True))
+        username = create_staff_username(staff_number)
+        email = create_staff_email(first_name, last_name)
+        department = self.get_random_department()
         role = "staff"
-        self.try_create_user({'username': username, 'email': email, 'k_number': k_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
-       
+        self.try_create_user({'username': username, 'email': email, 'k_number': staff_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
+
+    def try_create_ticket(self, data):
+        """
+        Attempt to create a ticket
+        """
+        try:
+            self.create_ticket(data)
+        except:
+            print("did not create ticket")
+
+    def create_ticket(self, data):
+        ticket = Ticket.objects.create(
+            user=data['user'],
+            department=data['department'],
+            type_of_issue=data['type_of_issue'],
+            additional_details=data['additional_details']
+        )
+        ticket.save()
+
     def try_create_user(self, data):
         """
         Attempt to create a user and ignore any errors.
@@ -202,3 +268,27 @@ def create_email(k_number):
         str: An email in the form ``k{k_number}@kcl.ac.uk``.
     """
     return 'k' + k_number + '@kcl.ac.uk'
+
+def create_staff_username(staff_number):
+    """
+    Construct a staff username from department and staff_number.
+
+    Args:
+        staff_number (str):  random UNIQUE number.
+
+    Returns:
+        str: A username in the form ``Staff{staff_number}``.
+    """
+    return "Staff" + staff_number    
+
+def create_staff_email(first_name, last_name):
+    """
+    Construct email address for staff.
+
+    Args:
+        staff_number (str): random UNIQUE number
+
+    Returns:
+        str: An email in the form ``Staff{staff_number}@kcl.ac.uk``.
+    """
+    return first_name.lower() + "." + last_name.lower() + '@kcl.ac.uk'

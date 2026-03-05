@@ -76,11 +76,17 @@ class TicketSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
-    
+    closed_by_role = serializers.SerializerMethodField()
+
     class Meta:
         model = Ticket
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_closed_by_role(self, obj):
+        if obj.status == 'closed' and obj.closed_by_id and hasattr(obj, 'closed_by') and obj.closed_by:
+            return (obj.closed_by.role or 'student').lower()
+        return None
 
 
 class TicketListSerializer(serializers.ModelSerializer):
@@ -88,12 +94,13 @@ class TicketListSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField()
     user_k_number = serializers.SerializerMethodField()
     assigned_to_name = serializers.SerializerMethodField()
+    closed_by_role = serializers.SerializerMethodField()
 
     class Meta:
         model = Ticket
         fields = ['id', 'user_name', 'user_k_number', 'department',
                   'type_of_issue', 'status', 'priority', 'assigned_to', 'assigned_to_name',
-                  'created_at', 'updated_at']
+                  'closed_by_role', 'created_at', 'updated_at']
     
     def get_user_name(self, obj):
         if obj.user:
@@ -108,6 +115,11 @@ class TicketListSerializer(serializers.ModelSerializer):
     def get_assigned_to_name(self, obj):
         if obj.assigned_to:
             return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}"
+        return None
+
+    def get_closed_by_role(self, obj):
+        if obj.status == 'closed' and obj.closed_by_id and hasattr(obj, 'closed_by') and obj.closed_by:
+            return (obj.closed_by.role or 'student').lower()
         return None
 
 

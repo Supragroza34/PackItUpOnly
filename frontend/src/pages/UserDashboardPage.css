@@ -376,6 +376,24 @@
   white-space: nowrap;
 }
 
+.close-ticket-btn {
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  background: transparent;
+  border: 1px solid #e53935;
+  color: #e53935;
+  border-radius: 6px;
+  cursor: pointer;
+  align-self: flex-end;
+  transition: background 0.2s, color 0.2s;
+}
+
+.close-ticket-btn:hover {
+  background: #e53935;
+  color: #fff;
+}
+
 /* Status badge */
 .status-badge {
   display: inline-block;

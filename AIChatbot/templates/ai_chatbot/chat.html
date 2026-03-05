@@ -34,7 +34,7 @@
   <div class="chat-wrap">
     <div class="chat-header">
       <h1>AI Helper</h1>
-      <a href="{% url 'home' %}">← Back</a>
+      <a href="{{ frontend_url }}/dashboard">← Back to Dashboard</a>
     </div>
     <div class="chat-messages">
       {% if not messages %}

@@ -30,6 +30,7 @@ def user_dashboard(request):
             "department": t.department,
             "additional_details": t.additional_details,
             "status": t.status,
+            "priority": t.priority,
             "closed_by_role": closed_by_role,
             "created_at": t.created_at.isoformat() if t.created_at else None,
             "replies": replies_data,

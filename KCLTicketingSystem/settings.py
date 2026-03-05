@@ -153,6 +153,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Frontend URL (used for "Back to Dashboard" links from Django pages)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

@@ -403,6 +403,19 @@ class AdminTicketUpdateTest(TestCase):
         self.assertEqual(response.data['assigned_to'], self.staff.id)
         self.assertEqual(response.data['admin_notes'], 'Updated ticket')
 
+    def test_ticket_update_closed_sets_closed_by(self):
+        """Test that closing ticket via admin sets closed_by to admin"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(self.url, {'status': 'closed'})
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'closed')
+        self.assertEqual(response.data['closed_by_role'], 'admin')
+        
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.CLOSED)
+        self.assertEqual(self.ticket.closed_by_id, self.admin.id)
+
     def test_ticket_update_not_found(self):
         """Test updating non-existent ticket"""
         self.client.force_authenticate(user=self.admin)

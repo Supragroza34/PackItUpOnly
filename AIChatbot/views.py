@@ -3,6 +3,7 @@ AI Chatbot: Django-rendered chat page + optional JSON API.
 Uses Ollama (e.g. ollama run llama2).
 """
 import logging
+from django.conf import settings
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view, permission_classes
@@ -70,7 +71,11 @@ def chat_page(request):
                 request.session[SESSION_KEY_ERROR] = error
         return redirect("chat_page")
 
-    return render(request, "ai_chatbot/chat.html", {"messages": messages, "error": error})
+    return render(
+        request,
+        "ai_chatbot/chat.html",
+        {"messages": messages, "error": error, "frontend_url": getattr(settings, "FRONTEND_URL", "http://localhost:3000")},
+    )
 
 
 @api_view(["POST"])

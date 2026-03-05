@@ -64,6 +64,13 @@ class Ticket(models.Model):
         related_name="assigned_tickets",
     )
     admin_notes = models.TextField(blank=True, default="")
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="closed_tickets",
+    )
 
     def __str__(self):
         return f"{self.user} - {self.type_of_issue}"

@@ -39,6 +39,22 @@
   border-color: #94a3b8;
 }
 
+.ticket-page-close-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #e53935;
+  background: transparent;
+  color: #e53935;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ticket-page-close-btn:hover {
+  background: #e53935;
+  color: #fff;
+}
+
 /* Meta bar */
 .ticket-meta {
   display: flex;

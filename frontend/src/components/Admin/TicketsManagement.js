@@ -133,6 +133,32 @@ const TicketsManagement = () => {
         }
     };
 
+    const confirmCloseTwice = (ticketId) => {
+        if (!window.confirm('Are you sure you want to close this ticket?')) return false;
+        if (!window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')) return false;
+        return true;
+    };
+
+    const getStatusLabel = (ticket) => {
+        if (ticket.status !== 'closed') return (ticket.status || 'pending').replace('_', ' ');
+        if (!ticket.closed_by_role) return 'Closed';
+        const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
+        return `Closed by ${label}`;
+    };
+
+    const handleCloseTicket = async (ticketId) => {
+        if (!confirmCloseTwice(ticketId)) return;
+        try {
+            await dispatch(updateTicket({
+                ticketId,
+                updates: { status: 'closed' },
+            })).unwrap();
+            refreshTickets();
+        } catch (err) {
+            alert('Failed to close ticket: ' + err);
+        }
+    };
+
     const handleDeleteTicket = async (ticketId) => {
         if (!window.confirm('Are you sure you want to delete this ticket?')) return;
         
@@ -272,7 +298,7 @@ const TicketsManagement = () => {
                                             <td>{ticket.type_of_issue}</td>
                                             <td>
                                                 <span className={`status-badge ${ticket.status}`}>
-                                                    {ticket.status.replace('_', ' ')}
+                                                    {getStatusLabel(ticket)}
                                                 </span>
                                             </td>
                                             <td>
@@ -307,6 +333,14 @@ const TicketsManagement = () => {
                                                 >
                                                     View/Edit
                                                 </button>
+                                                {ticket.status !== 'closed' && (
+                                                    <button
+                                                        onClick={() => handleCloseTicket(ticket.id)}
+                                                        className="btn-action btn-close"
+                                                    >
+                                                        Close
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleDeleteTicket(ticket.id)}
                                                     className="btn-action btn-delete"

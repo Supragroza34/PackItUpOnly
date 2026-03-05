@@ -64,6 +64,34 @@ function StaffDashboardPage() {
         navigate('/login');
     };
 
+    function confirmCloseTwice() {
+        if (!window.confirm('Are you sure you want to close this ticket?')) return false;
+        if (!window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')) return false;
+        return true;
+    }
+
+    async function handleCloseTicket(e, ticketId) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!confirmCloseTwice()) return;
+        try {
+            const res = await fetch(`/api/staff/dashboard/${ticketId}/update/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access')}`,
+                },
+                body: JSON.stringify({ status: 'closed' }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'closed', closed_by_role: data.closed_by_role || 'staff' } : t));
+            }
+        } catch (err) {
+            console.error('Failed to close ticket:', err);
+        }
+    }
+
     return (
         <div className="staff-dashboard">
             <h1>Staff Dashboard</h1>
@@ -108,15 +136,26 @@ function StaffDashboardPage() {
             ) : (
                 <div className="staff-dashboard-tickets">
                     {tickets.map((ticket) => (
-                        <Link
-                            key={ticket.id}
-                            to={`/staff/dashboard/${ticket.id}`}
-                            className="staff-dashboard-ticket"
-                        >
-                            <p>
-                                Created by: {ticket.user?.first_name} {ticket.user?.last_name}
-                            </p>
-                        </Link>
+                        <div key={ticket.id} className="staff-dashboard-ticket-wrap">
+                            <Link
+                                to={`/staff/dashboard/${ticket.id}`}
+                                className="staff-dashboard-ticket"
+                            >
+                                <p>
+                                    Created by: {ticket.user?.first_name} {ticket.user?.last_name}
+                                </p>
+                            </Link>
+                            {ticket.status !== 'closed' && (
+                                <button
+                                    type="button"
+                                    className="staff-close-ticket-btn"
+                                    onClick={(e) => handleCloseTicket(e, ticket.id)}
+                                    title="Close ticket"
+                                >
+                                    Close
+                                </button>
+                            )}
+                        </div>
                     ))}
                 </div>
             )}

@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-<<<<<<< HEAD:frontend/src/pages/UserDashboard.js
 import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboard.css";
 import UserNavbar from "../components/UserNavbar";
-=======
 import { useAuth } from "../context/AuthContext";
 import { apiFetch, authHeaders } from "../api";
 import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
->>>>>>> 729f35f (Add tests for User Dashboard Page):frontend/src/pages/UserDashboardPage.js
 
 const API_BASE = "http://localhost:8000/api";
 
@@ -31,6 +28,15 @@ function getProgressWidth(status) {
     default:
       return "0%";
   }
+}
+
+function getStatusLabel(ticket) {
+  if (ticket.status !== "closed") {
+    return (ticket.status || "pending").replace("_", " ");
+  }
+  if (!ticket.closed_by_role) return "Closed";
+  const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
+  return `Closed by ${label}`;
 }
 
 function UserDashboardPage() {
@@ -125,6 +131,38 @@ function UserDashboardPage() {
 
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
 
+  function confirmCloseTwice(ticketId) {
+    if (!window.confirm("Are you sure you want to close this ticket?")) return false;
+    if (!window.confirm("Please confirm again. This will close the ticket. Do you want to proceed?")) return false;
+    return true;
+  }
+
+  async function handleCloseTicket(ticketId) {
+    if (!confirmCloseTwice(ticketId)) return;
+    const token = localStorage.getItem("access");
+    try {
+      const res = await fetch(`${API_BASE}/dashboard/tickets/${ticketId}/close/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setLoadError(err.error || `Failed to close ticket (${res.status})`);
+        return;
+      }
+      const resData = await res.json();
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === ticketId
+            ? { ...t, status: "closed", closed_by_role: resData.closed_by_role || "student" }
+            : t
+        )
+      );
+    } catch (err) {
+      setLoadError(`Could not close ticket: ${err.message}`);
+    }
+  }
+
   return (
     <>
       <UserNavbar />
@@ -177,6 +215,58 @@ function UserDashboardPage() {
               ＋ Create New Ticket
             </Link>
           </div>
+<<<<<<< HEAD
+=======
+        ) : (
+          <div className="ticket-list">
+            {tickets.map((ticket) => (
+              <div key={ticket.id} className="ticket-item" onClick={() => setSelectedTicket(ticket)}>
+                <div className="ticket-item-info">
+                  <h3>{ticket.type_of_issue}</h3>
+                  <div className="ticket-dept">📁 {ticket.department}</div>
+                  <div className="ticket-details">{ticket.additional_details}</div>
+                  {ticket.replies && ticket.replies.length > 0 && (
+                    <div className="ticket-responses">
+                      <h4 className="ticket-responses-title">Responses from staff</h4>
+                      {ticket.replies.map((reply) => (
+                        <div key={reply.id} className="ticket-response">
+                          <p className="ticket-response-meta">
+                            <strong>{reply.user_username}</strong>
+                            {' · '}
+                            {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}
+                          </p>
+                          <p className="ticket-response-body">{reply.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="ticket-item-meta">
+                  <span className={statusClass(ticket.status)}>
+                    {getStatusLabel(ticket)}
+                  </span>
+                  <span className="ticket-date">
+                    {new Date(ticket.created_at).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                  {ticket.status !== "closed" && (
+                    <button
+                      type="button"
+                      className="close-ticket-btn"
+                      onClick={(e) => { e.stopPropagation(); handleCloseTicket(ticket.id); }}
+                    >
+                      Close ticket
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+>>>>>>> 82484e7 (Fixed merge conflict)
 
           {tickets.length === 0 ? (
             <div className="empty-state">

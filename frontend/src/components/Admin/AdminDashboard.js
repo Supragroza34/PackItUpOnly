@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchDashboardStats } from '../../store/slices/adminSlice';
+import { fetchDashboardStats, updateTicket } from '../../store/slices/adminSlice';
 import { logout } from '../../store/slices/authSlice';
 import './AdminDashboard.css';
 
@@ -19,6 +19,32 @@ const AdminDashboard = () => {
     const handleLogout = async () => {
         await dispatch(logout());
         navigate('/login');
+    };
+
+    const confirmCloseTwice = (ticketId) => {
+        if (!window.confirm('Are you sure you want to close this ticket?')) return false;
+        if (!window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')) return false;
+        return true;
+    };
+
+    const getStatusLabel = (ticket) => {
+        if (ticket.status !== 'closed') return (ticket.status || 'pending').replace('_', ' ');
+        if (!ticket.closed_by_role) return 'Closed';
+        const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
+        return `Closed by ${label}`;
+    };
+
+    const handleCloseTicket = async (ticketId) => {
+        if (!confirmCloseTwice(ticketId)) return;
+        try {
+            await dispatch(updateTicket({
+                ticketId,
+                updates: { status: 'closed' },
+            })).unwrap();
+            dispatch(fetchDashboardStats());
+        } catch (err) {
+            alert('Failed to close ticket: ' + err);
+        }
     };
 
     if (loading) {
@@ -134,6 +160,7 @@ const AdminDashboard = () => {
                                         <th>Status</th>
                                         <th>Priority</th>
                                         <th>Created</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -146,7 +173,7 @@ const AdminDashboard = () => {
                                             <td>{ticket.type_of_issue}</td>
                                             <td>
                                                 <span className={`status-badge ${ticket.status}`}>
-                                                    {ticket.status.replace('_', ' ')}
+                                                    {getStatusLabel(ticket)}
                                                 </span>
                                             </td>
                                             <td>
@@ -155,6 +182,17 @@ const AdminDashboard = () => {
                                                 </span>
                                             </td>
                                             <td>{new Date(ticket.created_at).toLocaleDateString()}</td>
+                                            <td>
+                                                {ticket.status !== 'closed' && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn-action btn-close"
+                                                        onClick={() => handleCloseTicket(ticket.id)}
+                                                    >
+                                                        Close
+                                                    </button>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

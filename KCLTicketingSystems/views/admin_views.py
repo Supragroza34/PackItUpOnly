@@ -45,7 +45,7 @@ def _get_user_stats():
 def _get_recent_tickets():
     """Get recent tickets from last 7 days."""
     week_ago = timezone.now() - timedelta(days=7)
-    return Ticket.objects.select_related('user').filter(created_at__gte=week_ago).order_by('-created_at')[:10]
+    return Ticket.objects.select_related('user', 'closed_by').filter(created_at__gte=week_ago).order_by('-created_at')[:10]
 
 
 @api_view(['GET'])
@@ -160,7 +160,7 @@ def _paginate_tickets(tickets, request):
 def admin_tickets_list(request):
     """Get all tickets with filtering, searching, and pagination"""
     try:
-        tickets = Ticket.objects.select_related('user').all().order_by('-created_at')
+        tickets = Ticket.objects.select_related('user', 'closed_by').all().order_by('-created_at')
         search = request.GET.get('search', '')
         if search:
             tickets = tickets.filter(
@@ -219,7 +219,7 @@ def admin_tickets_list(request):
 def admin_ticket_detail(request, ticket_id):
     """Get single ticket details"""
     try:
-        ticket = Ticket.objects.get(id=ticket_id)
+        ticket = Ticket.objects.select_related('user', 'assigned_to', 'closed_by').get(id=ticket_id)
         serializer = TicketSerializer(ticket)
         return Response(serializer.data)
     except Ticket.DoesNotExist:
@@ -233,12 +233,16 @@ def admin_ticket_detail(request, ticket_id):
 def admin_ticket_update(request, ticket_id):
     """Update ticket (status, priority, assignment, notes)"""
     try:
-        ticket = Ticket.objects.get(id=ticket_id)
+        ticket = Ticket.objects.select_related('user', 'assigned_to', 'closed_by').get(id=ticket_id)
         
         # Use serializer for partial update
         serializer = TicketUpdateSerializer(ticket, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            ticket.refresh_from_db()
+            if ticket.status == Ticket.Status.CLOSED:
+                ticket.closed_by = request.user
+                ticket.save(update_fields=["closed_by"])
             ticket.refresh_from_db()
             # Return full ticket data with nested user and assigned_to_details
             return Response(TicketSerializer(ticket).data)

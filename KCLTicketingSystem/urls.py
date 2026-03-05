@@ -55,9 +55,11 @@ urlpatterns = [
     # Staff Dashboard
     path('api/staff/dashboard/', staff_dashboard_view.staff_dashboard, name='staff_dashboard'),
     path('api/staff/dashboard/<int:ticket_id>/', ticket_info_view.ticket_info, name='ticket_info'),
+    path('api/staff/dashboard/<int:ticket_id>/update/', ticket_info_view.staff_ticket_update, name='staff_ticket_update'),
     path('api/staff/dashboard/reply/<int:ticket_id>/', reply_view.reply_details, name="reply"),
     
     path('api/dashboard/', views.user_dashboard, name="user_dashboard"),
+    path('api/dashboard/tickets/<int:ticket_id>/close/', views.student_close_ticket, name='student_close_ticket'),
     path('api/email-webhook/', email_webhook, name='email_webhook')
 ]
 

@@ -53,6 +53,26 @@ function TicketPage() {
             .catch(err => console.error('Error:', err));
     }, [ticket_id, navigate]);
 
+    function confirmCloseTwice() {
+        if (!window.confirm('Are you sure you want to close this ticket?')) return false;
+        if (!window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')) return false;
+        return true;
+    }
+
+    function handleCloseTicket() {
+        if (!confirmCloseTwice()) return;
+        fetch(`/api/staff/dashboard/${ticket_id}/update/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({ status: 'closed' }),
+        })
+            .then(res => res.ok ? res.json() : Promise.reject(res))
+            .then((data) => {
+                setTicket(data);
+            })
+            .catch(err => console.error('Failed to close ticket:', err));
+    }
+
     function submitReply(e) {
         e.preventDefault();
         if (!body.trim()) return;
@@ -83,6 +103,12 @@ function TicketPage() {
     }
 
     const statusClass = (ticket.status || 'pending').replace('_', '-');
+    const getStatusLabel = () => {
+        if (ticket.status !== 'closed') return (ticket.status || 'pending').replace('_', ' ');
+        if (!ticket.closed_by_role) return 'Closed';
+        const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
+        return `Closed by ${label}`;
+    };
 
     return (
         <div className="ticket-page">
@@ -98,7 +124,7 @@ function TicketPage() {
                 <span>
                     <strong>Status:</strong>{' '}
                     <span className={`status-badge status-${statusClass}`}>
-                        {ticket.is_overdue ? 'Overdue' : (ticket.status || 'pending').replace('_', ' ')}
+                        {ticket.is_overdue ? 'Overdue' : getStatusLabel()}
                     </span>
                 </span>
                 <span><strong>Priority:</strong> {(ticket.priority || 'medium')}</span>
@@ -121,6 +147,14 @@ function TicketPage() {
                     <p className="ticket-submitter">Email: {ticket.user.email}</p>
                 )}
             </div>
+
+            {ticket.status !== 'closed' && (
+                <div className="ticket-card">
+                    <button type="button" className="ticket-page-close-btn" onClick={handleCloseTicket}>
+                        Close ticket
+                    </button>
+                </div>
+            )}
 
             <div className="ticket-card">
                 <h2 className="ticket-card-title">Replies</h2>

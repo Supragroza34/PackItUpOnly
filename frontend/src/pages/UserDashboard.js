@@ -17,6 +17,15 @@ function statusClass(status) {
   return `status-badge status-${status || "pending"}`;
 }
 
+function getStatusLabel(ticket) {
+  if (ticket.status !== "closed") {
+    return (ticket.status || "pending").replace("_", " ");
+  }
+  if (!ticket.closed_by_role) return "Closed";
+  const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
+  return `Closed by ${label}`;
+}
+
 function UserDashboardPage() {
   const dispatch = useDispatch();
   const { user, loading } = useSelector((state) => state.auth);
@@ -90,6 +99,38 @@ function UserDashboardPage() {
   }
 
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
+
+  function confirmCloseTwice(ticketId) {
+    if (!window.confirm("Are you sure you want to close this ticket?")) return false;
+    if (!window.confirm("Please confirm again. This will close the ticket. Do you want to proceed?")) return false;
+    return true;
+  }
+
+  async function handleCloseTicket(ticketId) {
+    if (!confirmCloseTwice(ticketId)) return;
+    const token = localStorage.getItem("access");
+    try {
+      const res = await fetch(`${API_BASE}/dashboard/tickets/${ticketId}/close/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setLoadError(err.error || `Failed to close ticket (${res.status})`);
+        return;
+      }
+      const resData = await res.json();
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === ticketId
+            ? { ...t, status: "closed", closed_by_role: resData.closed_by_role || "student" }
+            : t
+        )
+      );
+    } catch (err) {
+      setLoadError(`Could not close ticket: ${err.message}`);
+    }
+  }
 
   return (
     <div className="dashboard-page">
@@ -168,7 +209,7 @@ function UserDashboardPage() {
                 </div>
                 <div className="ticket-item-meta">
                   <span className={statusClass(ticket.status)}>
-                    {(ticket.status || "pending").replace("_", " ")}
+                    {getStatusLabel(ticket)}
                   </span>
                   <span className="ticket-date">
                     {new Date(ticket.created_at).toLocaleDateString("en-GB", {
@@ -177,6 +218,15 @@ function UserDashboardPage() {
                       year: "numeric",
                     })}
                   </span>
+                  {ticket.status !== "closed" && (
+                    <button
+                      type="button"
+                      className="close-ticket-btn"
+                      onClick={(e) => { e.stopPropagation(); handleCloseTicket(ticket.id); }}
+                    >
+                      Close ticket
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

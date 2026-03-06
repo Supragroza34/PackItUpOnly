@@ -7,6 +7,8 @@ from .views.staff_dashboard_view import staff_dashboard
 from .views.reply_view import ReplyCreateView, ReplyView
 from .views.ticket_info_view import TicketDetailView
 from .views.ticket_create_view import TicketCreateView
+from .views.staff_directory_view import staff_directory
+from .views.staff_meeting_view import staff_meeting
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view()),
@@ -18,6 +20,8 @@ urlpatterns = [
     path('reply/<int:ticket_id>/', ReplyView.as_view()),
     path("tickets/", TicketCreateView.as_view()),
     path('tickets/<int:pk>', TicketDetailView.as_view()),
+    path("staff/", staff_directory, name="staff-directory"),
+    path("staff/<int:staff_id>/", staff_meeting, name="staff-meeting"),
 ]
 
 

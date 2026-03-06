@@ -1,4 +1,3 @@
-// Use the current hostname for API calls (works with localhost and IP addresses)
 const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
 
 export function authHeaders() {
@@ -6,11 +5,12 @@ export function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function apiFetch(path, options = {}) {
+export async function apiFetch(path, options = {}, { auth = false } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(auth ? authHeaders() : {}),
       ...(options.headers || {}),
     },
   });
@@ -19,5 +19,6 @@ export async function apiFetch(path, options = {}) {
     const text = await res.text();
     throw new Error(`HTTP ${res.status}: ${text}`);
   }
+
   return res.json();
 }

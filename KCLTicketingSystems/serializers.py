@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models.ticket import Ticket
 from .models.reply import Reply
+from .models.user import User
 
 User = get_user_model()
 
@@ -146,3 +147,10 @@ class DashboardStatsSerializer(serializers.Serializer):
     total_staff = serializers.IntegerField()
     total_admins = serializers.IntegerField()
     recent_tickets = TicketListSerializer(many=True)
+
+
+
+class StaffListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "first_name", "last_name", "email", "department", "k_number"]

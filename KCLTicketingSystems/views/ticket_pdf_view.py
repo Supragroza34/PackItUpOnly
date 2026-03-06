@@ -291,6 +291,12 @@ def ticket_pdf(request, ticket_id):
             status=status.HTTP_403_FORBIDDEN,
         )
 
+    if ticket.status != Ticket.Status.CLOSED:
+        return Response(
+            {"detail": "A PDF summary is only available once the ticket has been closed."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     pdf_bytes = _build_pdf(ticket)
 
     response = HttpResponse(pdf_bytes, content_type="application/pdf")

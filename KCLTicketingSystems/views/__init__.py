@@ -6,4 +6,6 @@ from .user_dashboard_view import *
 from .reply_view import *
 from .reply_view import *
 from .email_webhook import email_webhook
+from .notification_view import *
+
 

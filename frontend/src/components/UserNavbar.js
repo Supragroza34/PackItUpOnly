@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./UserNavbar.css";
 
+import NotificationBell from "./NotificationBell";
+
 // Handles logout and always redirects, even if the server-side call fails
 export async function handleLogout(logout, navigate) {
   try {
@@ -79,6 +81,7 @@ function NavLinks({ onLogout }) {
       <Link to="/faqs" className="navbar-link">View FAQs</Link>
       <Link to="/ai-chatbot" className="navbar-link">AI Helper</Link>
       <OfficeHoursButton />
+      <NotificationBell />
       <ProfileDropdown />
       <button className="navbar-logout-btn" onClick={onLogout}>Log Out</button>
     </div>

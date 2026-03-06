@@ -60,6 +60,8 @@ urlpatterns = [
     # Staff Dashboard
     path('api/staff/dashboard/', staff_dashboard_view.staff_dashboard, name='staff_dashboard'),
     path('api/staff/dashboard/<int:ticket_id>/', ticket_info_view.ticket_info, name='ticket_info'),
+    path('api/staff/list/', ticket_info_view.department_staff_list, name='department_staff_list'),
+    path('api/staff/dashboard/<int:ticket_id>/reassign', ticket_info_view.staff_ticket_reassign, name='staff-ticket-reassign'),
     
     path('api/dashboard/', views.user_dashboard, name="user_dashboard"),
     path('api/email-webhook/', email_webhook, name='email_webhook')

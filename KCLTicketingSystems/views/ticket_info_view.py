@@ -1,6 +1,7 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.generics import RetrieveAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -74,3 +75,18 @@ def staff_ticket_reassign(request, ticket_id):
         return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+# ================= STAFF IN SAME DEPARTMENT FOR REASSIGNMENT =================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def department_staff_list(request):
+    """Get list of staff and admin users for ticket reassignment (dropdown: staff and admin only)."""
+    try:
+        staff = User.objects.filter(role__in=[User.Role.STAFF, User.Role.ADMIN], department=request.user.department).values(
+            'id', 'username', 'first_name', 'last_name', 'email', 'role', 'department',
+        )
+        return Response({'staff': list(staff)})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)    

@@ -21,8 +21,22 @@ function getAuthHeaders() {
 }
 
 class StaffApi{
+    // ================= STAFF LIST =================
+    
+    async getStaffList() {
+        const response = await fetch(`${API_BASE_URL}/list/`, {
+            headers: getAuthHeaders(),
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch staff list');
+        }
+        
+        return response.json();
+    }
+    
     async reassignTicket(ticketId, data) {
-        const response = await fetch(`${API_BASE_URL}/${ticketId}/`, {
+        const response = await fetch(`${API_BASE_URL}/dashboard/${ticketId}/reassign`, {
             method: 'PATCH',
             headers: getAuthHeaders(),
             body: JSON.stringify(data),

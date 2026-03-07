@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
+import "./StaffDirectory.css";
 
 
 
@@ -10,7 +11,6 @@ export default function StaffDirectory() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Load departments (optional endpoint)
   useEffect(() => {
     (async () => {
       try {
@@ -22,7 +22,7 @@ export default function StaffDirectory() {
     })();
   }, []);
 
-  // Load staff list (with optional department filter)
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -31,7 +31,6 @@ export default function StaffDirectory() {
         const data = await apiFetch(`/staff/${query}`, {}, { auth: true });
         setStaff(data);
 
-        // If departments endpoint doesn't exist, derive departments from staff data
         if (departments.length === 0) {
           const derived = Array.from(
             new Set((data || []).map((s) => (s.department || "").trim()).filter(Boolean))
@@ -42,7 +41,6 @@ export default function StaffDirectory() {
         setLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [department]);
 
   return (
@@ -66,29 +64,23 @@ export default function StaffDirectory() {
       ) : staff.length === 0 ? (
         <p>No staff found.</p>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 12,
-          }}
-        >
-          {staff.map((s) => (
-            <div
-              key={s.id}
-              style={{ border: "1px solid #2b2b2b", borderRadius: 10, padding: 12 }}
-            >
-              <div style={{ fontWeight: 600 }}>
-                {s.first_name} {s.last_name}
-              </div>
-              <div style={{ opacity: 0.85 }}>{s.department || "—"}</div>
+        <>
 
-              <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-                <Link to={`/staff/${s.id}`}>Book Meeting</Link>
+          <div className="staff-grid">
+            {staff.map((s) => (
+              <div key={s.id} className="staff-card">
+                <div>
+                  <div className="staff-name">{s.first_name} {s.last_name}</div>
+                  <div style={{ opacity: 0.85 }}>{s.department || "—"}</div>
+                </div>
+
+                <div style={{ marginTop: 10 }}>
+                  <Link to={`/staff/${s.id}`}>Book Meeting</Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

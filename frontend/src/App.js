@@ -14,6 +14,7 @@ import StaffDashboardPage from "./pages/StaffDashboardPage";
 import TicketPage from "./pages/TicketPage";
 import StaffDirectory from "./pages/StaffDirectory";
 import StaffMeetingPage from "./pages/StaffMeetingPage";
+import StaffMeetingRequestsPage from "./pages/StaffMeetingRequestsPage";
 
 import Login from "./Login";
 import Signup from "./Signup";
@@ -84,6 +85,15 @@ export default function App() {
             element={
               <Protected>
                 <StaffMeetingPage />
+              </Protected>
+            }
+          />
+
+          <Route
+            path="/staff/dashboard/meeting-requests"
+            element={
+              <Protected>
+                <StaffMeetingRequestsPage />
               </Protected>
             }
           />

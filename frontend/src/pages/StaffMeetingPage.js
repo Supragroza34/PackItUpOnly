@@ -9,11 +9,12 @@ export default function StaffMeetingPage() {
   const [staff, setStaff] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // booking form (simple ticket-based request)
-  const [subject, setSubject] = useState("Meeting request");
+  // Meeting request form
+  const [meetingDatetime, setMeetingDatetime] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -23,7 +24,8 @@ export default function StaffMeetingPage() {
         const data = await apiFetch(`/staff/${id}/`, {}, { auth: true });
         setStaff(data);
       } catch (e) {
-        setErr(String(e.message || e));
+        const errorMsg = String(e.message || e);
+        setErr(errorMsg.replace(/^HTTP \\d+:\\s*/, ''));
       } finally {
         setLoading(false);
       }
@@ -34,30 +36,82 @@ export default function StaffMeetingPage() {
     e.preventDefault();
     setSubmitting(true);
     setErr("");
+    setSuccess("");
+
+    // Prevent selecting past date/time on the client
+    if (meetingDatetime) {
+      const selected = new Date(meetingDatetime);
+      const now = new Date();
+      if (isNaN(selected.getTime()) || selected < now) {
+        setErr("Please choose a current or future date and time.");
+        setSubmitting(false);
+        return;
+      }
+    }
 
     try {
       const payload = {
-        subject,
-        description,
-        staff_id: Number(id),
+        staff: Number(id),
+        meeting_datetime: meetingDatetime,
+        description: description,
       };
 
-      await apiFetch("/tickets/", {
+      await apiFetch("/meeting-requests/", {
         method: "POST",
         body: JSON.stringify(payload),
       }, { auth: true });
 
-      // Go somewhere after success
-      navigate("/dashboard");
+      setSuccess("Meeting request submitted successfully!");
+      setMeetingDatetime("");
+      setDescription("");
+      
     } catch (e2) {
-      setErr(String(e2.message || e2));
+      const errorMsg = String(e2.message || e2);
+      // Remove "HTTP XXX: " prefix if present for cleaner display
+      setErr(errorMsg.replace(/^HTTP \d+:\s*/, ''));
     } finally {
       setSubmitting(false);
     }
   }
 
+  // Helper function to format office hours
+  const formatOfficeHours = (officeHours) => {
+    if (!officeHours || officeHours.length === 0) {
+      return "No office hours set";
+    }
+
+    const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const sorted = [...officeHours].sort((a, b) => 
+      dayOrder.indexOf(a.day_of_week) - dayOrder.indexOf(b.day_of_week)
+    );
+
+    return sorted.map(oh => 
+      `${oh.day_of_week}: ${oh.start_time.substring(0, 5)} - ${oh.end_time.substring(0, 5)}`
+    ).join(", ");
+  };
+
+  // Minimum selectable datetime for the picker (current moment, local)
+  const minNow = (() => {
+    const d = new Date();
+    // adjust for local timezone so toISOString yields local-equivalent
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  })();
+
   if (loading) return <div style={{ padding: 24 }}>Loading...</div>;
-  if (err) return <div style={{ padding: 24, color: "crimson" }}>{err}</div>;
+  if (err && !staff) return (
+    <div style={{ padding: 24 }}>
+      <div style={{ 
+        padding: 12, 
+        backgroundColor: "#f8d7da", 
+        color: "#721c24",
+        borderRadius: 6,
+        border: "1px solid #f5c6cb"
+      }}>
+        {err}
+      </div>
+    </div>
+  );
   if (!staff) return <div style={{ padding: 24 }}>Not found</div>;
 
   return (
@@ -72,28 +126,86 @@ export default function StaffMeetingPage() {
         <div><b>K-number:</b> {staff.k_number || "—"}</div>
       </div>
 
+      <div style={{ 
+        padding: 12, 
+        backgroundColor: "#f0f8ff", 
+        borderRadius: 6,
+        marginBottom: 18
+      }}>
+        <b>Office Hours:</b>
+        <div style={{ marginTop: 6 }}>
+          {formatOfficeHours(staff.office_hours)}
+        </div>
+      </div>
+
       <hr style={{ margin: "18px 0" }} />
 
-      <h3>Book a meeting</h3>
+      <h3>Request a meeting</h3>
+      <p style={{ fontSize: 14, color: "#666", marginBottom: 12 }}>
+        Please select a date and time within the staff member's office hours.
+      </p>
+
+      {success && (
+        <div style={{ 
+          padding: 12, 
+          backgroundColor: "#d4edda", 
+          color: "#155724",
+          borderRadius: 6,
+          marginBottom: 12
+        }}>
+          {success}
+        </div>
+      )}
 
       <form onSubmit={submitRequest} style={{ display: "grid", gap: 10 }}>
-        <input
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="Subject"
-        />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe what you want to meet about…"
-          rows={5}
-        />
-        <button disabled={submitting}>
-          {submitting ? "Submitting..." : "Send request"}
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>
+            Meeting Date & Time
+          </label>
+          <input
+            type="datetime-local"
+            value={meetingDatetime}
+            onChange={(e) => setMeetingDatetime(e.target.value)}
+            min={minNow}
+            required
+            style={{ width: "100%", padding: 8 }}
+          />
+        </div>
+        
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>
+            Description
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe what you want to meet about…"
+            required
+            rows={5}
+            style={{ width: "100%", padding: 8 }}
+          />
+        </div>
+        
+        <button 
+          disabled={submitting}
+          style={{ padding: 10, fontSize: 16 }}
+        >
+          {submitting ? "Submitting..." : "Send meeting request"}
         </button>
       </form>
 
-      {err && <p style={{ color: "crimson" }}>{err}</p>}
+      {err && (
+        <div style={{ 
+          padding: 12, 
+          backgroundColor: "#f8d7da", 
+          color: "#721c24",
+          borderRadius: 6,
+          marginTop: 12,
+          border: "1px solid #f5c6cb"
+        }}>
+          {err}
+        </div>
+      )}
     </div>
   );
 }

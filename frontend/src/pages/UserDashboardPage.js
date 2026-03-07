@@ -2,11 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { checkAuth } from "../store/slices/authSlice";
-import "./UserDashboard.css";
 import UserNavbar from "../components/UserNavbar";
-import { useAuth } from "../context/AuthContext";
-import { apiFetch, authHeaders } from "../api";
-import { checkAuth, logout as logoutAction } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
 
 const API_BASE = "http://localhost:8000/api";
@@ -18,13 +14,13 @@ function statusClass(status) {
 function getProgressWidth(status) {
   switch (status) {
     case "pending":
-        return "20%";
+      return "20%";
     case "in_progress":
-        return "60%";
+      return "60%";
     case "resolved":
-        return "90%";
+      return "90%";
     case "closed":
-        return "100%";
+      return "100%";
     default:
       return "0%";
   }
@@ -35,7 +31,9 @@ function getStatusLabel(ticket) {
     return (ticket.status || "pending").replace("_", " ");
   }
   if (!ticket.closed_by_role) return "Closed";
-  const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
+  const label =
+    ticket.closed_by_role.charAt(0).toUpperCase() +
+    ticket.closed_by_role.slice(1);
   return `Closed by ${label}`;
 }
 
@@ -45,14 +43,8 @@ function UserDashboardPage() {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [loadError, setLoadError] = useState("");
-<<<<<<< HEAD
-  const [selectedTicket, setSelectedTicket] = useState(null);
   const nav = useNavigate();
 
-=======
-  const nav = useNavigate();
-  // Check auth on mount
->>>>>>> 367b58e (Fix conflicts)
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
@@ -89,7 +81,7 @@ function UserDashboardPage() {
         }
 
         const data = await res.json();
-        setTickets(data.tickets);
+        setTickets(data.tickets || []);
       } catch (err) {
         console.error("Dashboard fetch error:", err);
         setLoadError(
@@ -106,6 +98,68 @@ function UserDashboardPage() {
     localStorage.removeItem("refresh");
     nav("/login", { replace: true });
   };
+
+  function confirmCloseTwice() {
+    if (!window.confirm("Are you sure you want to close this ticket?")) {
+      return false;
+    }
+    if (
+      !window.confirm(
+        "Please confirm again. This will close the ticket. Do you want to proceed?"
+      )
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  async function handleCloseTicket(ticketId) {
+    if (!confirmCloseTwice()) return;
+
+    const token = localStorage.getItem("access");
+
+    try {
+      const res = await fetch(`${API_BASE}/dashboard/tickets/${ticketId}/close/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setLoadError(err.error || `Failed to close ticket (${res.status})`);
+        return;
+      }
+
+      const resData = await res.json();
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === ticketId
+            ? {
+                ...t,
+                status: "closed",
+                closed_by_role: resData.closed_by_role || "student",
+              }
+            : t
+        )
+      );
+
+      setSelectedTicket((prev) =>
+        prev && prev.id === ticketId
+          ? {
+              ...prev,
+              status: "closed",
+              closed_by_role: resData.closed_by_role || "student",
+            }
+          : prev
+      );
+    } catch (err) {
+      setLoadError(`Could not close ticket: ${err.message}`);
+    }
+  }
 
   if (loadError) {
     return (
@@ -131,45 +185,12 @@ function UserDashboardPage() {
 
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
 
-  function confirmCloseTwice(ticketId) {
-    if (!window.confirm("Are you sure you want to close this ticket?")) return false;
-    if (!window.confirm("Please confirm again. This will close the ticket. Do you want to proceed?")) return false;
-    return true;
-  }
-
-  async function handleCloseTicket(ticketId) {
-    if (!confirmCloseTwice(ticketId)) return;
-    const token = localStorage.getItem("access");
-    try {
-      const res = await fetch(`${API_BASE}/dashboard/tickets/${ticketId}/close/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setLoadError(err.error || `Failed to close ticket (${res.status})`);
-        return;
-      }
-      const resData = await res.json();
-      setTickets((prev) =>
-        prev.map((t) =>
-          t.id === ticketId
-            ? { ...t, status: "closed", closed_by_role: resData.closed_by_role || "student" }
-            : t
-        )
-      );
-    } catch (err) {
-      setLoadError(`Could not close ticket: ${err.message}`);
-    }
-  }
-
   return (
     <>
       <UserNavbar />
 
       <div className="dashboard-page">
         <div className="dashboard-topbar">
-<<<<<<< HEAD
           <h1>
             👋 Welcome,{" "}
             {user.first_name || user.last_name
@@ -184,9 +205,6 @@ function UserDashboardPage() {
               Log Out
             </button>
           </div>
-=======
-          <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
->>>>>>> 367b58e (Fix conflicts)
         </div>
 
         <div className="dashboard-summary">
@@ -206,6 +224,10 @@ function UserDashboardPage() {
             <div className="summary-count">{countByStatus("resolved")}</div>
             <div className="summary-label">Resolved</div>
           </div>
+          <div className="summary-card">
+            <div className="summary-count">{countByStatus("closed")}</div>
+            <div className="summary-label">Closed</div>
+          </div>
         </div>
 
         <div className="dashboard-content">
@@ -215,58 +237,6 @@ function UserDashboardPage() {
               ＋ Create New Ticket
             </Link>
           </div>
-<<<<<<< HEAD
-=======
-        ) : (
-          <div className="ticket-list">
-            {tickets.map((ticket) => (
-              <div key={ticket.id} className="ticket-item" onClick={() => setSelectedTicket(ticket)}>
-                <div className="ticket-item-info">
-                  <h3>{ticket.type_of_issue}</h3>
-                  <div className="ticket-dept">📁 {ticket.department}</div>
-                  <div className="ticket-details">{ticket.additional_details}</div>
-                  {ticket.replies && ticket.replies.length > 0 && (
-                    <div className="ticket-responses">
-                      <h4 className="ticket-responses-title">Responses from staff</h4>
-                      {ticket.replies.map((reply) => (
-                        <div key={reply.id} className="ticket-response">
-                          <p className="ticket-response-meta">
-                            <strong>{reply.user_username}</strong>
-                            {' · '}
-                            {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}
-                          </p>
-                          <p className="ticket-response-body">{reply.body}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="ticket-item-meta">
-                  <span className={statusClass(ticket.status)}>
-                    {getStatusLabel(ticket)}
-                  </span>
-                  <span className="ticket-date">
-                    {new Date(ticket.created_at).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                  {ticket.status !== "closed" && (
-                    <button
-                      type="button"
-                      className="close-ticket-btn"
-                      onClick={(e) => { e.stopPropagation(); handleCloseTicket(ticket.id); }}
-                    >
-                      Close ticket
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
->>>>>>> 82484e7 (Fixed merge conflict)
 
           {tickets.length === 0 ? (
             <div className="empty-state">
@@ -310,7 +280,7 @@ function UserDashboardPage() {
 
                   <div className="ticket-item-meta">
                     <span className={statusClass(ticket.status)}>
-                      {(ticket.status || "pending").replace("_", " ")}
+                      {getStatusLabel(ticket)}
                     </span>
                     <span className="ticket-date">
                       {new Date(ticket.created_at).toLocaleDateString("en-GB", {
@@ -319,6 +289,19 @@ function UserDashboardPage() {
                         year: "numeric",
                       })}
                     </span>
+
+                    {ticket.status !== "closed" && (
+                      <button
+                        type="button"
+                        className="close-ticket-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCloseTicket(ticket.id);
+                        }}
+                      >
+                        Close ticket
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -335,15 +318,15 @@ function UserDashboardPage() {
 
               <h2>{selectedTicket.type_of_issue}</h2>
 
-              {/* Progress Bar */}
               <div className="ticket-progress-container">
                 <div className="ticket-progress-bar">
-                  <div 
+                  <div
                     className={`ticket-progress-fill status-${selectedTicket.status}`}
                     style={{ width: getProgressWidth(selectedTicket.status) }}
-                  ></div>
+                  />
                   <span className="ticket-progress-text">
-                    {selectedTicket.status.replace("_", " ")} - {getProgressWidth(selectedTicket.status.toLowerCase())}
+                    {getStatusLabel(selectedTicket)} -{" "}
+                    {getProgressWidth(selectedTicket.status)}
                   </span>
                 </div>
               </div>
@@ -354,7 +337,7 @@ function UserDashboardPage() {
               </p>
               <p>
                 <strong>Status: </strong>
-                {selectedTicket.status}
+                {getStatusLabel(selectedTicket)}
               </p>
               <p>
                 <strong>Priority: </strong>
@@ -369,6 +352,16 @@ function UserDashboardPage() {
                 <strong>Description:</strong>
               </p>
               <p>{selectedTicket.additional_details}</p>
+
+              {selectedTicket.status !== "closed" && (
+                <button
+                  type="button"
+                  className="close-ticket-btn"
+                  onClick={() => handleCloseTicket(selectedTicket.id)}
+                >
+                  Close ticket
+                </button>
+              )}
 
               <div className="ticket-responses">
                 <h4 className="ticket-responses-title">Responses From Staff:</h4>

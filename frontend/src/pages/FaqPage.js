@@ -6,6 +6,7 @@ import UserNavbar from '../components/UserNavbar';
 import { FAQ_CATEGORIES, faqItems } from '../data/faqs';
 import { filterFaqs, getCategoryCounts } from '../utils/faqFilters';
 import './FaqPage.css';
+import { Link } from "react-router-dom";
 
 const FaqPage = ({ userRole, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');

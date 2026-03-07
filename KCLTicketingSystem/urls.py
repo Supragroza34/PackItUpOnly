@@ -66,7 +66,18 @@ urlpatterns = [
     path('api/staff/dashboard/<int:ticket_id>/', ticket_info_view.ticket_info, name='ticket_info'),
     path('api/staff/dashboard/<int:ticket_id>/update/', ticket_info_view.staff_ticket_update, name='staff_ticket_update'),
     path('api/staff/dashboard/reply/<int:ticket_id>/', reply_view.reply_details, name="reply"),
+    
+    # Meeting Requests - Staff Side
     path('api/staff/dashboard/meeting-requests/', staff_meeting_requests_views.meeting_request_list, name="meeting_request_list"),
+    path('api/staff/dashboard/meeting-requests/<int:request_id>/accept/', staff_meeting_requests_views.meeting_request_accept, name="meeting_request_accept"),
+    path('api/staff/dashboard/meeting-requests/<int:request_id>/deny/', staff_meeting_requests_views.meeting_request_deny, name="meeting_request_deny"),
+    
+    # Office Hours Management - Staff Side
+    path('api/staff/office-hours/', staff_meeting_requests_views.office_hours_manage, name="office_hours_manage"),
+    path('api/staff/office-hours/<int:hours_id>/', staff_meeting_requests_views.office_hours_delete, name="office_hours_delete"),
+    
+    # Meeting Requests - Student Side
+    path('api/meeting-requests/', staff_meeting_requests_views.meeting_request_create, name="meeting_request_create"),
     
     path('api/dashboard/', views.user_dashboard, name="user_dashboard"),
     path('api/dashboard/tickets/<int:ticket_id>/close/', views.student_close_ticket, name='student_close_ticket'),

@@ -65,7 +65,7 @@ function TicketPage() {
             await dispatch(reassignTicket({
                 ticketId,
                 updates: { assigned_to: value },
-            })).unwrap();
+            })).unwrap().then(navigate('/staff/dashboard'));
         } catch (err) {
             alert('Failed to redirect ticket: ' + err);
         }
@@ -179,7 +179,7 @@ function TicketPage() {
                         <option value="">Unassigned</option>
                         {staffList.map((staff) => (
                             <option key={staff.id} value={staff.id}>
-                                {staff.first_name} {staff.last_name}
+                                {staff.first_name} {staff.last_name} : {staff.ticket_count} tickets
                             </option>
                         ))}
                     </select>
@@ -187,14 +187,6 @@ function TicketPage() {
                         <span className="assign-hint">No staff in list</span>
                     )}
                 </td>
-                <div className="ticket-card">
-                    <h2 className="ticket-card-title">Staff availability suggestions</h2>
-                        {staffList.map((staff) => (
-                            <option key={staff.id} value={staff.id}>
-                                {staff.first_name} {staff.last_name} : {staff.ticket_count} tickets
-                            </option>
-                        ))}
-                </div>
             </div>
         </div>
     );

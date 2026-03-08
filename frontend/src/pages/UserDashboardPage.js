@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
 import UserNavbar from "../components/UserNavbar";
+import NotificationBell from "../components/NotificationBell";
 
 const API_BASE = "http://localhost:8000/api";
 
@@ -25,6 +26,7 @@ function getProgressWidth(status) {
       return "0%";
   }
 }
+
 
 function getStatusLabel(ticket) {
   if (ticket.status !== "closed") {
@@ -148,6 +150,12 @@ function UserDashboardPage() {
         {/* Top bar */}
         <div className="dashboard-topbar">
           <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
+            <NotificationBell
+              onNotificationClick={(notif) => {
+                const ticket = tickets.find((t) => t.id === notif.ticket_id);
+                if (ticket) setSelectedTicket(ticket);
+              }}
+            />
         </div>
 
         {/* Summary cards */}

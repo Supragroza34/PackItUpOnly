@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "./NotificationBell.css"; // import CSS
+import "./NotificationBell.css"; 
 
-const API_BASE = "http://localhost:8000/api";
-
-function NotificationBell() {
+function NotificationBell({ onNotificationClick }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem("access");
     if (!token) return;
 
-    fetch(`${API_BASE}/notifications/`, {
+    fetch("http://localhost:8000/api/notifications/", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -25,31 +21,30 @@ function NotificationBell() {
 
   const toggleDropdown = () => setOpen((prev) => !prev);
 
-  const handleNotificationClick = (n) => {
+  const handleClick = (notif) => {
     setOpen(false);
-    if (n.ticket_id) navigate(`/dashboard/ticket/${n.ticket_id}`);
+    if (onNotificationClick) onNotificationClick(notif); 
   };
 
   return (
     <div className="notification-bell">
       <span onClick={toggleDropdown}>
-        🔔 {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
+        🔔 {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>} Notifications
       </span>
 
       {open && (
         <div className="notification-dropdown">
           {notifications.length === 0 ? (
-            <p style={{ padding: "10px" }}>You have no notifications.</p>
+            <p className="no-notifications">You have no notifications.</p>
           ) : (
             notifications.map((n) => (
               <div
                 key={n.id}
                 className={`notification-item ${!n.is_read ? "unread" : ""}`}
-                onClick={() => handleNotificationClick(n)}
+                onClick={() => handleClick(n)}
               >
                 <strong>{n.title}</strong>
-                <p style={{ margin: "5px 0" }}>{n.message}</p>
-                {n.ticket_id && <span>Click to view ticket</span>}
+                <p>{n.message}</p>
               </div>
             ))
           )}
@@ -59,6 +54,4 @@ function NotificationBell() {
   );
 }
 
-export default NotificationBell; 
-
-
+export default NotificationBell;

@@ -15,7 +15,7 @@ export const reassignTicket = createAsyncThunk(
 
 // Staff List
 export const fetchStaffList = createAsyncThunk(
-  'admin/fetchStaffList',
+  'staff/fetchStaffList',
   async (_, { rejectWithValue }) => {
     try {
       const data = await staffApi.getStaffList();

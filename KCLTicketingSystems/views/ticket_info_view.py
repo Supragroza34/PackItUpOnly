@@ -6,6 +6,7 @@ from rest_framework import serializers
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Count
 from datetime import timedelta
 from ..models import Ticket, User
 from ..serializers import ReplySerializer, StaffReassignTicket
@@ -84,8 +85,13 @@ def staff_ticket_reassign(request, ticket_id):
 def department_staff_list(request):
     """Get list of staff and admin users for ticket reassignment (dropdown: staff and admin only)."""
     try:
-        staff = User.objects.filter(role__in=[User.Role.STAFF, User.Role.ADMIN], department=request.user.department).values(
-            'id', 'username', 'first_name', 'last_name', 'email', 'role', 'department',
+        staff = User.objects.filter(
+            role__in=[User.Role.STAFF, User.Role.ADMIN], 
+            department=request.user.department
+        ).annotate(
+            ticket_count=Count('assigned_tickets')
+        ).order_by('ticket_count').values(
+            'id', 'username', 'first_name', 'last_name', 'email', 'role', 'department', 'ticket_count',
         )
         return Response({'staff': list(staff)})
     except Exception as e:

@@ -25,10 +25,14 @@ def notifications_list (request):
     return Response(data)
 
 
-api_view(["POST"])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def mark_notification_read(request, pk):
-    notification = Notification.objects.get(id=pk, user=request.user)
+    try:
+        notification = Notification.objects.get(id=pk, user=request.user)
+    except Notification.DoesNotExist:
+        return Response({"error": "Notification not found."}, status=404)
+   
     notification.is_read = True
     notification.save()
 

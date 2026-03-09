@@ -47,7 +47,8 @@ function NotificationBell({ onNotificationClick }) {
         n.id === notif.id ? { ...n, is_read: true } : n
       )
     );
-
+    
+    // Mark notifications as read
     const token = localStorage.getItem("access");
     try {
       await fetch(`${API_BASE}/notifications/${notif.id}/read/`, {

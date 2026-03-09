@@ -17,17 +17,37 @@
     flex-wrap: wrap;
 }
 
+/*
 .dashboard-topbar h1 {
     margin: 0;
     font-size: 1.7rem;
     font-weight: 700;
     color: #1a237e;
 }
+*/
+
+.dashboard-topbar {
+    max-width: 1200px;
+    margin: 0 auto 28px;
+    display: flex;
+    align-items: center;
+}
+
+/*
+.dashboard-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+*/
 
 .dashboard-topbar-actions {
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-left: auto;
+    margin-right: auto;
+    flex-wrap: wrap;
 }
 
 .nav-tab {

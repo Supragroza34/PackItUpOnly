@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchDashboardStats, updateTicket } from '../../store/slices/adminSlice';
 import { logout } from '../../store/slices/authSlice';
 import './AdminDashboard.css';
+import NotificationBell from "../NotificationBell";
 
 const AdminDashboard = () => {
     const dispatch = useDispatch();
@@ -65,6 +66,13 @@ const AdminDashboard = () => {
             <div className="dashboard-topbar">
                 <h1>👋 Welcome, {user?.first_name || user?.username || 'Admin'}</h1>
                 <div className="dashboard-topbar-actions">
+                    <NotificationBell
+                        onNotificationClick={(notif) => {
+                            if (notif.ticket) {
+                                navigate(`/admin/tickets/${notif.ticket}`);
+                            }
+                        }}
+                    />
                     <button 
                         className={`nav-tab ${window.location.pathname === '/admin/dashboard' ? 'active' : ''}`}
                         onClick={() => navigate('/admin/dashboard')}

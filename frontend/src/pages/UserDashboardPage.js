@@ -141,6 +141,32 @@ function UserDashboardPage() {
     }
   }
 
+  async function handleDownloadPdf(ticketId) {
+    const token = localStorage.getItem("access");
+    try {
+      const res = await fetch(`${API_BASE}/tickets/${ticketId}/pdf/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || `Could not download PDF (${res.status})`);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ticket_${ticketId}_summary.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF download error:", err);
+      alert(`Could not download PDF: ${err.message}`);
+    }
+  }
+
   return (
     <>
       <UserNavbar />
@@ -231,6 +257,15 @@ function UserDashboardPage() {
                       Close ticket
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className={`download-pdf-btn${ticket.status !== "closed" ? " download-pdf-btn--disabled" : ""}`}
+                    disabled={ticket.status !== "closed"}
+                    title={ticket.status !== "closed" ? "Available once the ticket is closed" : "Download PDF summary"}
+                    onClick={(e) => { e.stopPropagation(); handleDownloadPdf(ticket.id); }}
+                  >
+                    📄 Download Summary
+                  </button>
                 </div>
               </div>
             ))}
@@ -283,6 +318,17 @@ function UserDashboardPage() {
                   <p className="ticket-response-none">No Responses Yet.</p>
                 )}
               </div>
+
+              {/* PDF download — disabled until ticket is closed */}
+              <button
+                type="button"
+                className={`download-pdf-btn download-pdf-btn--modal${selectedTicket.status !== "closed" ? " download-pdf-btn--disabled" : ""}`}
+                disabled={selectedTicket.status !== "closed"}
+                title={selectedTicket.status !== "closed" ? "Available once the ticket is closed" : "Download PDF summary"}
+                onClick={() => handleDownloadPdf(selectedTicket.id)}
+              >
+                📄 Download PDF Summary
+              </button>
             </div>
           </div>
         )}

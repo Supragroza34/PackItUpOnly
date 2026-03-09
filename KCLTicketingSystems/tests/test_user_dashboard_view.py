@@ -99,3 +99,26 @@ class UserDashboardViewTests(TestCase):
         data = response.json()
         ticket_ids = [t['id'] for t in data['tickets']]
         self.assertNotIn(self.other_ticket.id, ticket_ids)
+
+    def test_closed_ticket_has_closed_by_role(self):
+        # Set closed_by for ticket2
+        self.ticket2.closed_by = self.user
+        self.ticket2.save()
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/dashboard/')
+        data = response.json().get('tickets', [])
+
+        ticket2_data = next(t for t in data if t['id'] == self.ticket2.id)
+
+        self.assertEqual(ticket2_data["closed_by_role"], "student")
+
+    def test_ticket_with_no_replies(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/dashboard/')
+        data = response.json()
+
+        ticket2_data = next(t for t in data['tickets'] if t['id'] == self.ticket2.id)
+
+        self.assertEqual(ticket2_data["replies"], [])
+

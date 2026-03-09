@@ -6,7 +6,9 @@
     padding: 40px 20px;
 }
 
+
 /* Top bar - matching user dashboard */
+/*
 .dashboard-topbar {
     max-width: 1200px;
     margin: 0 auto 28px;
@@ -24,7 +26,7 @@
     font-weight: 700;
     color: #1a237e;
 }
-*/
+
 
 .dashboard-topbar {
     max-width: 1200px;
@@ -39,7 +41,7 @@
     align-items: center;
     gap: 12px;
 }
-*/
+
 
 .dashboard-topbar-actions {
     display: flex;
@@ -89,6 +91,7 @@
     background: #e53935;
     color: #fff;
 }
+*/
 
 /* Summary card row - matching user dashboard */
 .dashboard-summary {

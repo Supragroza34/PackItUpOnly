@@ -30,9 +30,7 @@ function NotificationBell({ onNotificationClick }) {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -42,13 +40,12 @@ function NotificationBell({ onNotificationClick }) {
   const handleClick = async (notif) => {
     setOpen(false);
 
+    // Optimistically mark as read
     setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === notif.id ? { ...n, is_read: true } : n
-      )
+      prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
     );
-    
-    // Mark notifications as read
+
+    // Persist in backend
     const token = localStorage.getItem("access");
     try {
       await fetch(`${API_BASE}/notifications/${notif.id}/read/`, {
@@ -57,11 +54,9 @@ function NotificationBell({ onNotificationClick }) {
       });
     } catch (err) {
       console.error("Failed to mark notification as read:", err);
-
+      // Revert if backend fails
       setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notif.id ? { ...n, is_read: false } : n
-        )
+        prev.map((n) => (n.id === notif.id ? { ...n, is_read: false } : n))
       );
     }
 
@@ -79,14 +74,17 @@ function NotificationBell({ onNotificationClick }) {
           {notifications.length === 0 ? (
             <p className="no-notifications">You have no notifications.</p>
           ) : (
-            notifications.map((n) => (
+            notifications.map((n, idx) => (
               <div
                 key={n.id}
                 className={`notification-item ${!n.is_read ? "unread" : ""}`}
                 onClick={() => handleClick(n)}
               >
-                <strong>{n.title}</strong>
-                <p style={{ fontWeight: n.is_read ? "normal" : "bold" }}>{n.message}</p>
+                {!n.is_read && <span className="unread-dot"></span>}
+                <div>
+                  <strong className="notification-title">{n.title}</strong>
+                  <p className="notification-message">{n.message}</p>
+                </div>
               </div>
             ))
           )}

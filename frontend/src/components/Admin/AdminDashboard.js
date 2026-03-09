@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchDashboardStats, updateTicket } from '../../store/slices/adminSlice';
 import { logout } from '../../store/slices/authSlice';
 import './AdminDashboard.css';
-import NotificationBell from "../NotificationBell";
+import AdminTopbar from "./AdminTopbar";
 
 const AdminDashboard = () => {
     const dispatch = useDispatch();
@@ -62,47 +62,8 @@ const AdminDashboard = () => {
 
     return (
         <div className="admin-dashboard">
-            {/* Top bar - matching user dashboard style */}
-            <div className="dashboard-topbar">
-                <h1>👋 Welcome, {user?.first_name || user?.username || 'Admin'}</h1>
-                <div className="dashboard-topbar-actions">
-                    <NotificationBell
-                        onNotificationClick={(notif) => {
-                            if (notif.ticket) {
-                                navigate(`/admin/tickets/${notif.ticket}`);
-                            }
-                        }}
-                    />
-                    <button 
-                        className={`nav-tab ${window.location.pathname === '/admin/dashboard' ? 'active' : ''}`}
-                        onClick={() => navigate('/admin/dashboard')}
-                    >
-                        Dashboard
-                    </button>
-                    <button 
-                        className="nav-tab"
-                        onClick={() => navigate('/admin/tickets')}
-                    >
-                        Tickets
-                    </button>
-                    <button 
-                        className="nav-tab"
-                        onClick={() => navigate('/admin/users')}
-                    >
-                        Users
-                    </button>
-                    <button 
-                        className="nav-tab"
-                        onClick={() => navigate('/admin/statistics')}
-                    >
-                        Statistics
-                    </button>
-                    <button className="logout-btn" onClick={handleLogout}>
-                        Log Out
-                    </button>
-                </div>
-            </div>
-
+            <AdminTopbar user={user} handleLogout={handleLogout} />
+        
             {/* Summary cards for ticket statistics */}
             <div className="dashboard-summary">
                 <div className="summary-card">

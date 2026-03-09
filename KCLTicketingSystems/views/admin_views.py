@@ -20,6 +20,8 @@ from ..serializers import (
 )
 from ..permissions import IsAdmin
 
+from ..utils import notify_on_ticket_update
+
 
 # ================= DASHBOARD STATISTICS =================
 
@@ -246,6 +248,9 @@ def admin_ticket_update(request, ticket_id):
                 ticket.closed_by = request.user
                 ticket.save(update_fields=["closed_by"])
             ticket.refresh_from_db()
+
+            notify_on_ticket_update(ticket, updated_by=request.user)
+
             # Return full ticket data with nested user and assigned_to_details
             return Response(TicketSerializer(ticket).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

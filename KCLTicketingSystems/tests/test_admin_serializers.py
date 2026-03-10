@@ -321,7 +321,7 @@ class TicketListSerializerTest(TestCase):
         expected_fields = [
             'id', 'user_name', 'user_k_number', 'department',
             'type_of_issue', 'status', 'priority', 'assigned_to',
-            'assigned_to_name', 'created_at', 'updated_at'
+            'assigned_to_name', 'closed_by_role', 'created_at', 'updated_at'
         ]
         
         self.assertEqual(set(serializer.data.keys()), set(expected_fields))
@@ -331,6 +331,20 @@ class TicketListSerializerTest(TestCase):
         serializer = TicketListSerializer(self.ticket)
         
         self.assertEqual(serializer.data['assigned_to_name'], 'Staff Member')
+
+    def test_ticket_list_serializer_closed_by_role_when_closed(self):
+        """Test closed_by_role is set when ticket is closed by a user"""
+        self.ticket.status = Ticket.Status.CLOSED
+        self.ticket.closed_by = self.staff
+        self.ticket.save()
+
+        serializer = TicketListSerializer(self.ticket)
+        self.assertEqual(serializer.data['closed_by_role'], 'staff')
+
+    def test_ticket_list_serializer_closed_by_role_when_open(self):
+        """Test closed_by_role is None when ticket is not closed"""
+        serializer = TicketListSerializer(self.ticket)
+        self.assertIsNone(serializer.data['closed_by_role'])
 
     def test_ticket_list_serializer_unassigned(self):
         """Test assigned_to_name with unassigned ticket"""

@@ -23,13 +23,19 @@ class StaffTicketSerializer(serializers.ModelSerializer):
     """Ticket list item for staff dashboard; includes submitter (user) and overdue flag."""
     user = UserSerializer(read_only=True)
     is_overdue = serializers.SerializerMethodField()
+    closed_by_role = serializers.SerializerMethodField()
 
     class Meta:
         model = Ticket
         fields = [
             'id', 'user', 'department', 'type_of_issue', 'additional_details',
-            'status', 'priority', 'assigned_to', 'created_at', 'updated_at', 'is_overdue'
+            'status', 'priority', 'assigned_to', 'closed_by_role', 'created_at', 'updated_at', 'is_overdue'
         ]
+
+    def get_closed_by_role(self, obj):
+        if obj.status == 'closed' and obj.closed_by_id and hasattr(obj, 'closed_by') and obj.closed_by:
+            return (obj.closed_by.role or 'student').lower()
+        return None
 
     def get_is_overdue(self, obj):
         cutoff = timezone.now() - timedelta(days=3)
@@ -65,7 +71,7 @@ def staff_dashboard(request):
     # Only show tickets assigned to this user
     tickets = (
         Ticket.objects
-        .select_related('user', 'assigned_to')
+        .select_related('user', 'assigned_to', 'closed_by')
         .filter(assigned_to=request.user)
         .order_by('-created_at')
     )

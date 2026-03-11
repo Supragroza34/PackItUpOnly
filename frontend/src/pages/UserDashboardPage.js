@@ -5,7 +5,8 @@ import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
 import UserNavbar from "../components/UserNavbar";
 
-const API_BASE = "http://localhost:8000/api";
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocal ? "http://localhost:8000/api" : `${window.location.origin}/api`;
 
 function statusClass(status) {
   return `status-badge status-${status || "pending"}`;

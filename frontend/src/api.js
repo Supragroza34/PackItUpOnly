@@ -1,5 +1,8 @@
-// Use the current hostname for API calls (works with localhost and IP addresses)
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
+// Same origin in production (Heroku); localhost:8000 when developing
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocal
+  ? `${window.location.protocol}//${window.location.hostname}:8000/api`
+  : `${window.location.origin}/api`;
 
 export function authHeaders() {
   const token = localStorage.getItem("access");

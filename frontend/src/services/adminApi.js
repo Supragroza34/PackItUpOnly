@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8000/api/admin';
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = isLocal ? 'http://localhost:8000/api/admin' : `${window.location.origin}/api/admin`;
 
 // Format DRF serializer errors { "field": ["msg"] } into a string
 function formatValidationErrors(obj) {
@@ -26,7 +27,8 @@ class AdminAPI {
     // So we don't need separate admin login/logout methods
     
     async getCurrentUser() {
-        const response = await fetch('http://localhost:8000/api/users/me/', {
+        const base = isLocal ? 'http://localhost:8000' : window.location.origin;
+        const response = await fetch(`${base}/api/users/me/`, {
             headers: getAuthHeaders(),
         });
         

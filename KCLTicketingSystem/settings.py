@@ -31,8 +31,9 @@ SECRET_KEY = 'django-insecure-ij%5&&=4@$tm!$653)nvwfirl_t8rsrqq+4mkxei4b3s21@$&&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# For development: Allow ngrok domains and localhost
+# For development: Allow ngrok domains and localhost; for Heroku: *.herokuapp.com
 ALLOWED_HOSTS = [
+    '.herokuapp.com',
     'unprotective-ungrieved-cheryle.ngrok-free.dev',
     'localhost',
     '127.0.0.1',
@@ -68,6 +69,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -142,7 +144,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# React build: serve its static assets (add build/static when frontend is built)
+FRONTEND_BUILD = BASE_DIR / 'frontend' / 'build'
+if (FRONTEND_BUILD / 'static').exists():
+    STATICFILES_DIRS = [FRONTEND_BUILD / 'static']
+else:
+    STATICFILES_DIRS = []
 
 # Media files (user uploads)
 MEDIA_URL = '/media/'
@@ -222,12 +232,5 @@ LOGGING = {
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
-    },
-    'loggers': {
-        'KCLTicketingSystems.views.email_webhook': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
     },
 }

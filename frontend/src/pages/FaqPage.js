@@ -8,6 +8,8 @@ import { filterFaqs, getCategoryCounts } from '../utils/faqFilters';
 import './FaqPage.css';
 import { Link } from "react-router-dom";
 
+
+
 const FaqPage = ({ userRole, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');

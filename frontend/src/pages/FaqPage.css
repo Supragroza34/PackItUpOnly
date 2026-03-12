@@ -11,6 +11,7 @@
   text-decoration: underline;
 }
 
+
 /* Page background — wraps the faq card to give a consistent background */
 .faq-page-bg {
   min-height: 100vh;
@@ -19,6 +20,7 @@
   justify-content: center;
   padding: 40px 20px;
 }
+
 
 .faq-page {
   width: 100%;

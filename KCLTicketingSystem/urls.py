@@ -18,14 +18,16 @@ Including another URLconf
 
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 
 from KCLTicketingSystems import views
 from AIChatbot.views import chat_page
+
 from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view, staff_meeting_requests_views
-from KCLTicketingSystems.views.email_webhook import email_webhook
+#from KCLTicketingSystems.views.email_webhook import email_webhook
+
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -81,8 +83,15 @@ urlpatterns = [
     
     path('api/dashboard/', views.user_dashboard, name="user_dashboard"),
     path('api/dashboard/tickets/<int:ticket_id>/close/', views.student_close_ticket, name='student_close_ticket'),
-    path('api/email-webhook/', email_webhook, name='email_webhook')
+
+    #path('api/email-webhook/', email_webhook, name='email_webhook'),
+
+
+    # SPA: serve React app for all other routes (login, dashboard, etc.)
+    re_path(r'^(?P<path>.*)$', views.spa_catchall, name='spa_catchall'),
+
 ]
+
 
 # Serve media files in development
 if settings.DEBUG:

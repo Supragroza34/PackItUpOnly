@@ -1,0 +1,294 @@
+"""
+Management command to seed the database with demo data.
+
+This command creates a small set of named fixture users and then fills up
+to ``USER_COUNT`` total users using Faker-generated data. Existing records
+are left untouched—if a create fails (e.g., due to duplicates), the error
+is swallowed and generation continues.
+"""
+
+
+from faker import Faker
+from faker.providers import job
+from random import randint, random, choice
+from django.core.management.base import BaseCommand, CommandError
+from ...models import User, Ticket
+
+user_fixtures = [
+    {'username': 'johndoe', 'email': 'john.doe@example.org', 'k_number': '12345678', 'first_name': 'John', 'last_name': 'Doe', 'department': 'Informatics', 'role': 'student'},
+    {'username': 'janedee', 'email': 'jane.dee@example.org', 'k_number': '45678123', 'first_name': 'Jane', 'last_name': 'Dee', 'department': 'Informatics', 'role': 'staff'},
+    {'username': 'Chrisdoo', 'email': 'chris.doo@example.org', 'k_number': '03472783', 'first_name': 'Chris', 'last_name': 'Doo', 'department': 'Informatics', 'role': 'student'},
+    {'username': 'alexadmin', 'email': 'alex.admin@example.org', 'k_number': '', 'first_name': '', 'last_name': '', 'department': '', 'role': 'admin'},
+]
+
+
+class Command(BaseCommand):
+    """
+    Build automation command to seed the database with data.
+
+    This command inserts a small set of known users (``user_fixtures``) and then
+    repeatedly generates additional random users until ``USER_COUNT`` total users
+    exist in the database. Each generated user receives the same default password.
+
+    Attributes:
+        USER_COUNT (int): Target total number of users in the database.
+        DEFAULT_PASSWORD (str): Default password assigned to all created users.
+        help (str): Short description shown in ``manage.py help``.
+        faker (Faker): Locale-specific Faker instance used for random data.
+    """
+
+    TICKET_COUNT_PER_STUDENT = 5
+    STUDENT_COUNT = 100
+    STAFF_COUNT = 100
+    DEFAULT_PASSWORD = 'Password123'
+    help = 'Seeds the database with sample data'
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the command with a locale-specific Faker instance."""
+        super().__init__(*args, **kwargs)
+        self.faker = Faker('en_GB')
+        self.faker.add_provider(job.Provider)
+
+    def handle(self, *args, **options):
+        """
+        Django entrypoint for the command.
+
+        Runs the full seeding workflow and stores ``self.users`` for any
+        post-processing or debugging (not required for operation).
+        """
+        # Try to create superuser if it doesn't exist
+        try:
+            if not User.objects.filter(username='spr_usr').exists():
+                spr_user = User.objects.create_superuser(
+                    username='spr_usr',
+                    email='spr.usr@example.org',
+                    password='SuperUser8^]',
+                    k_number=''  # Admins don't have k_numbers
+                )
+                spr_user.role = User.Role.ADMIN
+                spr_user.save()
+                print("Created superuser 'spr_usr'")
+        except Exception as e:
+            print(f"Superuser creation skipped: {e}")
+        
+        self.create_users()
+        self.users = User.objects.all()
+        self.create_student_tickets()
+        self.tickets = Ticket.objects.all()
+
+    def get_random_department(self):
+
+        departments = [
+            "Informatics",
+            "Engineering",
+            "Medicine",
+            "Law",
+            "Finance",
+            "Mathematics",
+            "English",
+            "Foreign Languages",
+            "Arts and Music",
+            "Media"
+        ]
+
+        return choice(departments)    
+
+    def create_student_tickets(self):
+        """
+        Create some tickets for all generated students.
+        """
+        students = User.objects.filter(role="student")
+        ticket_count = Ticket.objects.count()
+        for student in students:
+            print(f"Seeding ticket {ticket_count}/{self.STUDENT_COUNT * self.TICKET_COUNT_PER_STUDENT}", end='\r')
+            self.generate_n_tickets(self.TICKET_COUNT_PER_STUDENT, student)
+            ticket_count = Ticket.objects.count()  
+        
+        print("Ticket seeding complete.        ")                 
+
+    def create_users(self):
+        """
+        Create fixture users and then generate random users up to USER_COUNT.
+
+        The process is idempotent in spirit: attempts that fail (e.g., due to
+        uniqueness constraints on username/email) are ignored and generation continues.
+        """
+        self.generate_user_fixtures()
+        self.generate_random_students()
+        self.generate_random_staff()
+
+    def generate_n_tickets(self, number_of_tickets, student):
+        for i in range(number_of_tickets):
+            self.generate_one_ticket(student)
+
+    def generate_one_ticket(self, student):
+        department = self.get_random_department()
+        issue = "Problem in the " + department + " department."        
+        ticket_data = {
+            'user': student,
+            'department': department,
+            'type_of_issue': issue,
+            'additional_details': 'Everything is broken.'
+        }
+        self.try_create_ticket(ticket_data)   
+    
+    def generate_user_fixtures(self):
+        """Attempt to create each predefined fixture user."""
+        for data in user_fixtures:
+            self.try_create_user(data)
+        print("Fixture seeding complete.        ")    
+
+    def generate_random_students(self):
+        """
+        Generate random users until the database contains USER_COUNT users.
+
+        Prints a simple progress indicator to stdout during generation.
+        """
+        user_count = User.objects.count()
+        while  user_count < self.STUDENT_COUNT:
+            print(f"Seeding student {user_count}/{self.STUDENT_COUNT}", end='\r')
+            self.generate_student()
+            user_count = User.objects.count()
+        print("Student seeding complete.      ")
+
+    def generate_random_staff(self):
+        """
+        Generate random users until the database contains USER_COUNT users.
+
+        Prints a simple progress indicator to stdout during generation.
+        """
+        user_count = User.objects.count()-self.STUDENT_COUNT
+        while  user_count < self.STAFF_COUNT:
+            print(f"Seeding staff {user_count}/{self.STAFF_COUNT}", end='\r')
+            self.generate_staff()
+            user_count = User.objects.count()-self.STUDENT_COUNT
+        print("Staff seeding complete.      ")        
+
+    def generate_student(self):
+        """
+        Generate a single random user and attempt to insert it.
+
+        Uses Faker for first/last names, then derives a simple username/email.
+        """
+        first_name = self.faker.first_name()
+        last_name = self.faker.last_name()
+        k_number = str(self.faker.random_number(digits=8, fix_len = True))
+        username = create_username(k_number)
+        email = create_email(k_number)
+        department = self.get_random_department()
+        role = "student"
+        self.try_create_user({'username': username, 'email': email, 'k_number': k_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
+
+    def generate_staff(self):
+
+        first_name = self.faker.first_name()
+        last_name = self.faker.last_name()
+        staff_number = str(self.faker.random_number(digits=8, fix_len = True))
+        username = create_staff_username(staff_number)
+        email = create_staff_email(first_name, last_name)
+        department = self.get_random_department()
+        role = "staff"
+        self.try_create_user({'username': username, 'email': email, 'k_number': staff_number, 'department': department, 'role': role, 'first_name':first_name, 'last_name': last_name})
+
+    def try_create_ticket(self, data):
+        """
+        Attempt to create a ticket
+        """
+        try:
+            self.create_ticket(data)
+        except:
+            print("did not create ticket")
+
+    def create_ticket(self, data):
+        ticket = Ticket.objects.create(
+            user=data['user'],
+            department=data['department'],
+            type_of_issue=data['type_of_issue'],
+            additional_details=data['additional_details']
+        )
+        ticket.save()
+
+    def try_create_user(self, data):
+        """
+        Attempt to create a user and ignore any errors.
+
+        Args:
+            data (dict): Mapping with keys ``username``, ``email``,
+                ``first_name``, and ``last_name``.
+        """
+        try:
+            self.create_user(data)
+        except:
+            print("did not create user " + data['first_name'])
+
+    def create_user(self, data):
+        """
+        Create a user with the default password.
+
+        Args:
+            data (dict): Mapping with keys ``username``, ``email``,
+                ``first_name``, and ``last_name``.
+        """
+        user = User.objects.create(
+            username=data['username'],
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            email=data['email'],
+            k_number=data['k_number'],
+            department=data['department'],
+            role=data['role'],
+        )
+        # Set is_staff flag for staff and admin users
+        if data['role'] in ['staff', 'admin']:
+            user.is_staff = True
+        user.set_password(Command.DEFAULT_PASSWORD)
+        user.save()
+
+def create_username(k_number):
+    """
+    Construct a simple username from first and last names.
+
+    Args:
+        first_name (str): Given name.
+        last_name (str): Family name.
+
+    Returns:
+        str: A username in the form ``@{firstname}{lastname}`` (lowercased).
+    """
+    return '@' + k_number
+
+def create_email(k_number):
+    """
+    Construct a simple example email address.
+
+    Args:
+        k_number (str): K number without k
+
+    Returns:
+        str: An email in the form ``k{k_number}@kcl.ac.uk``.
+    """
+    return 'k' + k_number + '@kcl.ac.uk'
+
+def create_staff_username(staff_number):
+    """
+    Construct a staff username from department and staff_number.
+
+    Args:
+        staff_number (str):  random UNIQUE number.
+
+    Returns:
+        str: A username in the form ``Staff{staff_number}``.
+    """
+    return "Staff" + staff_number    
+
+def create_staff_email(first_name, last_name):
+    """
+    Construct email address for staff.
+
+    Args:
+        staff_number (str): random UNIQUE number
+
+    Returns:
+        str: An email in the form ``Staff{staff_number}@kcl.ac.uk``.
+    """
+    return first_name.lower() + "." + last_name.lower() + '@kcl.ac.uk'

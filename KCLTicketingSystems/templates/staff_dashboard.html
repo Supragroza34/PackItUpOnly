@@ -1,0 +1,28 @@
+<h1> Welcome back {{user.k_number}} </h1>
+
+<form method="get">
+  <select name="filtering" onchange="this.form.submit()">
+    <option value="open" {% if filter_options == "open" %}selected{% endif %}>Open</option>
+    <option value="overdue" {% if filter_options == "overdue" %}selected{% endif %}>Overdue</option>
+    <option value="closed" {% if filter_options == "closed" %}selected{% endif %}>Closed</option>
+    <option value="all" {% if filter_options == "all" %}selected{% endif %}>All</option>
+  </select>
+</form>
+
+{% for ticket in tickets %}
+    <a href="{% url 'ticket_info' ticket.pk %}">
+    <strong>{{ ticket.type_of_issue }}</strong>
+    {% if ticket.is_overdue %}
+    <p>Status: Overdue</p>
+    {% else %}
+    <p>Status: {{ ticket.status }}</p>
+    {% endif %}
+    <p>Student: {{ticket.k_number}}</p>
+    <p>Department: {{ticket.department}}</p>
+    <p>Created: {{ ticket.created_at }}</p>
+    </a>
+{% empty %}
+  <p>No tickets available.</p>
+{% endfor %}
+
+

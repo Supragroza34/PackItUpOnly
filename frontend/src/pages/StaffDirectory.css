@@ -1,0 +1,7 @@
+.staff-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.staff-card{border:1px solid #2b2b2b;border-radius:10px;padding:16px;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;background:white}
+.staff-name{font-weight:600}
+@media (max-width:1200px){.staff-grid{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:992px){.staff-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:700px){.staff-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:420px){.staff-grid{grid-template-columns:repeat(1,1fr)}}

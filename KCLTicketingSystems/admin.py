@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ticket, User, Reply, Attachment
+from .models import Ticket, User, Reply, Attachment, OfficeHours, MeetingRequest
 
 
 # @admin.register(Ticket)
@@ -26,3 +26,5 @@ admin.site.register(Ticket)
 admin.site.register(User)
 admin.site.register(Reply)
 admin.site.register(Attachment)
+admin.site.register(OfficeHours)
+admin.site.register(MeetingRequest)

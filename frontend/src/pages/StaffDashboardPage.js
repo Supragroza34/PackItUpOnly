@@ -100,6 +100,9 @@ function StaffDashboardPage() {
                 <p className="staff-dashboard-user">
                     Welcome, {user?.first_name || user?.last_name}
                 </p>
+                <button className = "staff-dashboard-logout" onClick={() => navigate("/staff/dashboard/meeting-requests")}>
+                    See Meeting Requests
+                </button>
                 <button className="staff-dashboard-logout" onClick={handleLogout}>
                     Logout
                 </button>

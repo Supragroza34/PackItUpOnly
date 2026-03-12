@@ -394,6 +394,42 @@
   color: #fff;
 }
 
+
+.download-pdf-btn {
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  background: transparent;
+  border: 1px solid #1a237e;
+  color: #1a237e;
+  border-radius: 6px;
+  cursor: pointer;
+  align-self: flex-end;
+  transition: background 0.2s, color 0.2s;
+}
+
+.download-pdf-btn:hover:not(:disabled) {
+  background: #1a237e;
+  color: #fff;
+}
+
+.download-pdf-btn--disabled,
+.download-pdf-btn:disabled {
+  border-color: #b0bec5;
+  color: #b0bec5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.download-pdf-btn--modal {
+  margin-top: 16px;
+  width: 100%;
+  padding: 10px;
+  font-size: 0.9rem;
+  align-self: unset;
+}
+
+
 /* Status badge */
 .status-badge {
   display: inline-block;

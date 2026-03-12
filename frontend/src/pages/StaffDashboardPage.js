@@ -5,16 +5,37 @@ import { useAuth } from '../context/AuthContext';
 import { logout as logoutAction } from '../store/slices/authSlice';
 import './StaffDashboardPage.css';
 
+function statusClass(status, isOverdue) {
+    if (isOverdue) return 'sd-status-badge sd-status-overdue';
+    return `sd-status-badge sd-status-${(status || 'pending').replace('_', '-')}`;
+}
+
+function getStatusLabel(ticket) {
+    if (ticket.is_overdue) return 'Overdue';
+    if (ticket.status !== 'closed') return (ticket.status || 'pending').replace('_', ' ');
+    if (!ticket.closed_by_role) return 'Closed';
+    const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
+    return `Closed by ${label}`;
+}
+
+function extractArray(data) {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.tickets)) return data.tickets;
+    if (Array.isArray(data?.results)) return data.results;
+    return [];
+}
+
 function StaffDashboardPage() {
     const dispatch = useDispatch();
     const reduxUser = useSelector((state) => state.auth.user);
     const { user: contextUser } = useAuth();
     const user = reduxUser ?? contextUser;
     const [tickets, setTickets] = useState([]);
-    const [filter, setFilter] = useState("open");
+    const [allTickets, setAllTickets] = useState([]);
+    const [filter, setFilter] = useState('open');
     const [nameSearch, setNameSearch] = useState('');
     const navigate = useNavigate();
-    
+
     // Hard guard: only staff (and admin) should see this page
     useEffect(() => {
         if (!user) return;
@@ -24,39 +45,38 @@ function StaffDashboardPage() {
         }
     }, [user, navigate]);
 
+    // Fetch all tickets once for summary card counts
+    useEffect(() => {
+        fetch('/api/staff-dashboard/?filtering=all', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` },
+        })
+            .then((res) => res.json())
+            .then((data) => setAllTickets(extractArray(data)))
+            .catch(() => {});
+    }, []);
+
+    // Fetch filtered tickets
     useEffect(() => {
         const params = new URLSearchParams({ filtering: filter });
         if (nameSearch.trim()) params.set('search', nameSearch.trim());
         fetch('/api/staff-dashboard/?' + params.toString(), {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('access')}`
-            }
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` },
         })
-            .then(res => {
+            .then((res) => {
                 if (res.status === 401) {
                     alert('You do not have permission to access this page.');
                     localStorage.removeItem('access');
                     navigate('/login');
-                    return;
+                    return null;
                 }
                 return res.json();
             })
-            .then(data => {
+            .then((data) => {
                 if (!data) return;
-
                 console.log('Staff dashboard response:', data);
-
-                const ticketsArray = Array.isArray(data)
-                    ? data
-                    : Array.isArray(data.tickets)
-                        ? data.tickets
-                        : Array.isArray(data.results)
-                            ? data.results
-                            : [];
-
-                setTickets(ticketsArray);
+                setTickets(extractArray(data));
             })
-            .catch(err => console.error('Error:', err))
+            .catch((err) => console.error('Error:', err));
     }, [filter, nameSearch, navigate]);
 
     const handleLogout = async () => {
@@ -85,83 +105,140 @@ function StaffDashboardPage() {
             });
             if (res.ok) {
                 const data = await res.json();
-                setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'closed', closed_by_role: data.closed_by_role || 'staff' } : t));
+                const update = (t) =>
+                    t.id === ticketId
+                        ? { ...t, status: 'closed', is_overdue: false, closed_by_role: data.closed_by_role || 'staff' }
+                        : t;
+                setTickets((prev) => prev.map(update));
+                setAllTickets((prev) => prev.map(update));
             }
         } catch (err) {
             console.error('Failed to close ticket:', err);
         }
     }
 
+    const countOpen = allTickets.filter((t) => ['pending', 'in_progress'].includes(t.status)).length;
+    const countOverdue = allTickets.filter((t) => t.is_overdue).length;
+    const countClosed = allTickets.filter((t) => ['closed', 'resolved'].includes(t.status)).length;
+
     return (
-        <div className="staff-dashboard">
-            <h1>Staff Dashboard</h1>
-
-            <div className="staff-dashboard-header">
-                <p className="staff-dashboard-user">
-                    Welcome, {user?.first_name || user?.last_name}
-                </p>
-                <button className = "staff-dashboard-logout" onClick={() => navigate("/staff/dashboard/meeting-requests")}>
-                    See Meeting Requests
-                </button>
-                <button className="staff-dashboard-logout" onClick={handleLogout}>
-                    Logout
-                </button>
-            </div>
-
-            <div className="staff-dashboard-filter">
-                <label>
-                    Filter tickets:&nbsp;
-                    <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-                        <option value="open">Open</option>
-                        <option value="overdue">Overdue</option>
-                        <option value="closed">Closed</option>
-                        <option value="all">All</option>
-                    </select>
-                </label>
-                <label className="staff-search-by-name">
-                    Search by name:&nbsp;
-                    <input
-                        type="text"
-                        placeholder="Submitter name..."
-                        value={nameSearch}
-                        onChange={(e) => setNameSearch(e.target.value)}
-                        className="staff-name-search-input"
-                    />
-                </label>
-            </div>
-
-            {tickets.length === 0 ? (
-                <p className="staff-dashboard-empty">
-                    {filter === 'all'
-                        ? 'No tickets assigned to you.'
-                        : 'No tickets assigned to you for this filter. Try "All" or ask an admin to assign you a ticket.'}
-                </p>
-            ) : (
-                <div className="staff-dashboard-tickets">
-                    {tickets.map((ticket) => (
-                        <div key={ticket.id} className="staff-dashboard-ticket-wrap">
-                            <Link
-                                to={`/staff/dashboard/${ticket.id}`}
-                                className="staff-dashboard-ticket"
-                            >
-                                <p>
-                                    Created by: {ticket.user?.first_name} {ticket.user?.last_name}
-                                </p>
-                            </Link>
-                            {ticket.status !== 'closed' && (
-                                <button
-                                    type="button"
-                                    className="staff-close-ticket-btn"
-                                    onClick={(e) => handleCloseTicket(e, ticket.id)}
-                                    title="Close ticket"
-                                >
-                                    Close
-                                </button>
-                            )}
-                        </div>
-                    ))}
+        <div className="sd-page">
+            {/* Top bar */}
+            <div className="sd-topbar">
+                <h1>👋 Welcome, {user?.first_name} {user?.last_name}</h1>
+                <div className="sd-topbar-actions">
+                    <button
+                        className="sd-meeting-btn"
+                        onClick={() => navigate('/staff/dashboard/meeting-requests')}
+                    >
+                        📅 Meeting Requests
+                    </button>
+                    <button className="sd-logout-btn" onClick={handleLogout}>Log Out</button>
                 </div>
-            )}
+            </div>
+
+            {/* Summary cards */}
+            <div className="sd-summary">
+                <div className="sd-summary-card">
+                    <div className="sd-summary-count">{allTickets.length}</div>
+                    <div className="sd-summary-label">Total Assigned</div>
+                </div>
+                <div className="sd-summary-card">
+                    <div className="sd-summary-count">{countOpen}</div>
+                    <div className="sd-summary-label">Open</div>
+                </div>
+                <div className="sd-summary-card sd-summary-card--overdue">
+                    <div className="sd-summary-count">{countOverdue}</div>
+                    <div className="sd-summary-label">Overdue</div>
+                </div>
+                <div className="sd-summary-card">
+                    <div className="sd-summary-count">{countClosed}</div>
+                    <div className="sd-summary-label">Closed</div>
+                </div>
+            </div>
+
+            {/* Ticket list */}
+            <div className="sd-content">
+                <div className="sd-content-header">
+                    <h2>Assigned Tickets</h2>
+                    <div className="sd-controls">
+                        <select
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                            className="sd-select"
+                            aria-label="Filter tickets"
+                        >
+                            <option value="open">Open</option>
+                            <option value="overdue">Overdue</option>
+                            <option value="closed">Closed</option>
+                            <option value="all">All</option>
+                        </select>
+                        <input
+                            type="text"
+                            placeholder="Search by name…"
+                            value={nameSearch}
+                            onChange={(e) => setNameSearch(e.target.value)}
+                            className="sd-search-input"
+                        />
+                    </div>
+                </div>
+
+                {tickets.length === 0 ? (
+                    <div className="sd-empty-state">
+                        <div className="sd-empty-icon">🎫</div>
+                        <p>
+                            {filter === 'all'
+                                ? 'No tickets assigned to you.'
+                                : 'No tickets for this filter. Try "All" or ask an admin to assign you a ticket.'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="sd-ticket-list">
+                        {tickets.map((ticket) => (
+                            <div key={ticket.id} className="sd-ticket-item">
+                                <Link to={`/staff/dashboard/${ticket.id}`} className="sd-ticket-link">
+                                    <div className="sd-ticket-info">
+                                        <h3>{ticket.type_of_issue}</h3>
+                                        <div className="sd-ticket-dept">📁 {ticket.department}</div>
+                                        {ticket.additional_details && (
+                                            <div className="sd-ticket-details">{ticket.additional_details}</div>
+                                        )}
+                                        <div className="sd-ticket-submitter">
+                                            👤 {ticket.user?.first_name} {ticket.user?.last_name}
+                                        </div>
+                                    </div>
+                                </Link>
+                                <div className="sd-ticket-meta">
+                                    <span className={statusClass(ticket.status, ticket.is_overdue)}>
+                                        {getStatusLabel(ticket)}
+                                    </span>
+                                    {ticket.priority && (
+                                        <span className={`sd-priority-badge sd-priority-${ticket.priority}`}>
+                                            {ticket.priority}
+                                        </span>
+                                    )}
+                                    <span className="sd-ticket-date">
+                                        {new Date(ticket.created_at).toLocaleDateString('en-GB', {
+                                            day: '2-digit',
+                                            month: 'short',
+                                            year: 'numeric',
+                                        })}
+                                    </span>
+                                    {ticket.status !== 'closed' && (
+                                        <button
+                                            type="button"
+                                            className="sd-close-btn"
+                                            onClick={(e) => handleCloseTicket(e, ticket.id)}
+                                        >
+                                            Close ticket
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

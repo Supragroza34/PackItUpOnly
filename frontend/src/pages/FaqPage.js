@@ -6,7 +6,6 @@ import UserNavbar from '../components/UserNavbar';
 import { FAQ_CATEGORIES, faqItems } from '../data/faqs';
 import { filterFaqs, getCategoryCounts } from '../utils/faqFilters';
 import './FaqPage.css';
-import { Link } from "react-router-dom";
 
 
 
@@ -37,10 +36,6 @@ const FaqPage = ({ userRole, onNavigate }) => {
 
   return (
     <div className="faq-page-wrapper">
-      <Link to="/dashboard" className="faq-back-link">
-        ← Back to Dashboard
-      </Link>
-
       <UserNavbar />
 
       <div className="faq-page-bg">

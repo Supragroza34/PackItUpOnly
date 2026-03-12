@@ -6,6 +6,7 @@ from rest_framework import status
 
 from ..models.ticket import Ticket
 from ..models.user import User
+from ..models.reply import Reply
 
 
 class AdminTicketStatisticsTest(TestCase):
@@ -284,6 +285,117 @@ class AdminTicketStatisticsTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Should work even with limited data
         self.assertIn('department_statistics', response.data)
+
+
+class AdminAvgResponseTimeTest(TestCase):
+    """Test cases for average staff response time in statistics"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = '/api/admin/statistics/'
+
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_superuser=True,
+        )
+        self.staff = User.objects.create_user(
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='22222222', role=User.Role.STAFF,
+        )
+        self.student = User.objects.create_user(
+            username='student', email='student@test.com', password='testpass123',
+            k_number='11111111', role=User.Role.STUDENT,
+        )
+
+        now = timezone.now()
+
+        # Ticket with a staff reply after 2 hours
+        self.ticket1 = Ticket.objects.create(
+            user=self.student, department='Informatics',
+            type_of_issue='Software Issue', additional_details='Help',
+            status=Ticket.Status.PENDING,
+        )
+        # Override created_at
+        Ticket.objects.filter(id=self.ticket1.id).update(created_at=now - timedelta(hours=4))
+        self.ticket1.refresh_from_db()
+
+        # Student reply first (should be ignored), then staff reply 2h after ticket creation
+        Reply.objects.create(
+            user=self.student, ticket=self.ticket1, body='Student note',
+        )
+        staff_reply1 = Reply.objects.create(
+            user=self.staff, ticket=self.ticket1, body='Staff reply',
+        )
+        Reply.objects.filter(id=staff_reply1.id).update(
+            created_at=self.ticket1.created_at + timedelta(hours=2),
+        )
+
+        # Ticket with a staff reply after 4 hours (same department)
+        self.ticket2 = Ticket.objects.create(
+            user=self.student, department='Informatics',
+            type_of_issue='Hardware Issue', additional_details='Broken',
+            status=Ticket.Status.IN_PROGRESS,
+        )
+        Ticket.objects.filter(id=self.ticket2.id).update(created_at=now - timedelta(hours=6))
+        self.ticket2.refresh_from_db()
+
+        staff_reply2 = Reply.objects.create(
+            user=self.staff, ticket=self.ticket2, body='Staff reply 2',
+        )
+        Reply.objects.filter(id=staff_reply2.id).update(
+            created_at=self.ticket2.created_at + timedelta(hours=4),
+        )
+
+        # Ticket with no staff reply
+        self.ticket3 = Ticket.objects.create(
+            user=self.student, department='Engineering',
+            type_of_issue='Lab Issue', additional_details='Equipment',
+            status=Ticket.Status.PENDING,
+        )
+
+    def test_avg_response_time_field_present(self):
+        """Statistics include avg_response_time_hours field"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for dept in response.data['department_statistics']:
+            self.assertIn('avg_response_time_hours', dept)
+
+    def test_avg_response_time_calculated_correctly(self):
+        """Average response time is the mean of first-staff-reply deltas"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        dept_map = {d['department']: d for d in response.data['department_statistics']}
+
+        # Informatics: (2h + 4h) / 2 = 3h
+        info = dept_map.get('Informatics')
+        self.assertIsNotNone(info)
+        self.assertIsNotNone(info['avg_response_time_hours'])
+        self.assertAlmostEqual(info['avg_response_time_hours'], 3.0, delta=0.1)
+
+    def test_avg_response_time_null_when_no_staff_replies(self):
+        """Departments with no staff replies have null avg_response_time_hours"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        dept_map = {d['department']: d for d in response.data['department_statistics']}
+        eng = dept_map.get('Engineering')
+        self.assertIsNotNone(eng)
+        self.assertIsNone(eng['avg_response_time_hours'])
+
+    def test_avg_response_time_ignores_student_replies(self):
+        """Only staff/admin replies count for response time, not student replies"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        dept_map = {d['department']: d for d in response.data['department_statistics']}
+        info = dept_map.get('Informatics')
+        # If student replies were counted, the avg would be much lower than 3h
+        self.assertAlmostEqual(info['avg_response_time_hours'], 3.0, delta=0.1)
 
 
 class AdminUserDetailTest(TestCase):

@@ -108,7 +108,8 @@ class AdminExportStatisticsCSVTest(TestCase):
             'Medium Priority',
             'High Priority',
             'Urgent Priority',
-            'Avg Resolution Time (hours)'
+            'Avg Resolution Time (hours)',
+            'Avg Response Time (hours)'
         ]
         
         self.assertEqual(headers, expected_headers)
@@ -133,7 +134,7 @@ class AdminExportStatisticsCSVTest(TestCase):
         
         # Check that each row has correct number of columns
         for row in rows:
-            self.assertEqual(len(row), 11)  # 11 columns as per headers
+            self.assertEqual(len(row), 12)  # 12 columns as per headers
 
     def test_export_statistics_custom_days(self):
         """Test statistics export with custom days parameter"""

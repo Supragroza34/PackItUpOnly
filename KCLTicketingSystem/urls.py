@@ -88,8 +88,8 @@ urlpatterns = [
 
 
     # SPA: serve React app for all other routes (login, dashboard, etc.)
-    re_path(r'^(?P<path>.*)$', views.spa_catchall, name='spa_catchall'),
-
+    re_path(r'^(?!static/)(?P<path>.*)$', views.spa_catchall, name='spa_catchall')
+    #Check
 ]
 
 

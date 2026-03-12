@@ -1,0 +1,47 @@
+{% block content %}
+<h1 class="cover-heading">Reply to ticket issued by {{ticket.name}} {{ticket.surname}}</h1>
+<style>
+  .box {
+    border: 1px solid black;
+  }
+</style>
+<div class="box" size=50>
+  <h2>Ticket details:</h2>
+  <p>email: {{ticket.k_email}}</p>
+  <p>type of issue: {{ticket.type_of_issue}}</p>
+  <p>additional details: {{ ticket.additional_details }}</p>    
+</div>
+<div class="box" size=50>
+  <h2>Responses:</h2>
+    {% if p_replies %}
+      {% for reply in p_replies %}
+        <div>
+          {{ reply.body }} (posted {{reply.created_at}})
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No responses yet...</p>  
+    {% endif %}
+</div>  
+<body>
+  <h2>Your response:</h2> 
+  <form method="post">
+    {% csrf_token %}
+      {{form.as_p}}
+    <button type="submit" class = "submit-button">Submit reply</button>    
+  </form>
+</body>
+{% endblock %}
+
+          <!-- {% if reply.leaf_replies.count != 0 %}
+            {% for l_reply in reply.leaf_replies.all %}
+              <li>
+                {{ l_reply.body }} (posted {{reply.created_at}})
+              </li>
+            {% endfor %}
+            <p>Reply</p>
+            <form method="post">
+              {{form.as_p}}
+              {% csrf_token %}
+            </form>
+          {% endif %}     -->

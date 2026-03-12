@@ -12,6 +12,9 @@ import UsersManagement from "./components/Admin/UsersManagement";
 import Statistics from "./components/Admin/Statistics";
 import StaffDashboardPage from "./pages/StaffDashboardPage";
 import TicketPage from "./pages/TicketPage";
+import StaffDirectory from "./pages/StaffDirectory";
+import StaffMeetingPage from "./pages/StaffMeetingPage";
+import StaffMeetingRequestsPage from "./pages/StaffMeetingRequestsPage";
 
 import Login from "./Login";
 import Signup from "./Signup";
@@ -64,6 +67,33 @@ export default function App() {
             element={
               <Protected>
                 <TicketFormPage />
+              </Protected>
+            }
+          />
+
+          <Route
+            path="/staff"
+            element={
+              <Protected>
+                <StaffDirectory />
+              </Protected>
+            }
+          />
+
+          <Route
+            path="/staff/:id"
+            element={
+              <Protected>
+                <StaffMeetingPage />
+              </Protected>
+            }
+          />
+
+          <Route
+            path="/staff/dashboard/meeting-requests"
+            element={
+              <Protected>
+                <StaffMeetingRequestsPage />
               </Protected>
             }
           />

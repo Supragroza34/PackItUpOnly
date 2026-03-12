@@ -15,8 +15,12 @@ function getProgressWidth(status) {
   switch (status) {
     case "pending":
         return "20%";
+    case "seen":
+        return "40%"
     case "in_progress":
         return "60%";
+    case "awaiting_response":
+        return "75%"
     case "resolved":
         return "90%";
     case "closed":

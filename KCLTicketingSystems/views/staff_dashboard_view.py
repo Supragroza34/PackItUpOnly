@@ -43,15 +43,15 @@ class StaffTicketSerializer(serializers.ModelSerializer):
 
 
 def _apply_ticket_filter(tickets, filter_options):
-    """Filter by status: open = pending|in_progress, closed = resolved|closed, overdue = open + old, all = all."""
+    """Filter by status: open = pending|in_progress|new|seen|awaiting_student_response, closed = resolved|closed, overdue = open + old, all = all."""
     cutoff = timezone.now() - timedelta(days=3)
     if filter_options == 'open':
-        return tickets.filter(status__in=(Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS))
+        return tickets.filter(status__in=(Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS, Ticket.Status.NEW, Ticket.Status.SEEN, Ticket.Status.AWAITING_RESPONSE))
     if filter_options == 'closed':
         return tickets.filter(status__in=(Ticket.Status.RESOLVED, Ticket.Status.CLOSED))
     if filter_options == 'overdue':
         return tickets.filter(
-            status__in=(Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS),
+            status__in=(Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS, Ticket.Status.NEW, Ticket.Status.SEEN, Ticket.Status.AWAITING_RESPONSE),
             created_at__lt=cutoff
         )
     # 'all' or anything else: no status filter

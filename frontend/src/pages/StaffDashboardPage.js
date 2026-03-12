@@ -109,7 +109,7 @@ function StaffDashboardPage() {
                 <label>
                     Filter tickets:&nbsp;
                     <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-                        <option value="open">Open</option>
+                        <option value="open" >Open</option>
                         <option value="overdue">Overdue</option>
                         <option value="closed">Closed</option>
                         <option value="all">All</option>

@@ -226,7 +226,6 @@ function UserDashboardPage() {
 
       <div className="dashboard-page">
         <div className="dashboard-topbar">
-<<<<<<< HEAD
           <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
             <NotificationBell
               onNotificationClick={(notif) => {
@@ -234,22 +233,6 @@ function UserDashboardPage() {
                 if (ticket) setSelectedTicket(ticket);
               }}
             />
-=======
-          <h1>
-            👋 Welcome,{" "}
-            {user.first_name || user.last_name
-              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-              : user.k_number || "Student"}
-          </h1>
-          <div className="dashboard-topbar-actions">
-            <Link to="/faqs" className="faq-btn">
-              View FAQs
-            </Link>
-            <button className="logout-btn" onClick={handleLogout}>
-              Log Out
-            </button>
-          </div>
->>>>>>> main
         </div>
 
         <div className="dashboard-summary">

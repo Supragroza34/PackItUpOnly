@@ -47,6 +47,11 @@ def reply_details(request, ticket_id):
         return Response(serializer.data)
 
     # POST: create reply
+    if ticket.status == Ticket.Status.CLOSED:
+        return Response(
+            {"error": "Replies are disabled because this ticket is closed"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     data = {**request.data, "ticket": ticket.id}
     serializer = ReplyCreateSerializer(data=data)
     if serializer.is_valid():

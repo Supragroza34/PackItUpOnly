@@ -73,11 +73,11 @@ class AdminErrorHandlingTest(TestCase):
         """Test getting ticket detail with invalid ID format"""
         self.client.force_authenticate(user=self.admin)
         url = '/api/admin/tickets/invalid_id/'
-        
-        # URL with non-integer ID doesn't match the detail route, so it falls
-        # through to the ticket list view which returns 200.
+
+        # A non-integer segment doesn't match <int:ticket_id>/, so Django
+        # returns 404 — no URL pattern matches this path.
         response = self.client.get(url)
-        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND])
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_ticket_update_with_empty_data(self):
         """Test updating ticket with empty request data"""

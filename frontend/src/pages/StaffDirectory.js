@@ -11,35 +11,32 @@ export default function StaffDirectory() {
   const [departments, setDepartments] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     (async () => {
-      try {
-        const deps = await apiFetch("/staff/departments/");
-        setDepartments(deps);
-      } catch (e) {
-        setDepartments([]);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
       setLoading(true);
+      setError(null);
       try {
         const query = department ? `?department=${encodeURIComponent(department)}` : "";
         const data = await apiFetch(`/staff/${query}`, {}, { auth: true });
         setStaff(data);
         setPage(1);
 
-        if (departments.length === 0) {
+        // Derive departments from the unfiltered staff list only.
+        // Avoids a stale closure on `departments` and removes the need for
+        // a separate /staff/departments/ endpoint that doesn't exist.
+        if (!department) {
           const derived = Array.from(
             new Set((data || []).map((s) => (s.department || "").trim()).filter(Boolean))
           ).sort();
           setDepartments(derived);
         }
+      } catch (e) {
+        setStaff([]);
+        setError("Failed to load staff. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -77,6 +74,7 @@ export default function StaffDirectory() {
               type="text"
               className="staff-search"
               placeholder="Search by name…"
+              aria-label="Search staff by name"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -97,6 +95,8 @@ export default function StaffDirectory() {
 
           {loading ? (
             <p className="staff-status">Loading...</p>
+          ) : error ? (
+            <p className="staff-status">{error}</p>
           ) : filtered.length === 0 ? (
             <p className="staff-status">No staff found.</p>
           ) : (

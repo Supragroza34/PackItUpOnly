@@ -1,13 +1,15 @@
+from collections import defaultdict
+from datetime import timedelta, datetime
+import csv
+
 from django.shortcuts import render
 from django.db.models import Q, Count, Avg, F, Case, When, ExpressionWrapper, DurationField, IntegerField
 from django.utils import timezone
 from django.http import HttpResponse
-from datetime import timedelta, datetime
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-import csv
 
 from ..models.ticket import Ticket
 from ..models.user import User
@@ -49,6 +51,48 @@ def _get_recent_tickets():
     """Get recent tickets from last 7 days."""
     week_ago = timezone.now() - timedelta(days=7)
     return Ticket.objects.select_related('user', 'closed_by').filter(created_at__gte=week_ago).order_by('-created_at')[:10]
+
+
+def _compute_dept_response_times(tickets):
+    """Return a dict mapping department name to average first-response time in hours.
+
+    Response time is the gap between ticket creation and the first reply from a
+    staff or admin user.  Only departments that have at least one such reply are
+    included in the returned dict.
+    """
+    staff_roles = [User.Role.STAFF, User.Role.ADMIN]
+
+    # Build {ticket_id: first_staff_reply_at} in Python.
+    # .distinct(field) is only supported on PostgreSQL, so we iterate in Python.
+    first_reply = {}
+    for reply in (
+        Reply.objects.filter(ticket__in=tickets, user__role__in=staff_roles)
+        .order_by('created_at')
+        .values('ticket_id', 'created_at')
+    ):
+        if reply['ticket_id'] not in first_reply:
+            first_reply[reply['ticket_id']] = reply['created_at']
+
+    # Single query for both department and created_at to avoid two round-trips.
+    ticket_meta = {
+        tid: (dept, created)
+        for tid, dept, created in tickets.values_list('id', 'department', 'created_at')
+    }
+
+    dept_times = defaultdict(list)
+    for ticket_id, first_reply_at in first_reply.items():
+        meta = ticket_meta.get(ticket_id)
+        if meta:
+            dept, created = meta
+            if dept and created:
+                delta = (first_reply_at - created).total_seconds()
+                if delta >= 0:
+                    dept_times[dept].append(delta)
+
+    return {
+        dept: round((sum(times) / len(times)) / 3600, 2)
+        for dept, times in dept_times.items()
+    }
 
 
 @api_view(['GET'])
@@ -489,38 +533,7 @@ def get_ticket_statistics(request):
         ).order_by('-total_tickets')
         
         # Compute average response time (first staff/admin reply) per department
-        staff_roles = [User.Role.STAFF, User.Role.ADMIN]
-        first_reply_qs = (
-            Reply.objects.filter(
-                ticket__in=tickets,
-                user__role__in=staff_roles,
-            )
-            .order_by('ticket_id', 'created_at')
-            .distinct('ticket_id')
-            .values('ticket_id', 'created_at')
-        )
-
-        # Django on SQLite doesn't support .distinct(field), so fall back to Python
-        from collections import defaultdict
-        _first_staff_reply = {}
-        for reply in Reply.objects.filter(
-            ticket__in=tickets,
-            user__role__in=staff_roles,
-        ).order_by('created_at').values('ticket_id', 'created_at'):
-            if reply['ticket_id'] not in _first_staff_reply:
-                _first_staff_reply[reply['ticket_id']] = reply['created_at']
-
-        # Build per-department response time totals
-        ticket_dept_map = dict(tickets.values_list('id', 'department'))
-        ticket_created_map = dict(tickets.values_list('id', 'created_at'))
-        dept_response_times = defaultdict(list)
-        for ticket_id, first_reply_at in _first_staff_reply.items():
-            dept = ticket_dept_map.get(ticket_id)
-            created = ticket_created_map.get(ticket_id)
-            if dept and created:
-                delta = (first_reply_at - created).total_seconds()
-                if delta >= 0:
-                    dept_response_times[dept].append(delta)
+        dept_response_times = _compute_dept_response_times(tickets)
 
         # Format the results
         formatted_stats = []
@@ -530,10 +543,7 @@ def get_ticket_statistics(request):
                 avg_resolution_hours = round(stat['avg_resolution_seconds'].total_seconds() / 3600, 2)
 
             dept_name = stat['department']
-            times = dept_response_times.get(dept_name, [])
-            avg_response_time_hours = None
-            if times:
-                avg_response_time_hours = round((sum(times) / len(times)) / 3600, 2)
+            avg_response_time_hours = dept_response_times.get(dept_name)
 
             formatted_stats.append({
                 'department': dept_name,
@@ -640,26 +650,7 @@ def export_statistics_csv(request):
         ).order_by('-total_tickets')
         
         # Compute average response time per department for CSV
-        staff_roles = [User.Role.STAFF, User.Role.ADMIN]
-        from collections import defaultdict
-        _first_staff_reply_csv = {}
-        for reply in Reply.objects.filter(
-            ticket__in=tickets,
-            user__role__in=staff_roles,
-        ).order_by('created_at').values('ticket_id', 'created_at'):
-            if reply['ticket_id'] not in _first_staff_reply_csv:
-                _first_staff_reply_csv[reply['ticket_id']] = reply['created_at']
-
-        ticket_dept_map = dict(tickets.values_list('id', 'department'))
-        ticket_created_map = dict(tickets.values_list('id', 'created_at'))
-        dept_response_times_csv = defaultdict(list)
-        for ticket_id, first_reply_at in _first_staff_reply_csv.items():
-            dept = ticket_dept_map.get(ticket_id)
-            created = ticket_created_map.get(ticket_id)
-            if dept and created:
-                delta = (first_reply_at - created).total_seconds()
-                if delta >= 0:
-                    dept_response_times_csv[dept].append(delta)
+        dept_response_times = _compute_dept_response_times(tickets)
 
         for stat in department_stats:
             avg_resolution_hours = ''
@@ -667,10 +658,7 @@ def export_statistics_csv(request):
                 avg_resolution_hours = round(stat['avg_resolution_seconds'].total_seconds() / 3600, 2)
 
             dept_name = stat['department']
-            times = dept_response_times_csv.get(dept_name, [])
-            avg_response_hours = ''
-            if times:
-                avg_response_hours = round((sum(times) / len(times)) / 3600, 2)
+            avg_response_hours = dept_response_times.get(dept_name, '')
 
             writer.writerow([
                 dept_name,

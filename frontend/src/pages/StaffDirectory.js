@@ -12,6 +12,7 @@ export default function StaffDirectory() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -45,10 +46,19 @@ export default function StaffDirectory() {
     })();
   }, [department]);
 
-  const totalPages = Math.max(1, Math.ceil(staff.length / PER_PAGE));
+  const filtered = useMemo(() => {
+    if (!search.trim()) return staff;
+    const q = search.toLowerCase();
+    return staff.filter((s) => {
+      const full = `${s.first_name} ${s.last_name}`.toLowerCase();
+      return full.includes(q);
+    });
+  }, [staff, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paged = useMemo(
-    () => staff.slice((page - 1) * PER_PAGE, page * PER_PAGE),
-    [staff, page]
+    () => filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE),
+    [filtered, page]
   );
 
   return (
@@ -63,6 +73,14 @@ export default function StaffDirectory() {
           </header>
 
           <div className="staff-controls">
+            <input
+              type="text"
+              className="staff-search"
+              placeholder="Search by name…"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+
             <label htmlFor="dept-filter">Department:</label>
             <select
               id="dept-filter"
@@ -79,7 +97,7 @@ export default function StaffDirectory() {
 
           {loading ? (
             <p className="staff-status">Loading...</p>
-          ) : staff.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <p className="staff-status">No staff found.</p>
           ) : (
             <>

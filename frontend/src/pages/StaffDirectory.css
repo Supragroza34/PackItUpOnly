@@ -50,6 +50,23 @@
   color: #3c4466;
 }
 
+.staff-search {
+  padding: 8px 14px;
+  border: 2px solid #d8def4;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  color: #3c4466;
+  outline: none;
+  width: 220px;
+  transition: border-color 0.2s;
+}
+
+.staff-search:focus {
+  border-color: #6376d9;
+  box-shadow: 0 0 0 3px rgba(99, 118, 217, 0.15);
+}
+
 .staff-select {
   padding: 8px 14px;
   border: 2px solid #d8def4;

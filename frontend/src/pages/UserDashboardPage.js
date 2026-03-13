@@ -230,15 +230,8 @@ function UserDashboardPage() {
               ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
               : user.k_number || "Student"}
           </h1>
-          <div className="dashboard-topbar-actions">
-            <Link to="/faqs" className="faq-btn">
-              View FAQs
-            </Link>
-            <button className="logout-btn" onClick={handleLogout}>
-              Log Out
-            </button>
-          </div>
         </div>
+
 
         <div className="dashboard-summary">
           <div className="summary-card">

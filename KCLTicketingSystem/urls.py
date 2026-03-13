@@ -88,11 +88,13 @@ urlpatterns = [
 
 
     # SPA: serve React app for all other routes (login, dashboard, etc.)
-    re_path(r'^(?P<path>.*)$', views.spa_catchall, name='spa_catchall'),
-
+    re_path(r'^(?!static/)(?P<path>.*)$', views.spa_catchall, name='spa_catchall')
+    #Check
 ]
 
 
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Serve React app for all other routes (login, dashboard, etc.)

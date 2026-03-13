@@ -242,5 +242,5 @@ function StaffDashboardPage() {
         </div>
     );
 }
-
+//Staff dashboard updated
 export default StaffDashboardPage;

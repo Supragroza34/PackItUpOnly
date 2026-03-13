@@ -785,3 +785,4 @@ describe('StaffDashboardPage – priority badge colours', () => {
         }
     );
 });
+//Staff dashboard tests added

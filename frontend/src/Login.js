@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { login as loginAction, checkAuth } from "./store/slices/authSlice";
+import { login as loginAction } from "./store/slices/authSlice";
 import "./Login.css";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
@@ -33,7 +33,7 @@ export default function Login() {
     // Check for autofill after a short delay
     const timer = setTimeout(syncAutofill, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [username, password]);
 
   // Redirect when user is set in AuthContext
   useEffect(() => {

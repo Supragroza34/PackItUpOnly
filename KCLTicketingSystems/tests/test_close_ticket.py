@@ -243,8 +243,8 @@ class UserDashboardClosedByRoleTest(TestCase):
         self.client.force_authenticate(user=self.student)
         response = self.client.get('/api/dashboard/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        tickets = response.data.get('tickets', [])
+        data = response.json()
+        tickets = data.get('tickets', [])
         self.assertEqual(len(tickets), 1)
         self.assertEqual(tickets[0]['status'], 'closed')
         self.assertEqual(tickets[0]['closed_by_role'], 'student')

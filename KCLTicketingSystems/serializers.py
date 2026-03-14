@@ -3,6 +3,9 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count
 from .models.ticket import Ticket
 from .models.reply import Reply
+from .models.user import User
+from .models.office_hours import OfficeHours
+from .models.meeting_request import MeetingRequest
 
 User = get_user_model()
 
@@ -186,3 +189,89 @@ class DashboardStatsSerializer(serializers.Serializer):
     total_staff = serializers.IntegerField()
     total_admins = serializers.IntegerField()
     recent_tickets = TicketListSerializer(many=True)
+
+
+
+class StaffListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "first_name", "last_name", "email", "department", "k_number"]
+
+
+class OfficeHoursSerializer(serializers.ModelSerializer):
+    """Serializer for OfficeHours model"""
+    class Meta:
+        model = OfficeHours
+        fields = ['id', 'staff', 'day_of_week', 'start_time', 'end_time', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class MeetingRequestSerializer(serializers.ModelSerializer):
+    """Serializer for MeetingRequest model with student and staff details"""
+    student_name = serializers.SerializerMethodField()
+    student_email = serializers.SerializerMethodField()
+    student_k_number = serializers.SerializerMethodField()
+    staff_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MeetingRequest
+        fields = [
+            'id', 'student', 'staff', 'meeting_datetime', 'description', 
+            'status', 'created_at', 'updated_at',
+            'student_name', 'student_email', 'student_k_number', 'staff_name'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_student_name(self, obj):
+        return f"{obj.student.first_name} {obj.student.last_name}"
+    
+    def get_student_email(self, obj):
+        return obj.student.email
+    
+    def get_student_k_number(self, obj):
+        return obj.student.k_number
+    
+    def get_staff_name(self, obj):
+        return f"{obj.staff.first_name} {obj.staff.last_name}"
+
+
+class MeetingRequestCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating meeting requests"""
+    class Meta:
+        model = MeetingRequest
+        fields = ['staff', 'meeting_datetime', 'description']
+    
+    def validate(self, data):
+        """Validate that meeting time falls within office hours"""
+        meeting_datetime = data.get('meeting_datetime')
+        staff = data.get('staff')
+        
+        if meeting_datetime and staff:
+            # Get the day of week
+            day_name = meeting_datetime.strftime("%A")
+            meeting_time = meeting_datetime.time()
+            
+            # Check if there's an office hours block that matches
+            office_hours = OfficeHours.objects.filter(
+                staff=staff,
+                day_of_week=day_name,
+                start_time__lte=meeting_time,
+                end_time__gte=meeting_time,
+            )
+            
+            if not office_hours.exists():
+                raise serializers.ValidationError({
+                    'meeting_datetime': f"The selected time is not within the staff member's office hours. "
+                                       f"Please choose a time slot during their available hours."
+                })
+        
+        return data
+
+
+class StaffWithOfficeHoursSerializer(serializers.ModelSerializer):
+    """Extended serializer for staff that includes their office hours"""
+    office_hours = OfficeHoursSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = User
+        fields = ["id", "first_name", "last_name", "email", "department", "k_number", "office_hours"]

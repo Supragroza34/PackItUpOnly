@@ -2,7 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { authHeaders } from "../api";
 import "./Chatbot.css";
 
-const API_CHAT = `${window.location.protocol}//${window.location.hostname}:8000/api/ai-chatbot/chat/`;
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_CHAT = isLocal
+  ? `${window.location.protocol}//${window.location.hostname}:8000/api/ai-chatbot/chat/`
+  : `${window.location.origin}/api/ai-chatbot/chat/`;
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);

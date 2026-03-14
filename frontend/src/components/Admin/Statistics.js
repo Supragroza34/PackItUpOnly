@@ -230,6 +230,7 @@ const Statistics = () => {
                                         <th>Resolved</th>
                                         <th>Closed</th>
                                         <th>Avg Resolution Time</th>
+                                        <th>Avg Response Time</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -242,6 +243,7 @@ const Statistics = () => {
                                             <td>{dept.status_breakdown.resolved}</td>
                                             <td>{dept.status_breakdown.closed}</td>
                                             <td>{formatHours(dept.avg_resolution_time_hours)}</td>
+                                            <td>{formatHours(dept.avg_response_time_hours)}</td>
                                         </tr>
                                     ))}
                                 </tbody>

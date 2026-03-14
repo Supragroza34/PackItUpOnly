@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { reassignTicket, fetchStaffList } from '../store/slices/staffSlice';
 import { checkAuth } from '../store/slices/authSlice';
 import { useAuth } from '../context/AuthContext';
 import './TicketPage.css';
@@ -9,6 +10,7 @@ function TicketPage() {
     const { ticket_id } = useParams();
     const dispatch = useDispatch();
     const reduxUser = useSelector((state) => state.auth.user);
+    const { staffList } = useSelector((state) => state.staff);
     const { user: contextUser } = useAuth();
     const user = reduxUser ?? contextUser;
     const [ticket, setTicket] = useState(null);
@@ -18,6 +20,10 @@ function TicketPage() {
     const authHeaders = () => ({
         'Authorization': `Bearer ${localStorage.getItem('access')}`,
     });
+
+    useEffect(() => {
+        dispatch(fetchStaffList());
+    }, [dispatch]);
 
     useEffect(() => {
         if (!user && localStorage.getItem('access')) {
@@ -52,6 +58,18 @@ function TicketPage() {
             .then(data => data && setTicket(data))
             .catch(err => console.error('Error:', err));
     }, [ticket_id, navigate]);
+    
+    const redirectQuery = async (ticketId, assignedToId) => {
+        const value = assignedToId === '' ? null : parseInt(assignedToId, 10);
+        try {
+            await dispatch(reassignTicket({
+                ticketId,
+                updates: { assigned_to: value },
+            })).unwrap().then(navigate('/staff/dashboard'));
+        } catch (err) {
+            alert('Failed to redirect ticket: ' + err);
+        }
+    };
 
     function confirmCloseTwice() {
         if (!window.confirm('Are you sure you want to close this ticket?')) return false;
@@ -181,6 +199,28 @@ function TicketPage() {
                     />
                     <button type="submit">Send reply</button>
                 </form>
+            </div>
+
+            <div className="ticket-card">
+                <h2 className="ticket-card-title">Escalate ticket?</h2>
+                <td className="assign-cell">
+                    <select
+                        className="assign-select"
+                        value={ticket.assigned_to ?? ''}
+                        onChange={(e) => redirectQuery(ticket.id, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <option value="">Unassigned</option>
+                        {staffList.map((staff) => (
+                            <option key={staff.id} value={staff.id}>
+                                {staff.first_name} {staff.last_name} : {staff.ticket_count} tickets
+                            </option>
+                        ))}
+                    </select>
+                    {staffList.length === 0 && (
+                        <span className="assign-hint">No staff in list</span>
+                    )}
+                </td>
             </div>
         </div>
     );

@@ -388,7 +388,6 @@ const TicketsManagement = () => {
                                         onChange={(e) => setReplyBody(e.target.value)}
                                         placeholder="Write a reply..."
                                         rows={3}
-                                        required
                                     />
                                     <button type="button" onClick={handleSubmitReply} className="btn-send-reply">Send Reply</button>
                                 </div>

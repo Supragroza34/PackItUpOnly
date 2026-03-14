@@ -235,6 +235,7 @@ function UserDashboardPage() {
             />
         </div>
 
+
         <div className="dashboard-summary">
           <div className="summary-card">
             <div className="summary-count">{tickets.length}</div>

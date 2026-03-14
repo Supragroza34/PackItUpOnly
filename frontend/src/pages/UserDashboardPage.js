@@ -47,6 +47,9 @@ function UserDashboardPage() {
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [replyBody, setReplyBody] = useState("");
+  const [replySubmitting, setReplySubmitting] = useState(false);
+  const [replyError, setReplyError] = useState("");
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
 
@@ -191,6 +194,82 @@ function UserDashboardPage() {
     } catch (err) {
       console.error("PDF download error:", err);
       alert(`Could not download PDF: ${err.message}`);
+    }
+  }
+
+  async function fetchTicketReplies(ticketId, token) {
+    const res = await fetch(`${API_BASE}/tickets/${ticketId}/replies/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to fetch replies (${res.status})`);
+    }
+
+    const replies = await res.json();
+    return Array.isArray(replies) ? replies : [];
+  }
+
+  async function handleSendReply() {
+    if (!selectedTicket || selectedTicket.status === "closed") return;
+
+    const message = replyBody.trim();
+    if (!message) {
+      setReplyError("Reply cannot be empty.");
+      return;
+    }
+
+    const token = localStorage.getItem("access");
+    if (!token) {
+      nav("/login", { replace: true });
+      return;
+    }
+
+    setReplySubmitting(true);
+    setReplyError("");
+
+    try {
+      const createRes = await fetch(
+        `${API_BASE}/tickets/${selectedTicket.id}/replies/`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ body: message }),
+        }
+      );
+
+      if (!createRes.ok) {
+        const err = await createRes.json().catch(() => ({}));
+        setReplyError(err.error || err.body?.[0] || "Could not send reply.");
+        return;
+      }
+
+      const updatedReplies = await fetchTicketReplies(selectedTicket.id, token);
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === selectedTicket.id ? { ...t, replies: updatedReplies } : t
+        )
+      );
+
+      setSelectedTicket((prev) =>
+        prev && prev.id === selectedTicket.id
+          ? { ...prev, replies: updatedReplies }
+          : prev
+      );
+
+      setReplyBody("");
+    } catch (err) {
+      setReplyError(`Could not send reply: ${err.message}`);
+    } finally {
+      setReplySubmitting(false);
     }
   }
 
@@ -411,7 +490,7 @@ function UserDashboardPage() {
               )}
 
               <div className="ticket-responses">
-                <h4 className="ticket-responses-title">Responses From Staff:</h4>
+                <h4 className="ticket-responses-title">Conversation:</h4>
                 {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
                   selectedTicket.replies.map((reply) => (
                     <div key={reply.id} className="ticket-response">
@@ -426,6 +505,35 @@ function UserDashboardPage() {
                   <p className="ticket-response-none">No Responses Yet.</p>
                 )}
               </div>
+
+              {selectedTicket.status !== "closed" && (
+                <div className="ticket-reply-composer">
+                  <label className="ticket-reply-label" htmlFor="student-reply-box">
+                    Your reply
+                  </label>
+                  <textarea
+                    id="student-reply-box"
+                    className="ticket-reply-textarea"
+                    value={replyBody}
+                    onChange={(e) => {
+                      setReplyBody(e.target.value);
+                      if (replyError) setReplyError("");
+                    }}
+                    placeholder="Write your response to continue the conversation..."
+                    rows={4}
+                    maxLength={2000}
+                  />
+                  {replyError && <p className="ticket-reply-error">{replyError}</p>}
+                  <button
+                    type="button"
+                    className="ticket-reply-send-btn"
+                    onClick={handleSendReply}
+                    disabled={replySubmitting || !replyBody.trim()}
+                  >
+                    {replySubmitting ? "Sending..." : "Send reply"}
+                  </button>
+                </div>
+              )}
 
               <button
                 type="button"

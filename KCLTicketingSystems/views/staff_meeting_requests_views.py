@@ -12,6 +12,7 @@ from ..serializers import (
     OfficeHoursSerializer
 )
 
+from ..utils import notify_staff_on_meeting_request, notify_student_on_meeting_response
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -47,6 +48,8 @@ def meeting_request_accept(request, request_id):
     
     meeting_request.status = MeetingRequest.Status.ACCEPTED
     meeting_request.save()
+
+    notify_student_on_meeting_response(meeting_request, request.user)
     
     serializer = MeetingRequestSerializer(meeting_request)
     return Response(serializer.data)
@@ -68,6 +71,8 @@ def meeting_request_deny(request, request_id):
     
     meeting_request.status = MeetingRequest.Status.DENIED
     meeting_request.save()
+
+    notify_student_on_meeting_response(meeting_request, request.user)
     
     serializer = MeetingRequestSerializer(meeting_request)
     return Response(serializer.data)
@@ -121,11 +126,18 @@ def meeting_request_create(request):
     Create a new meeting request (for students).
     """
     data = request.data.copy()
+
+    data['student'] = request.user.id
+
     serializer = MeetingRequestCreateSerializer(data=data)
     
     if serializer.is_valid():
         # Set the student to the current user
-        serializer.save(student=request.user)
+        #serializer.save(student=request.user)
+        meeting_request = serializer.save(student=request.user)
+
+        notify_staff_on_meeting_request(meeting_request)
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

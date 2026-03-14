@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../context/AuthContext';
 import { logout as logoutAction } from '../store/slices/authSlice';
 import './StaffDashboardPage.css';
+import NotificationBell from "../components/NotificationBell";
+
 
 function statusClass(status, isOverdue) {
     if (isOverdue) return 'sd-status-badge sd-status-overdue';
@@ -34,6 +36,7 @@ function StaffDashboardPage() {
     const [allTickets, setAllTickets] = useState([]);
     const [filter, setFilter] = useState('open');
     const [nameSearch, setNameSearch] = useState('');
+    const [selectedTicket, setSelectedTicket] = useState(null);
     const navigate = useNavigate();
 
     // Hard guard: only staff (and admin) should see this page
@@ -127,12 +130,20 @@ function StaffDashboardPage() {
             <div className="sd-topbar">
                 <h1>👋 Welcome, {user?.first_name} {user?.last_name}</h1>
                 <div className="sd-topbar-actions">
+                     <NotificationBell
+                        onNotificationClick={(notif) => {
+                            const ticket = tickets.find((t) => t.id === notif.ticket_id);
+                            if (ticket) setSelectedTicket(ticket);
+                        }}
+                    />
+                    
                     <button
                         className="sd-meeting-btn"
                         onClick={() => navigate('/staff/dashboard/meeting-requests')}
                     >
                         📅 Meeting Requests
                     </button>
+                   
                     <button className="sd-logout-btn" onClick={handleLogout}>Log Out</button>
                 </div>
             </div>

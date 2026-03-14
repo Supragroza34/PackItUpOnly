@@ -91,12 +91,14 @@
 /* Profile dropdown wrapper */
 .navbar-dropdown-wrapper {
   position: relative;
+  padding-bottom: 6px;
+  padding-top: 6px;
 }
 
 /* Dropdown menu panel */
 .navbar-dropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: 100%;
   right: 0;
   background: #ffffff;
   border-radius: 8px;

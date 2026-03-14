@@ -74,7 +74,7 @@ def _chat_with_gemini(messages, system_prompt=None):
     chat_history = history[:-1]
 
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-flash-latest",
         system_instruction=full_system,
     )
     chat = model.start_chat(history=chat_history)

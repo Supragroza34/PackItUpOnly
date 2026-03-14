@@ -10,6 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ def _chat_with_ollama(messages, model="llama2", system_prompt=None):
         import ollama
     except ImportError:
         raise RuntimeError("Ollama package not installed.")
+    
     system_prompt = system_prompt or DEFAULT_SYSTEM
     ollama_messages = [{"role": "system", "content": system_prompt}]
     for m in messages:
@@ -35,10 +37,16 @@ def _chat_with_ollama(messages, model="llama2", system_prompt=None):
         content = m.get("content")
         if role in ("user", "assistant") and content is not None:
             ollama_messages.append({"role": role, "content": str(content).strip()})
+            
     if len(ollama_messages) <= 1:
         raise ValueError("At least one user message required.")
-    # Create client with longer timeout (120 seconds for model loading)
-    client = ollama.Client(timeout=120.0)
+
+    # NEW: Fetch the URL from Heroku config vars; default to local for development
+    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+
+    # Create client with the remote host and a long timeout for model loading
+    client = ollama.Client(host=ollama_url, timeout=120.0)
+    
     response = client.chat(model=model, messages=ollama_messages)
     reply = response.get("message") or {}
     return (reply.get("content") or "").strip()

@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Q
 from datetime import timedelta
 
 from ..models import Ticket, User
@@ -126,7 +126,7 @@ def department_staff_list(request):
             role__in=[User.Role.STAFF, User.Role.ADMIN], 
             department=request.user.department
         ).annotate(
-            ticket_count=Count('assigned_tickets')
+            ticket_count=Count('assigned_tickets', filter=Q(assigned_tickets__status__in=[Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS]))
         ).order_by('ticket_count').values(
             'id', 'username', 'first_name', 'last_name', 'email', 'role', 'department', 'ticket_count',
         )

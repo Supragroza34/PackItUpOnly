@@ -1,8 +1,11 @@
 """
 AI Chatbot: Django-rendered chat page + optional JSON API.
-Uses Ollama (e.g. ollama run llama2).
+Uses Google Gemini API with ticket context.
 """
 import logging
+import os
+
+import google.generativeai as genai
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_http_methods
@@ -10,9 +13,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-import os
+
+from KCLTicketingSystems.models import Ticket
 
 logger = logging.getLogger(__name__)
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 DEFAULT_SYSTEM = (
     "You are a helpful support assistant for students at KCL. "
@@ -23,33 +29,57 @@ SESSION_KEY_MESSAGES = "ai_chatbot_messages"
 SESSION_KEY_ERROR = "ai_chatbot_error"
 
 
-def _chat_with_ollama(messages, model="llama2", system_prompt=None):
-    """Call Ollama with message list; return assistant content or raise."""
-    try:
-        import ollama
-    except ImportError:
-        raise RuntimeError("Ollama package not installed.")
-    
+def _get_ticket_context():
+    """Fetches recent tickets to give the AI background knowledge."""
+    tickets = Ticket.objects.all().order_by("-created_at")[:15]
+    context = "System Knowledge: The following tickets exist in the database:\n"
+    for t in tickets:
+        context += (
+            f"- ID: {t.id}, Issue: {t.type_of_issue}, "
+            f"Status: {t.status}, Priority: {t.priority}, Department: {t.department}\n"
+        )
+    return context
+
+
+def _chat_with_gemini(messages, system_prompt=None):
+    """
+    Sends context + user messages to Gemini 1.5 Flash.
+    messages: [{"role": "user"|"assistant", "content": "..."}, ...]
+    """
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is not set. Add it to .env or Heroku config vars.")
+
     system_prompt = system_prompt or DEFAULT_SYSTEM
-    ollama_messages = [{"role": "system", "content": system_prompt}]
+    context = _get_ticket_context()
+    full_system = f"{system_prompt}\n\n{context}"
+
+    # Convert our format (user/assistant) to Gemini history (user/model)
+    history = []
     for m in messages:
         role = m.get("role")
-        content = m.get("content")
-        if role in ("user", "assistant") and content is not None:
-            ollama_messages.append({"role": role, "content": str(content).strip()})
-            
-    if len(ollama_messages) <= 1:
+        content = (m.get("content") or "").strip()
+        if not content:
+            continue
+        if role == "user":
+            history.append({"role": "user", "parts": [content]})
+        elif role == "assistant":
+            history.append({"role": "model", "parts": [content]})
+
+    if not history or history[-1]["role"] != "user":
         raise ValueError("At least one user message required.")
 
-    # NEW: Fetch the URL from Heroku config vars; default to local for development
-    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    # Last message is the new user input; history is everything before
+    new_user_message = history[-1]["parts"][0]
+    chat_history = history[:-1]
 
-    # Create client with the remote host and a long timeout for model loading
-    client = ollama.Client(host=ollama_url, timeout=120.0)
-    
-    response = client.chat(model=model, messages=ollama_messages)
-    reply = response.get("message") or {}
-    return (reply.get("content") or "").strip()
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        system_instruction=full_system,
+    )
+    chat = model.start_chat(history=chat_history)
+    response = chat.send_message(new_user_message)
+    return (response.text or "").strip()
 
 
 @require_http_methods(["GET", "POST"])
@@ -64,14 +94,14 @@ def chat_page(request):
             messages = list(messages)
             messages.append({"role": "user", "content": user_message})
             try:
-                content = _chat_with_ollama(messages)
+                content = _chat_with_gemini(messages)
                 messages.append({"role": "assistant", "content": content})
                 error = None
             except Exception as e:
-                logger.exception("Ollama chat error")
+                logger.exception("Gemini chat error")
                 err_msg = str(e).strip()
-                if "connection" in err_msg.lower() or "refused" in err_msg.lower():
-                    error = "Cannot reach Ollama. Start Ollama and run a model (e.g. ollama run llama2)."
+                if "GEMINI_API_KEY" in err_msg or "api_key" in err_msg.lower():
+                    error = "Gemini API key not configured. Set GEMINI_API_KEY in .env or Heroku config."
                 else:
                     error = err_msg or "Chat request failed."
             request.session[SESSION_KEY_MESSAGES] = messages
@@ -91,7 +121,7 @@ def chat_page(request):
 def chat(request):
     """
     POST body: { "messages": [ {"role": "user"|"assistant", "content": "..."}, ... ] }
-    Optionally: "model": "llama2" (default), "system": "optional system prompt"
+    Optionally: "system": "optional system prompt"
     Returns: { "message": { "role": "assistant", "content": "..." } }
     """
     messages = request.data.get("messages")
@@ -101,30 +131,21 @@ def chat(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    model = request.data.get("model") or "llama2"
     system_prompt = request.data.get("system") or DEFAULT_SYSTEM
 
     try:
-        content = _chat_with_ollama(messages, model=model, system_prompt=system_prompt)
+        content = _chat_with_gemini(messages, system_prompt=system_prompt)
         return Response({"message": {"role": "assistant", "content": content}})
     except RuntimeError as e:
-        if "not installed" in str(e).lower():
+        if "GEMINI_API_KEY" in str(e):
             return Response(
-                {"error": "Ollama package not installed. Add 'ollama' to requirements.txt and install."},
+                {"error": "GEMINI_API_KEY not configured. Set it in .env or Heroku config vars."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         raise
     except Exception as e:
-        logger.exception("Ollama chat error")
+        logger.exception("Gemini chat error")
         err_msg = str(e).strip()
-        if "connection" in err_msg.lower() or "refused" in err_msg.lower():
-            return Response(
-                {
-                    "error": "Cannot reach Ollama. Start Ollama and pull a model (e.g. ollama run llama2).",
-                    "detail": err_msg,
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
         return Response(
             {"error": "Chat request failed.", "detail": err_msg},
             status=status.HTTP_502_BAD_GATEWAY,

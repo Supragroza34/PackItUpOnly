@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from .models.ticket import Ticket
 from .models.reply import Reply
 from .models.user import User
@@ -135,6 +136,21 @@ class TicketCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'priority': {'required': False},
         }
+    
+    def create(self, validated_data):
+        department = validated_data.get("department")
+
+        # Find staff in the same department with the least tickets
+        staff = User.objects.filter(
+            role__in=[User.Role.STAFF, User.Role.ADMIN],
+            department=department
+        ).annotate(
+            ticket_count=Count("assigned_tickets")
+        ).order_by("ticket_count").first()
+
+        validated_data["assigned_to"] = staff
+
+        return Ticket.objects.create(**validated_data)    
 
 
 class TicketUpdateSerializer(serializers.ModelSerializer):
@@ -149,6 +165,17 @@ class TicketUpdateSerializer(serializers.ModelSerializer):
         model = Ticket
         fields = ['status', 'priority', 'assigned_to', 'admin_notes']
 
+class StaffReassignTicket(serializers.ModelSerializer):
+    """Serializer for staff to reassign tickets"""
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="staff"),
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Ticket
+        fields = ['assigned_to']            
 
 class DashboardStatsSerializer(serializers.Serializer):
     """Serializer for dashboard statistics"""

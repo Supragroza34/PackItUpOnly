@@ -42,6 +42,10 @@ function getStatusLabel(ticket) {
   return `Closed by ${label}`;
 }
 
+function isTicketClosed(ticket) {
+  return (ticket?.status || "") === "closed";
+}
+
 function UserDashboardPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -169,7 +173,12 @@ function UserDashboardPage() {
     }
   }
 
-  async function handleDownloadPdf(ticketId) {
+  async function handleDownloadPdf(ticketId, ticketStatus) {
+    if (ticketStatus !== "closed") {
+      alert("PDF summary is available once the ticket is closed.");
+      return;
+    }
+
     const token = localStorage.getItem("access");
     try {
       const res = await fetch(`${API_BASE}/tickets/${ticketId}/pdf/`, {
@@ -411,19 +420,19 @@ function UserDashboardPage() {
                     <button
                       type="button"
                       className={`download-pdf-btn${
-                        ticket.status !== "closed"
+                        !isTicketClosed(ticket)
                           ? " download-pdf-btn--disabled"
                           : ""
                       }`}
-                      disabled={ticket.status !== "closed"}
+                      disabled={!isTicketClosed(ticket)}
                       title={
-                        ticket.status !== "closed"
+                        !isTicketClosed(ticket)
                           ? "Available once the ticket is closed"
                           : "Download PDF summary"
                       }
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDownloadPdf(ticket.id);
+                        handleDownloadPdf(ticket.id, ticket.status);
                       }}
                     >
                       📄 Download Summary
@@ -538,17 +547,19 @@ function UserDashboardPage() {
               <button
                 type="button"
                 className={`download-pdf-btn download-pdf-btn--modal${
-                  selectedTicket.status !== "closed"
+                  !isTicketClosed(selectedTicket)
                     ? " download-pdf-btn--disabled"
                     : ""
                 }`}
-                disabled={selectedTicket.status !== "closed"}
+                disabled={!isTicketClosed(selectedTicket)}
                 title={
-                  selectedTicket.status !== "closed"
+                  !isTicketClosed(selectedTicket)
                     ? "Available once the ticket is closed"
                     : "Download PDF summary"
                 }
-                onClick={() => handleDownloadPdf(selectedTicket.id)}
+                onClick={() =>
+                  handleDownloadPdf(selectedTicket.id, selectedTicket.status)
+                }
               >
                 📄 Download PDF Summary
               </button>

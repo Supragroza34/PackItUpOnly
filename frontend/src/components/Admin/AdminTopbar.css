@@ -1,0 +1,98 @@
+.admin-topbar-container {
+  max-width: 1200px;
+  margin: 0 auto 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* spacing between rows */
+}
+
+/* Row 1: welcome left, actions right */
+.topbar-row-1 {
+  display: flex;
+  justify-content: space-between; /* welcome left, actions right */
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.topbar-row-1 h1 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #1a237e;
+}
+
+.topbar-row-1-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Row 2: navigation tabs centered */
+.topbar-row-2 {
+  display: flex;
+  justify-content: center; /* center the nav buttons */
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Nav tabs */
+.nav-tab {
+  padding: 8px 18px;
+  background: transparent;
+  color: #546e7a;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-tab:hover {
+  color: #1a237e;
+  border-color: #1a237e;
+}
+
+.nav-tab.active {
+  background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+  color: #ffffff;
+  border-color: #1a237e;
+}
+
+/* Logout button */
+.logout-btn {
+  padding: 8px 18px;
+  background: transparent;
+  border: 2px solid #e53935;
+  color: #e53935;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.logout-btn:hover {
+  background: #e53935;
+  color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .topbar-row-1 {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .topbar-row-2 {
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .nav-tab,
+  .logout-btn {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+}

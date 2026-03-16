@@ -15,6 +15,7 @@ import TicketPage from "./pages/TicketPage";
 import StaffDirectory from "./pages/StaffDirectory";
 import StaffMeetingPage from "./pages/StaffMeetingPage";
 import StaffMeetingRequestsPage from "./pages/StaffMeetingRequestsPage";
+import MyMeetingsPage from "./pages/MyMeetingsPage";
 
 import Login from "./Login";
 import Signup from "./Signup";
@@ -94,6 +95,15 @@ export default function App() {
             element={
               <Protected>
                 <StaffMeetingRequestsPage />
+              </Protected>
+            }
+          />
+
+          <Route
+            path="/my-meetings"
+            element={
+              <Protected>
+                <MyMeetingsPage />
               </Protected>
             }
           />

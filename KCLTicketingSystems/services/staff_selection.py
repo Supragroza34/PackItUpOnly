@@ -1,11 +1,11 @@
 from ..models import User, Ticket
 
-def get_staff_id_with_least_tickets_in_department(department):
+def get_staff_with_least_tickets_in_department(department):
     staff = get_staff_from_department(department)
     staff_map = map_number_of_tickets_staff(staff)
     ticket_nums = staff_map.keys()
     smallest_num = min(ticket_nums)
-    return staff_map.get(smallest_num)["id"]
+    return staff_map.get(smallest_num)
 
 def map_number_of_tickets_staff(staff_members):
     staff_map = {}

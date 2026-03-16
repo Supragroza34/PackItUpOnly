@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404
 from ..models import Ticket
 from ..serializers import ReplyCreateSerializer, ReplySerializer
 
+from ..utils import notify_user_on_reply, notify_staff_on_student_reply
+
 
 def _staff_can_access_ticket(user, ticket):
     """Staff can access tickets assigned to them; admins can access any."""
@@ -67,7 +69,12 @@ class ReplyCreateView(generics.CreateAPIView):
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=self.request.user)
+            reply = serializer.save(user=self.request.user)
+            ticket = reply.ticket
+          
+            # Notify student (ticket owner) if staff replied
+            notify_user_on_reply(ticket, reply.user)
+
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=400)
@@ -101,6 +108,11 @@ def ticket_replies(request, ticket_id):
     data = {**request.data, "ticket": ticket.id}
     serializer = ReplyCreateSerializer(data=data)
     if serializer.is_valid():
-        serializer.save(user=request.user)
+        reply = serializer.save(user=request.user)
+        ticket = reply.ticket
+
+        # Notify staff if student replied
+        notify_staff_on_student_reply(ticket, reply.user)
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

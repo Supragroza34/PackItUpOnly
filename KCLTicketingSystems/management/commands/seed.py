@@ -14,6 +14,7 @@ from random import randint, random, choice
 from django.core.management.base import BaseCommand, CommandError
 from ...models import User, Ticket, OfficeHours
 from datetime import time
+from ...services import staff_selection
 
 user_fixtures = [
     {'username': 'johndoe', 'email': 'john.doe@example.org', 'k_number': '12345678', 'first_name': 'John', 'last_name': 'Doe', 'department': 'Informatics', 'role': 'student'},
@@ -128,14 +129,21 @@ class Command(BaseCommand):
         for i in range(number_of_tickets):
             self.generate_one_ticket(student)
 
+    def get_least_busy_staff(self, department):
+        staff_member = staff_selection.get_staff_with_least_tickets_in_department(department)
+        return staff_member
+
     def generate_one_ticket(self, student):
         department = self.get_random_department()
-        issue = "Problem in the " + department + " department."        
+        issue = "Problem in the " + department + " department."
+        staff_member_id = self.get_least_busy_staff(department)["id"]
+        staff_member = User.objects.get(id=staff_member_id)        
         ticket_data = {
             'user': student,
             'department': department,
             'type_of_issue': issue,
-            'additional_details': 'Everything is broken.'
+            'additional_details': 'Everything is broken.',
+            'assigned_to': staff_member,
         }
         self.try_create_ticket(ticket_data)   
     
@@ -211,7 +219,8 @@ class Command(BaseCommand):
             user=data['user'],
             department=data['department'],
             type_of_issue=data['type_of_issue'],
-            additional_details=data['additional_details']
+            additional_details=data['additional_details'],
+            assigned_to=data['assigned_to']
         )
         ticket.save()
 

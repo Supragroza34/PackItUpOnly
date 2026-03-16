@@ -68,6 +68,8 @@ urlpatterns = [
     path('api/staff/dashboard/<int:ticket_id>/', ticket_info_view.ticket_info, name='ticket_info'),
     path('api/staff/dashboard/<int:ticket_id>/update/', ticket_info_view.staff_ticket_update, name='staff_ticket_update'),
     path('api/staff/dashboard/reply/<int:ticket_id>/', reply_view.reply_details, name="reply"),
+    path('api/staff/list/', ticket_info_view.department_staff_list, name='department_staff_list'),
+    path('api/staff/dashboard/<int:ticket_id>/reassign', ticket_info_view.staff_ticket_reassign, name='staff-ticket-reassign'),
     
     # Meeting Requests - Staff Side
     path('api/staff/dashboard/meeting-requests/', staff_meeting_requests_views.meeting_request_list, name="meeting_request_list"),

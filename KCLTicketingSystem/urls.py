@@ -25,8 +25,10 @@ from django.conf.urls.static import static
 from KCLTicketingSystems import views
 from AIChatbot.views import chat_page
 
-from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view, staff_meeting_requests_views
+from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view, staff_meeting_requests_views, notification_view
 #from KCLTicketingSystems.views.email_webhook import email_webhook
+
+from KCLTicketingSystems.views import notifications_list, mark_notification_read
 
 
 urlpatterns = [
@@ -85,6 +87,9 @@ urlpatterns = [
     
     path('api/dashboard/', views.user_dashboard, name="user_dashboard"),
     path('api/dashboard/tickets/<int:ticket_id>/close/', views.student_close_ticket, name='student_close_ticket'),
+
+    path("notifications/", notifications_list, name="notifications_list"),
+    path("notifications/<int:pk>/read/", mark_notification_read, name="mark_notification_read"),
 
     #path('api/email-webhook/', email_webhook, name='email_webhook'),
 

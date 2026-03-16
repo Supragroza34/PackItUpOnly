@@ -12,7 +12,8 @@ from faker import Faker
 from faker.providers import job
 from random import randint, random, choice
 from django.core.management.base import BaseCommand, CommandError
-from ...models import User, Ticket
+from ...models import User, Ticket, OfficeHours
+from datetime import time
 from ...services import staff_selection
 
 user_fixtures = [
@@ -73,6 +74,12 @@ class Command(BaseCommand):
             print(f"Superuser creation skipped: {e}")
         
         self.create_users()
+        # Seed office hours for staff users so they have default availability
+        try:
+            self.seed_office_hours()
+        except Exception as e:
+            print(f"Seeding office hours skipped: {e}")
+
         self.users = User.objects.all()
         self.create_student_tickets()
         self.tickets = Ticket.objects.all()
@@ -252,6 +259,35 @@ class Command(BaseCommand):
             user.is_staff = True
         user.set_password(Command.DEFAULT_PASSWORD)
         user.save()
+
+    def seed_office_hours(self):
+        """
+        Create default office hours blocks for all staff users.
+        Existing office hours for each staff user are removed first to
+        make the seeding idempotent.
+        """
+        # single default template applied to all staff users (idempotent)
+        default_template = [
+            {"day_of_week": "Monday", "start_time": time(9, 0), "end_time": time(12, 0)},
+            {"day_of_week": "Wednesday", "start_time": time(14, 0), "end_time": time(16, 0)},
+            {"day_of_week": "Friday", "start_time": time(10, 0), "end_time": time(12, 0)},
+        ]
+
+        staff_qs = User.objects.filter(role=User.Role.STAFF)
+        for staff in staff_qs:
+            try:
+                OfficeHours.objects.filter(staff=staff).delete()
+                for b in default_template:
+                    OfficeHours.objects.create(
+                        staff=staff,
+                        day_of_week=b["day_of_week"],
+                        start_time=b["start_time"],
+                        end_time=b["end_time"],
+                    )
+                print(f"Seeded office hours for {staff.username}")
+            except Exception:
+                # don't fail the entire seeding process for one user
+                print(f"Could not seed office hours for {staff}")
 
 def create_username(k_number):
     """

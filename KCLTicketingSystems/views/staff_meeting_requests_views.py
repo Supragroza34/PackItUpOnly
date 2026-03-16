@@ -114,12 +114,19 @@ def office_hours_delete(request, hours_id):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def meeting_request_create(request):
     """
-    Create a new meeting request (for students).
+    GET: List meeting requests for the current user (student).
+    POST: Create a new meeting request (for students).
     """
+    if request.method == 'GET':
+        meeting_requests = MeetingRequest.objects.filter(student=request.user)
+        serializer = MeetingRequestSerializer(meeting_requests, many=True)
+        return Response(serializer.data)
+
+    # POST
     data = request.data.copy()
     serializer = MeetingRequestCreateSerializer(data=data)
     

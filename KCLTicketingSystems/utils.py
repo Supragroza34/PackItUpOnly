@@ -124,3 +124,17 @@ def notify_student_on_meeting_response(meeting_request, staff_user):
         message=message,
         ticket=None  
     )
+
+
+def notify_staff_on_student_reply(ticket, student_user):
+    """
+    Notify the staff assigned to a ticket when the student replies.
+    """
+    staff_user = ticket.assigned_to
+    if staff_user and staff_user != student_user:
+        Notification.objects.create(
+            user=staff_user,
+            title="New Student Reply",
+            message=f"{student_user.get_full_name()} replied to ticket #{ticket.id}: {ticket.type_of_issue}",
+            ticket=ticket
+        )

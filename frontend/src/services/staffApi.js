@@ -13,7 +13,7 @@ function formatValidationErrors(obj) {
 
 // Helper to get auth headers with JWT token
 function getAuthHeaders() {
-    const token = localStorage.getItem('access');
+    const token = sessionStorage.getItem('access');
     return {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})

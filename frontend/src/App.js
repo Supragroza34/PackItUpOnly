@@ -28,7 +28,7 @@ import ChatbotPage from "./AIChatbot/ChatbotPage";
 import "./App.css";
 
 function isAuthed() {
-  return !!localStorage.getItem("access");
+  return !!sessionStorage.getItem("access");
 }
 
 function Protected({ children }) {

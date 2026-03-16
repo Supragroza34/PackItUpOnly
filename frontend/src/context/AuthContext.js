@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
         try {
-            const token = localStorage.getItem('access');
+            const token = sessionStorage.getItem('access');
             if (token) {
                 const userData = await adminApi.getCurrentUser();
                 setUser(userData);
@@ -43,8 +43,8 @@ export const AuthProvider = ({ children }) => {
                 method: 'POST',
                 body: JSON.stringify({ username, password }),
             });
-            localStorage.setItem('access', data.access);
-            localStorage.setItem('refresh', data.refresh);
+            sessionStorage.setItem('access', data.access);
+            sessionStorage.setItem('refresh', data.refresh);
             
             // Fetch user data
             const userData = await adminApi.getCurrentUser();
@@ -58,8 +58,8 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            localStorage.removeItem('access');
-            localStorage.removeItem('refresh');
+            sessionStorage.removeItem('access');
+            sessionStorage.removeItem('refresh');
             setUser(null);
             return { success: true };
         } catch (err) {

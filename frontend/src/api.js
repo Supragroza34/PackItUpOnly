@@ -6,7 +6,7 @@ const API_BASE = isLocal
 
 
 export function authHeaders() {
-  const token = localStorage.getItem("access");
+  const token = sessionStorage.getItem("access");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

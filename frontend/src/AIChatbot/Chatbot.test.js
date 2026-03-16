@@ -7,7 +7,7 @@ describe('Chatbot component (AI helper)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Ensure authHeaders() returns a token
-    localStorage.setItem('access', 'test-token-123');
+    sessionStorage.setItem('access', 'test-token-123');
   });
 
   afterEach(() => {

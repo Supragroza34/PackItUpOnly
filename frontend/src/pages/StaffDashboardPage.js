@@ -48,7 +48,7 @@ function StaffDashboardPage() {
     // Fetch all tickets once for summary card counts
     useEffect(() => {
         fetch('/api/staff-dashboard/?filtering=all', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` },
+            headers: { 'Authorization': `Bearer ${sessionStorage.getItem('access')}` },
         })
             .then((res) => res.json())
             .then((data) => setAllTickets(extractArray(data)))
@@ -60,12 +60,12 @@ function StaffDashboardPage() {
         const params = new URLSearchParams({ filtering: filter });
         if (nameSearch.trim()) params.set('search', nameSearch.trim());
         fetch('/api/staff-dashboard/?' + params.toString(), {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` },
+            headers: { 'Authorization': `Bearer ${sessionStorage.getItem('access')}` },
         })
             .then((res) => {
                 if (res.status === 401) {
                     alert('You do not have permission to access this page.');
-                    localStorage.removeItem('access');
+                    sessionStorage.removeItem('access');
                     navigate('/login');
                     return null;
                 }
@@ -99,7 +99,7 @@ function StaffDashboardPage() {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('access')}`,
+                    'Authorization': `Bearer ${sessionStorage.getItem('access')}`,
                 },
                 body: JSON.stringify({ status: 'closed' }),
             });

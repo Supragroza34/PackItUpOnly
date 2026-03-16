@@ -71,7 +71,7 @@ function renderWithStore(preloadedState = { auth: { user: null, loading: false }
 describe("UserDashboardPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.clear();
+    sessionStorage.clear();
     global.fetch = jest.fn();
     global.alert = jest.fn();
     window.alert = global.alert;
@@ -94,7 +94,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("redirects to login when dashboard API returns 401", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockResolvedValue({ ok: false, status: 401 });
 
     renderWithStore(loggedInState());
@@ -105,7 +105,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("shows server error when dashboard response is not ok", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockResolvedValue({ ok: false, status: 500, text: () => Promise.resolve("Broken") });
 
     renderWithStore(loggedInState());
@@ -114,7 +114,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("shows network error when dashboard fetch throws", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
     renderWithStore(loggedInState());
@@ -123,7 +123,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("renders tickets, opens modal, and closes modal with close button and overlay", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ tickets: [makeTicket({ replies: [{ id: 1, user_username: "staff1", body: "We are checking.", created_at: "2025-01-02T11:00:00Z" }] })] }),
@@ -144,7 +144,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("shows reply composer for open tickets and hides it for closed tickets", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ tickets: [makeTicket({ status: "pending" })] }),
@@ -157,7 +157,7 @@ describe("UserDashboardPage", () => {
 
     unmount();
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ tickets: [makeTicket({ status: "closed" })] }),
@@ -185,7 +185,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("submits a student reply successfully and refreshes the conversation", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch
       .mockResolvedValueOnce({
         ok: true,
@@ -224,7 +224,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("shows reply error from API and clears it when the user types again", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch
       .mockResolvedValueOnce({
         ok: true,
@@ -253,7 +253,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("shows reply fetch failure after a successful post refresh attempt", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch
       .mockResolvedValueOnce({
         ok: true,
@@ -273,7 +273,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("redirects to login when sending a reply without a token", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ tickets: [makeTicket({ id: 6, status: "pending" })] }),
@@ -281,7 +281,7 @@ describe("UserDashboardPage", () => {
 
     renderWithStore(loggedInState());
     fireEvent.click(await screen.findByText(/login issue/i));
-    localStorage.removeItem("access");
+    sessionStorage.removeItem("access");
     fireEvent.change(screen.getByLabelText(/your reply/i), {
       target: { value: "Token expired" },
     });
@@ -293,7 +293,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("handles close ticket success, failure, network error, and cancelled confirmations", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     window.confirm.mockReturnValueOnce(false);
     global.fetch.mockResolvedValueOnce({
       ok: true,
@@ -305,7 +305,7 @@ describe("UserDashboardPage", () => {
     firstRender.unmount();
 
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     window.confirm.mockReturnValueOnce(true).mockReturnValueOnce(false);
     global.fetch.mockResolvedValueOnce({
       ok: true,
@@ -317,7 +317,7 @@ describe("UserDashboardPage", () => {
     secondRender.unmount();
 
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     window.confirm.mockReturnValue(true);
     global.fetch
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tickets: [makeTicket({ id: 12, status: "pending" })] }) })
@@ -328,7 +328,7 @@ describe("UserDashboardPage", () => {
     thirdRender.unmount();
 
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     window.confirm.mockReturnValue(true);
     global.fetch
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tickets: [makeTicket({ id: 13, status: "pending" })] }) })
@@ -339,7 +339,7 @@ describe("UserDashboardPage", () => {
     fourthRender.unmount();
 
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     window.confirm.mockReturnValue(true);
     global.fetch
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tickets: [makeTicket({ id: 14, status: "pending" })] }) })
@@ -350,7 +350,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("closes a ticket from the modal action", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     window.confirm.mockReturnValue(true);
     global.fetch
       .mockResolvedValueOnce({
@@ -376,7 +376,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("covers status labels and progress widths for closed, resolved, and unknown states", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -402,7 +402,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("handles PDF download success, API failure, network failure, and non-closed guard", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tickets: [makeTicket({ id: 31, status: "closed" })] }) })
       .mockResolvedValueOnce({ ok: true, blob: () => Promise.resolve(new Blob(["pdf"], { type: "application/pdf" })) });
@@ -415,7 +415,7 @@ describe("UserDashboardPage", () => {
     successRender.unmount();
 
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tickets: [makeTicket({ id: 32, status: "closed" })] }) })
       .mockResolvedValueOnce({ ok: false, status: 403, json: () => Promise.resolve({ detail: "Forbidden" }) });
@@ -425,7 +425,7 @@ describe("UserDashboardPage", () => {
     failureRender.unmount();
 
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tickets: [makeTicket({ id: 33, status: "closed" })] }) })
       .mockRejectedValueOnce(new Error("Network failure"));
@@ -435,7 +435,7 @@ describe("UserDashboardPage", () => {
     networkRender.unmount();
 
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tickets: [makeTicket({ id: 34, status: "pending" })] }) });
     renderWithStore(loggedInState());
     const disabledButton = await screen.findByText(/download summary/i);
@@ -463,11 +463,11 @@ describe("UserDashboardPage", () => {
   });
 
   test("returns the stored access token or an empty string when absent", () => {
-    localStorage.removeItem("access");
+    sessionStorage.removeItem("access");
     expect(getLocalToken()).toBe("");
-    localStorage.setItem("access", "abc123");
+    sessionStorage.setItem("access", "abc123");
     expect(getLocalToken()).toBe("abc123");
-    localStorage.removeItem("access");
+    sessionStorage.removeItem("access");
   });
 
   test("determines correctly whether a ticket is open for a student reply", () => {
@@ -487,7 +487,7 @@ describe("UserDashboardPage", () => {
   });
 
   test("downloads the PDF from the modal action for a closed ticket", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch
       .mockResolvedValueOnce({
         ok: true,

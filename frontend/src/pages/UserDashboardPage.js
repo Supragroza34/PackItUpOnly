@@ -46,6 +46,45 @@ function isTicketClosed(ticket) {
   return (ticket?.status || "") === "closed";
 }
 
+export function coerceRepliesToArray(replies) {
+  return Array.isArray(replies) ? replies : [];
+}
+
+export function getLocalToken() {
+  return localStorage.getItem("access") || "";
+}
+
+export function isTicketOpenForReply(selectedTicket) {
+  return Boolean(selectedTicket) && selectedTicket.status !== "closed";
+}
+
+export function canDownloadTicketPdf(ticketStatus) {
+  return ticketStatus === "closed";
+}
+
+export function getReplyMessageError(message) {
+  return message.trim() ? "" : "Reply cannot be empty.";
+}
+
+export function guardPdfDownload(ticketStatus, notify = alert) {
+  if (canDownloadTicketPdf(ticketStatus)) {
+    return true;
+  }
+
+  notify("PDF summary is available once the ticket is closed.");
+  return false;
+}
+
+export function validateReplyBeforeSubmit(message, setError) {
+  const messageError = getReplyMessageError(message);
+  if (!messageError) {
+    return false;
+  }
+
+  setError(messageError);
+  return true;
+}
+
 function UserDashboardPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -104,12 +143,6 @@ function UserDashboardPage() {
 
     fetchDashboard();
   }, [user, nav]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    nav("/login", { replace: true });
-  };
 
   function confirmCloseTwice() {
     if (!window.confirm("Are you sure you want to close this ticket?")) {
@@ -174,12 +207,11 @@ function UserDashboardPage() {
   }
 
   async function handleDownloadPdf(ticketId, ticketStatus) {
-    if (ticketStatus !== "closed") {
-      alert("PDF summary is available once the ticket is closed.");
+    if (!guardPdfDownload(ticketStatus)) {
       return;
     }
 
-    const token = localStorage.getItem("access");
+    const token = getLocalToken();
     try {
       const res = await fetch(`${API_BASE}/tickets/${ticketId}/pdf/`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -220,15 +252,13 @@ function UserDashboardPage() {
     }
 
     const replies = await res.json();
-    return Array.isArray(replies) ? replies : [];
+    return coerceRepliesToArray(replies);
   }
 
   async function handleSendReply() {
-    if (!selectedTicket || selectedTicket.status === "closed") return;
+    if (!isTicketOpenForReply(selectedTicket)) return;
 
-    const message = replyBody.trim();
-    if (!message) {
-      setReplyError("Reply cannot be empty.");
+    if (validateReplyBeforeSubmit(replyBody, setReplyError)) {
       return;
     }
 
@@ -250,7 +280,7 @@ function UserDashboardPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ body: message }),
+          body: JSON.stringify({ body: replyBody.trim() }),
         }
       );
 

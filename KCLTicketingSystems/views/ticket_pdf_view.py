@@ -221,14 +221,14 @@ def _build_pdf(ticket) -> bytes:
     # ------------------------------------------------------------------
     story.append(Paragraph("Conversation Thread", styles["section_heading"]))
 
-    replies = ticket.replies.select_related("user").order_by("created_at")
+    replies = ticket.replies.select_related("user").order_by("created_at", "id")
 
     if not replies.exists():
         story.append(Paragraph("No replies yet.", styles["message"]))
     else:
         for reply in replies:
-            role = getattr(reply.user, "role", "student") if reply.user else "student"
-            is_staff = role in ("staff", "Staff", "admin", "Admin")
+            role = (getattr(reply.user, "role", "student") or "student").lower() if reply.user else "student"
+            is_staff = getattr(reply.user, "is_superuser", False) or role in ("staff", "admin")
 
             sender_label = "Staff" if is_staff else "Student"
             sender_style = styles["sender_staff"] if is_staff else styles["sender_student"]

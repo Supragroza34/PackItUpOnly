@@ -25,8 +25,10 @@ from django.conf.urls.static import static
 from KCLTicketingSystems import views
 from AIChatbot.views import chat_page
 
-from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view, staff_meeting_requests_views
+from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view, staff_meeting_requests_views, notification_view
 #from KCLTicketingSystems.views.email_webhook import email_webhook
+
+from KCLTicketingSystems.views import notifications_list, mark_notification_read
 
 
 urlpatterns = [
@@ -68,6 +70,8 @@ urlpatterns = [
     path('api/staff/dashboard/<int:ticket_id>/', ticket_info_view.ticket_info, name='ticket_info'),
     path('api/staff/dashboard/<int:ticket_id>/update/', ticket_info_view.staff_ticket_update, name='staff_ticket_update'),
     path('api/staff/dashboard/reply/<int:ticket_id>/', reply_view.reply_details, name="reply"),
+    path('api/staff/list/', ticket_info_view.department_staff_list, name='department_staff_list'),
+    path('api/staff/dashboard/<int:ticket_id>/reassign', ticket_info_view.staff_ticket_reassign, name='staff-ticket-reassign'),
     
     # Meeting Requests - Staff Side
     path('api/staff/dashboard/meeting-requests/', staff_meeting_requests_views.meeting_request_list, name="meeting_request_list"),
@@ -83,6 +87,9 @@ urlpatterns = [
     
     path('api/dashboard/', views.user_dashboard, name="user_dashboard"),
     path('api/dashboard/tickets/<int:ticket_id>/close/', views.student_close_ticket, name='student_close_ticket'),
+
+    path("notifications/", notifications_list, name="notifications_list"),
+    path("notifications/<int:pk>/read/", mark_notification_read, name="mark_notification_read"),
 
     #path('api/email-webhook/', email_webhook, name='email_webhook'),
 

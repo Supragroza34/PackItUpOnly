@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from .models.ticket import Ticket
 from .models.reply import Reply
 from .models.user import User
@@ -55,19 +56,41 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class ReplySerializer(serializers.ModelSerializer):
-    # user = UserSerializer(read_only=True)
     user_username = serializers.CharField(source="user.username", read_only=True)
-    # ticket = TicketSerializer(read_only=True)
+    user_role = serializers.SerializerMethodField()
 
     class Meta:
         model = Reply
         fields = "__all__"
         read_only_fields = ['created_at', 'updated_at']
 
+    def get_user_role(self, obj):
+        """Return the role of the reply author so callers can style messages correctly."""
+        if obj.user is None:
+            return "student"
+        if getattr(obj.user, "is_superuser", False):
+            return "admin"
+        return (obj.user.role or "student").lower()
+
 class ReplyCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Reply
-        fields = ['ticket', 'body']   
+        model = Reply
+        fields = ['ticket', 'body']
+
+    def validate_body(self, value):
+        """Reject blank or whitespace-only reply bodies."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Reply body cannot be empty.")
+        return value.strip()
+
+    def validate(self, attrs):
+        """Block replies to closed tickets at the serializer level."""
+        ticket = attrs.get('ticket')
+        if ticket and ticket.status == Ticket.Status.CLOSED:
+            raise serializers.ValidationError(
+                {"ticket": "Cannot add a reply to a closed ticket."}
+            )
+        return attrs
 
 class TicketSerializer(serializers.ModelSerializer):
     """Serializer for Ticket model - Admin view"""
@@ -135,6 +158,21 @@ class TicketCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'priority': {'required': False},
         }
+    
+    def create(self, validated_data):
+        department = validated_data.get("department")
+
+        # Find staff in the same department with the least tickets
+        staff = User.objects.filter(
+            role__in=[User.Role.STAFF, User.Role.ADMIN],
+            department=department
+        ).annotate(
+            ticket_count=Count("assigned_tickets")
+        ).order_by("ticket_count").first()
+
+        validated_data["assigned_to"] = staff
+
+        return Ticket.objects.create(**validated_data)    
 
 
 class TicketUpdateSerializer(serializers.ModelSerializer):
@@ -149,6 +187,17 @@ class TicketUpdateSerializer(serializers.ModelSerializer):
         model = Ticket
         fields = ['status', 'priority', 'assigned_to', 'admin_notes']
 
+class StaffReassignTicket(serializers.ModelSerializer):
+    """Serializer for staff to reassign tickets"""
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="staff"),
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Ticket
+        fields = ['assigned_to']            
 
 class DashboardStatsSerializer(serializers.Serializer):
     """Serializer for dashboard statistics"""

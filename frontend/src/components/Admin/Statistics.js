@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchStatistics } from '../../store/slices/adminSlice';
 import { logout } from '../../store/slices/authSlice';
 import './Statistics.css';
+import AdminTopbar from "./AdminTopbar";
 
 const Statistics = () => {
     const dispatch = useDispatch();
@@ -123,39 +124,7 @@ const Statistics = () => {
     
     return (
         <div className="admin-dashboard">
-            {/* Top bar - matching admin dashboard style */}
-            <div className="dashboard-topbar">
-                <h1>👋 Welcome, {user?.first_name || user?.username || 'Admin'}</h1>
-                <div className="dashboard-topbar-actions">
-                    <button 
-                        className="nav-tab"
-                        onClick={() => navigate('/admin/dashboard')}
-                    >
-                        Dashboard
-                    </button>
-                    <button 
-                        className="nav-tab"
-                        onClick={() => navigate('/admin/tickets')}
-                    >
-                        Tickets
-                    </button>
-                    <button 
-                        className="nav-tab"
-                        onClick={() => navigate('/admin/users')}
-                    >
-                        Users
-                    </button>
-                    <button 
-                        className="nav-tab active"
-                        onClick={() => navigate('/admin/statistics')}
-                    >
-                        Statistics
-                    </button>
-                    <button className="logout-btn" onClick={handleLogout}>
-                        Log Out
-                    </button>
-                </div>
-            </div>
+            <AdminTopbar user={user} handleLogout={handleLogout} />
 
             <main className="dashboard-content">
                 <div className="page-header">

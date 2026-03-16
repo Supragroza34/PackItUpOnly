@@ -133,10 +133,26 @@ function StaffDashboardPage() {
                      <NotificationBell
                         onNotificationClick={(notif) => {
                             const ticket = tickets.find((t) => t.id === notif.ticket_id);
-                            if (ticket) setSelectedTicket(ticket);
+                            if (notif.ticket_id) {
+                                if (!ticket) {
+                                    alert("This ticket is no longer available or has been redirected.");
+                                    return;
+                                }
+                                if (ticket.status === "closed" || ticket.status === "redirected") {
+                                    alert("This ticket is already closed or redirected.");
+                                    return;
+                                }
+                                navigate(`/staff/dashboard/${ticket.id}`);
+                                return;
+                            }
+
+                            if (notif.meeting_request_id) {
+                                navigate('/staff/dashboard/meeting-requests');
+                                return;
+                            }
                         }}
                     />
-                    
+
                     <button
                         className="sd-meeting-btn"
                         onClick={() => navigate('/staff/dashboard/meeting-requests')}

@@ -6,7 +6,7 @@ from rest_framework.decorators import permission_classes
 from ..models import Notification
 
 @api_view(["GET"])
-@permission_classes({IsAuthenticated})
+@permission_classes([IsAuthenticated])
 def notifications_list (request):
     notifications = Notification.objects.filter(user=request.user).order_by("-created_at")
 
@@ -17,6 +17,7 @@ def notifications_list (request):
             "message": n.message,
             "is_read": n.is_read, 
             "ticket_id": n.ticket_id if n.ticket else None, 
+            "meeting_request_id": n.meeting_request_id if n.meeting_request else None,
             "created_at": n.created_at
         }
         for n in notifications 

@@ -97,6 +97,7 @@ def notify_staff_on_meeting_request(meeting_request):
             user=staff_user,
             title="New Meeting Request",
             message=f"{student.get_full_name()} submitted a meeting request.",
+            meeting_request=meeting_request,
             ticket=None  
         )
 
@@ -115,11 +116,11 @@ def notify_student_on_meeting_response(meeting_request, staff_user):
     elif status_text == "denied":
         message = f"Your meeting request has been denied by {staff_user.get_full_name()}."
     else:
-        return  # Do not notify for other statuses
+        return  
 
     Notification.objects.create(
         user=student,
         title="Meeting Request Update",
         message=message,
-        ticket=None  # optional: or link to meeting_request.id if you add FK
+        ticket=None  
     )

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -419,7 +419,6 @@ const TicketsManagement = () => {
                                         onChange={(e) => setReplyBody(e.target.value)}
                                         placeholder="Write a reply..."
                                         rows={3}
-                                        required
                                     />
                                     <button type="button" onClick={handleSubmitReply} className="btn-send-reply">Send Reply</button>
                                 </div>

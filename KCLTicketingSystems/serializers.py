@@ -1,7 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from .models.ticket import Ticket
 from .models.reply import Reply
+from .models.user import User
+from .models.office_hours import OfficeHours
+from .models.meeting_request import MeetingRequest
 
 User = get_user_model()
 
@@ -52,19 +56,41 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class ReplySerializer(serializers.ModelSerializer):
-    # user = UserSerializer(read_only=True)
     user_username = serializers.CharField(source="user.username", read_only=True)
-    # ticket = TicketSerializer(read_only=True)
+    user_role = serializers.SerializerMethodField()
 
     class Meta:
         model = Reply
         fields = "__all__"
         read_only_fields = ['created_at', 'updated_at']
 
+    def get_user_role(self, obj):
+        """Return the role of the reply author so callers can style messages correctly."""
+        if obj.user is None:
+            return "student"
+        if getattr(obj.user, "is_superuser", False):
+            return "admin"
+        return (obj.user.role or "student").lower()
+
 class ReplyCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Reply
-        fields = ['ticket', 'body']   
+        model = Reply
+        fields = ['ticket', 'body']
+
+    def validate_body(self, value):
+        """Reject blank or whitespace-only reply bodies."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Reply body cannot be empty.")
+        return value.strip()
+
+    def validate(self, attrs):
+        """Block replies to closed tickets at the serializer level."""
+        ticket = attrs.get('ticket')
+        if ticket and ticket.status == Ticket.Status.CLOSED:
+            raise serializers.ValidationError(
+                {"ticket": "Cannot add a reply to a closed ticket."}
+            )
+        return attrs
 
 class TicketSerializer(serializers.ModelSerializer):
     """Serializer for Ticket model - Admin view"""
@@ -132,6 +158,21 @@ class TicketCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'priority': {'required': False},
         }
+    
+    def create(self, validated_data):
+        department = validated_data.get("department")
+
+        # Find staff in the same department with the least tickets
+        staff = User.objects.filter(
+            role__in=[User.Role.STAFF, User.Role.ADMIN],
+            department=department
+        ).annotate(
+            ticket_count=Count("assigned_tickets")
+        ).order_by("ticket_count").first()
+
+        validated_data["assigned_to"] = staff
+
+        return Ticket.objects.create(**validated_data)    
 
 
 class TicketUpdateSerializer(serializers.ModelSerializer):
@@ -146,6 +187,17 @@ class TicketUpdateSerializer(serializers.ModelSerializer):
         model = Ticket
         fields = ['status', 'priority', 'assigned_to', 'admin_notes']
 
+class StaffReassignTicket(serializers.ModelSerializer):
+    """Serializer for staff to reassign tickets"""
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="staff"),
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Ticket
+        fields = ['assigned_to']            
 
 class DashboardStatsSerializer(serializers.Serializer):
     """Serializer for dashboard statistics"""
@@ -159,3 +211,89 @@ class DashboardStatsSerializer(serializers.Serializer):
     total_staff = serializers.IntegerField()
     total_admins = serializers.IntegerField()
     recent_tickets = TicketListSerializer(many=True)
+
+
+
+class StaffListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "first_name", "last_name", "email", "department", "k_number"]
+
+
+class OfficeHoursSerializer(serializers.ModelSerializer):
+    """Serializer for OfficeHours model"""
+    class Meta:
+        model = OfficeHours
+        fields = ['id', 'staff', 'day_of_week', 'start_time', 'end_time', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class MeetingRequestSerializer(serializers.ModelSerializer):
+    """Serializer for MeetingRequest model with student and staff details"""
+    student_name = serializers.SerializerMethodField()
+    student_email = serializers.SerializerMethodField()
+    student_k_number = serializers.SerializerMethodField()
+    staff_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MeetingRequest
+        fields = [
+            'id', 'student', 'staff', 'meeting_datetime', 'description', 
+            'status', 'created_at', 'updated_at',
+            'student_name', 'student_email', 'student_k_number', 'staff_name'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_student_name(self, obj):
+        return f"{obj.student.first_name} {obj.student.last_name}"
+    
+    def get_student_email(self, obj):
+        return obj.student.email
+    
+    def get_student_k_number(self, obj):
+        return obj.student.k_number
+    
+    def get_staff_name(self, obj):
+        return f"{obj.staff.first_name} {obj.staff.last_name}"
+
+
+class MeetingRequestCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating meeting requests"""
+    class Meta:
+        model = MeetingRequest
+        fields = ['staff', 'meeting_datetime', 'description']
+    
+    def validate(self, data):
+        """Validate that meeting time falls within office hours"""
+        meeting_datetime = data.get('meeting_datetime')
+        staff = data.get('staff')
+        
+        if meeting_datetime and staff:
+            # Get the day of week
+            day_name = meeting_datetime.strftime("%A")
+            meeting_time = meeting_datetime.time()
+            
+            # Check if there's an office hours block that matches
+            office_hours = OfficeHours.objects.filter(
+                staff=staff,
+                day_of_week=day_name,
+                start_time__lte=meeting_time,
+                end_time__gte=meeting_time,
+            )
+            
+            if not office_hours.exists():
+                raise serializers.ValidationError({
+                    'meeting_datetime': f"The selected time is not within the staff member's office hours. "
+                                       f"Please choose a time slot during their available hours."
+                })
+        
+        return data
+
+
+class StaffWithOfficeHoursSerializer(serializers.ModelSerializer):
+    """Extended serializer for staff that includes their office hours"""
+    office_hours = OfficeHoursSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = User
+        fields = ["id", "first_name", "last_name", "email", "department", "k_number", "office_hours"]

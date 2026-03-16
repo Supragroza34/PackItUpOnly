@@ -56,19 +56,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class ReplySerializer(serializers.ModelSerializer):
-    # user = UserSerializer(read_only=True)
     user_username = serializers.CharField(source="user.username", read_only=True)
-    # ticket = TicketSerializer(read_only=True)
+    children = serializers.SerializerMethodField()
 
     class Meta:
         model = Reply
         fields = "__all__"
         read_only_fields = ['created_at', 'updated_at']
 
+    def get_children(self, obj):
+        children = obj.children.all()
+        return ReplySerializer(children, many=True, context=self.context).data    
+
 class ReplyCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model=Reply
-        fields = ['ticket', 'body']   
+        fields = ['ticket', 'body', 'parent',]   
 
 class TicketSerializer(serializers.ModelSerializer):
     """Serializer for Ticket model - Admin view"""

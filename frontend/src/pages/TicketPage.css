@@ -149,6 +149,12 @@
   border-left: 4px solid #0f3460;
 }
 
+.reply-children {
+    margin-left: 24px;
+    border-left: 2px solid #ddd;
+    padding-left: 12px;
+}
+
 .ticket-reply-meta {
   font-size: 0.8rem;
   color: #64748b;

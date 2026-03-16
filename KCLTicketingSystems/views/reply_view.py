@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 
-from ..models import Ticket
+from ..models import Ticket, Reply
 from ..serializers import ReplyCreateSerializer, ReplySerializer
 
 
@@ -32,7 +32,7 @@ def reply_details(request, ticket_id):
         return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == "GET":
-        replies = ticket.replies.all().order_by("created_at")
+        replies = Reply.objects.filter(ticket=ticket_id, parent=None).select_related("user").prefetch_related("children")
         serializer = ReplySerializer(replies, many=True)
         return Response(serializer.data)
 

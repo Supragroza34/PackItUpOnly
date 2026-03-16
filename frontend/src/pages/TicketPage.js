@@ -15,6 +15,7 @@ function TicketPage() {
     const user = reduxUser ?? contextUser;
     const [ticket, setTicket] = useState(null);
     const [body, setBody] = useState("");
+    const [parentReply_id, setParentReplyId] = useState(null);
     const navigate = useNavigate();
 
     const authHeaders = () => ({
@@ -97,14 +98,38 @@ function TicketPage() {
         fetch("/api/replies/create/", {
             method: "POST",
             headers: { "Content-Type": "application/json", ...authHeaders() },
-            body: JSON.stringify({ ticket: ticket_id, body: body.trim() }),
+            body: JSON.stringify({ ticket: ticket_id, body: body.trim(), parent: parentReply_id }),
         })
             .then(res => res.ok ? res.json() : Promise.reject(res))
             .then(() => {
                 setBody("");
+                setParentReplyId(null);
                 fetchTicket();
             })
             .catch(err => console.error('Reply failed:', err));
+    }
+
+    function Reply({ reply }) {
+        return (
+            <div className="reply">
+                <div className="reply-content">
+                    <strong>{reply.user_username}</strong>
+                    <p>{reply.body}</p>
+
+                    <button onClick={() => setParentReplyId(reply.id)}>
+                        Reply
+                    </button>
+                </div>
+
+                {reply.children?.length > 0 && (
+                    <div className="reply-children">
+                        {reply.children.map(child => (
+                            <Reply key={child.id} reply={child} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
     }
 
     if (ticket === null) {
@@ -179,18 +204,21 @@ function TicketPage() {
                 {ticket.replies?.length ? (
                     <div className="ticket-replies-list">
                         {ticket.replies.map(reply => (
-                            <div key={reply.id} className="ticket-reply">
-                                <p className="ticket-reply-meta">
-                                    <strong>{reply.user_username}</strong> · {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}
-                                </p>
-                                <p className="ticket-reply-body">{reply.body}</p>
-                            </div>
+                            <Reply key={reply.id} reply={reply} />
                         ))}
                     </div>
                 ) : (
                     <p className="ticket-replies-empty">No replies yet.</p>
                 )}
                 <form className="ticket-reply-form" onSubmit={submitReply}>
+                    {parentReply_id && (
+                        <p className="reply-indicator">
+                            Replying to comment #{parentReply_id}
+                            <button type="button" onClick={() => setParentReplyId(null)}>
+                                Cancel
+                            </button>
+                        </p>
+                    )}
                     <textarea
                         value={body}
                         onChange={e => setBody(e.target.value)}

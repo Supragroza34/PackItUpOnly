@@ -1,5 +1,5 @@
 from rest_framework import generics
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -16,6 +16,16 @@ def _staff_can_access_ticket(user, ticket):
     if getattr(user, "is_superuser", False) or (user.role or "").lower() == "admin":
         return True
     return ticket.assigned_to_id == user.id
+
+
+def _is_staff_or_admin(user):
+    return getattr(user, "is_superuser", False) or (user.role or "").lower() in ("staff", "admin")
+
+
+def _can_access_ticket_conversation(user, ticket):
+    if _is_staff_or_admin(user):
+        return _staff_can_access_ticket(user, ticket)
+    return ticket.user_id == user.id
 
 
 @api_view(["GET", "POST"])
@@ -39,6 +49,11 @@ def reply_details(request, ticket_id):
         return Response(serializer.data)
 
     # POST: create reply
+    if ticket.status == Ticket.Status.CLOSED:
+        return Response(
+            {"error": "Replies are disabled because this ticket is closed"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     data = {**request.data, "ticket": ticket.id}
     serializer = ReplyCreateSerializer(data=data)
     if serializer.is_valid():
@@ -60,3 +75,36 @@ class ReplyCreateView(generics.CreateAPIView):
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=400)
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def ticket_replies(request, ticket_id):
+    """
+    Ticket conversation endpoint.
+
+    GET: list replies in chronological order.
+    POST: create reply if caller can access the ticket and ticket is not closed.
+    """
+    ticket = get_object_or_404(Ticket, pk=ticket_id)
+
+    if not _can_access_ticket_conversation(request.user, ticket):
+        return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "GET":
+        replies = ticket.replies.all().order_by("created_at")
+        serializer = ReplySerializer(replies, many=True)
+        return Response(serializer.data)
+
+    if ticket.status == Ticket.Status.CLOSED:
+        return Response(
+            {"error": "Replies are disabled because this ticket is closed"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    data = {**request.data, "ticket": ticket.id}
+    serializer = ReplyCreateSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save(user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

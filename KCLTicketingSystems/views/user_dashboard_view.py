@@ -2,12 +2,13 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
+from django.db.models import Prefetch
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from ..models import Ticket
+from ..models import Ticket, Reply
 from ..serializers import ReplySerializer
 from ..utils import notify_on_ticket_update
 
@@ -16,7 +17,18 @@ from ..utils import notify_on_ticket_update
 @permission_classes([IsAuthenticated])
 def user_dashboard(request):
     user = request.user
-    tickets = Ticket.objects.filter(user=user).select_related('user', 'closed_by').prefetch_related('replies').order_by('-created_at')
+    tickets = (
+        Ticket.objects
+        .filter(user=user)
+        .select_related('user', 'closed_by')
+        .prefetch_related(
+            Prefetch(
+                'replies',
+                queryset=Reply.objects.select_related('user').order_by('created_at'),
+            )
+        )
+        .order_by('-created_at')
+    )
 
     # Prepare list to hold ticket data
     tickets_data = []

@@ -87,8 +87,8 @@ urlpatterns = [
     #path('api/email-webhook/', email_webhook, name='email_webhook'),
 
 
-    # SPA: serve React app for all other routes (login, dashboard, etc.)
-    re_path(r'^(?!static/)(?P<path>.*)$', views.spa_catchall, name='spa_catchall')
+    # SPA: serve React app for all non-API routes (login, dashboard, etc.)
+    re_path(r'^(?!(static/|api/))(?P<path>.*)$', views.spa_catchall, name='spa_catchall')
     #Check
 ]
 

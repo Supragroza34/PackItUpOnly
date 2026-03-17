@@ -6,6 +6,18 @@ import { checkAuth } from '../store/slices/authSlice';
 import { useAuth } from '../context/AuthContext';
 import './TicketPage.css';
 
+const STATUS_OPTIONS = [
+    { value: 'new', label: 'New' },
+    { value: 'seen', label: 'Seen' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'awaiting_response', label: 'Awaiting Student Response' },
+    { value: 'resolved', label: 'Resolved' },
+    { value: 'closed', label: 'Closed' },
+];
+
+
+
 function TicketPage() {
     const { ticket_id } = useParams();
     const dispatch = useDispatch();
@@ -21,6 +33,19 @@ function TicketPage() {
     const authHeaders = () => ({
         'Authorization': `Bearer ${localStorage.getItem('access')}`,
     });
+
+    function changeStatus(newStatus) {
+    fetch(`/api/staff/dashboard/${ticket_id}/update/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ status: newStatus }),
+    })
+        .then(res => res.ok ? res.json() : Promise.reject(res))
+        .then((data) => {
+            setTicket(data);
+        })
+        .catch(err => console.error('Failed to update status:', err));
+}
 
     useEffect(() => {
         dispatch(fetchStaffList());
@@ -166,9 +191,19 @@ function TicketPage() {
                 <span><strong>Type:</strong> {ticket.type_of_issue}</span>
                 <span>
                     <strong>Status:</strong>{' '}
-                    <span className={`status-badge status-${statusClass}`}>
-                        {ticket.is_overdue ? 'Overdue' : getStatusLabel()}
-                    </span>
+                                    <select 
+                                    value={ticket.status || 'pending'} 
+                        onChange={(e) => changeStatus(e.target.value)}
+                        className="status-dropdown"
+                        disabled={ticket.status === 'closed'}
+                    >
+                        {STATUS_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                    {ticket.is_overdue && <span className="overdue-badge">⚠️ Overdue</span>}
                 </span>
                 <span><strong>Priority:</strong> {(ticket.priority || 'medium')}</span>
                 <span><strong>Created:</strong> {ticket.created_at ? new Date(ticket.created_at).toLocaleString() : '—'}</span>

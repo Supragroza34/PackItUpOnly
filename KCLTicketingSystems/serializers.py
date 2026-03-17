@@ -57,12 +57,21 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class ReplySerializer(serializers.ModelSerializer):
     user_username = serializers.CharField(source="user.username", read_only=True)
+    user_role = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
 
     class Meta:
         model = Reply
         fields = "__all__"
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_user_role(self, obj):
+        """Return the role of the reply author so callers can style messages correctly."""
+        if obj.user is None:
+            return "student"
+        if getattr(obj.user, "is_superuser", False):
+            return "admin"
+        return (obj.user.role or "student").lower()
 
     def get_children(self, obj):
         children = obj.children.all()
@@ -72,6 +81,21 @@ class ReplyCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model=Reply
         fields = ['ticket', 'body', 'parent',]   
+
+    def validate_body(self, value):
+        """Reject blank or whitespace-only reply bodies."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Reply body cannot be empty.")
+        return value.strip()
+
+    def validate(self, attrs):
+        """Block replies to closed tickets at the serializer level."""
+        ticket = attrs.get('ticket')
+        if ticket and ticket.status == Ticket.Status.CLOSED:
+            raise serializers.ValidationError(
+                {"ticket": "Cannot add a reply to a closed ticket."}
+            )
+        return attrs
 
 class TicketSerializer(serializers.ModelSerializer):
     """Serializer for Ticket model - Admin view"""

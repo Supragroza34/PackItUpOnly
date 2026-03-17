@@ -76,6 +76,7 @@ function NavLinks({ onLogout }) {
   return (
     <div className="navbar-links">
       <Link to="/dashboard" className="navbar-link">Home</Link>
+      <Link to="/my-meetings" className="navbar-link">My Meetings</Link>
       <Link to="/faqs" className="navbar-link">View FAQs</Link>
       <Link to="/staff" className="navbar-link">Staff Directory</Link>
       <Link to="/ai-chatbot" className="navbar-link">AI Chatbot</Link>

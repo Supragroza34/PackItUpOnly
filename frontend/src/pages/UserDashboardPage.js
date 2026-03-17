@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
 import UserNavbar from "../components/UserNavbar";
+import NotificationBell from "../components/NotificationBell";
 
 const isLocal =
   window.location.hostname === "localhost" ||
@@ -19,9 +20,13 @@ function statusClass(status) {
 function getProgressWidth(status) {
   switch (status) {
     case "pending":
-      return "20%";
+        return "20%";
+    case "seen":
+        return "40%"
     case "in_progress":
-      return "60%";
+        return "60%";
+    case "awaiting_response":
+        return "75%"
     case "resolved":
       return "90%";
     case "closed":
@@ -30,6 +35,7 @@ function getProgressWidth(status) {
       return "0%";
   }
 }
+
 
 function getStatusLabel(ticket) {
   if (ticket.status !== "closed") {
@@ -42,11 +48,57 @@ function getStatusLabel(ticket) {
   return `Closed by ${label}`;
 }
 
+function isTicketClosed(ticket) {
+  return (ticket?.status || "") === "closed";
+}
+
+export function coerceRepliesToArray(replies) {
+  return Array.isArray(replies) ? replies : [];
+}
+
+export function getLocalToken() {
+  return localStorage.getItem("access") || "";
+}
+
+export function isTicketOpenForReply(selectedTicket) {
+  return Boolean(selectedTicket) && selectedTicket.status !== "closed";
+}
+
+export function canDownloadTicketPdf(ticketStatus) {
+  return ticketStatus === "closed";
+}
+
+export function getReplyMessageError(message) {
+  return message.trim() ? "" : "Reply cannot be empty.";
+}
+
+export function guardPdfDownload(ticketStatus, notify = alert) {
+  if (canDownloadTicketPdf(ticketStatus)) {
+    return true;
+  }
+
+  notify("PDF summary is available once the ticket is closed.");
+  return false;
+}
+
+export function validateReplyBeforeSubmit(message, setError) {
+  const messageError = getReplyMessageError(message);
+  if (!messageError) {
+    return false;
+  }
+
+  setError(messageError);
+  return true;
+}
+
 function UserDashboardPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [replyBody, setReplyBody] = useState("");
+  const [replySubmitting, setReplySubmitting] = useState(false);
+  const [replyError, setReplyError] = useState("");
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
 
@@ -97,12 +149,6 @@ function UserDashboardPage() {
 
     fetchDashboard();
   }, [user, nav]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    nav("/login", { replace: true });
-  };
 
   function confirmCloseTwice() {
     if (!window.confirm("Are you sure you want to close this ticket?")) {
@@ -166,8 +212,12 @@ function UserDashboardPage() {
     }
   }
 
-  async function handleDownloadPdf(ticketId) {
-    const token = localStorage.getItem("access");
+  async function handleDownloadPdf(ticketId, ticketStatus) {
+    if (!guardPdfDownload(ticketStatus)) {
+      return;
+    }
+
+    const token = getLocalToken();
     try {
       const res = await fetch(`${API_BASE}/tickets/${ticketId}/pdf/`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -191,6 +241,80 @@ function UserDashboardPage() {
     } catch (err) {
       console.error("PDF download error:", err);
       alert(`Could not download PDF: ${err.message}`);
+    }
+  }
+
+  async function fetchTicketReplies(ticketId, token) {
+    const res = await fetch(`${API_BASE}/tickets/${ticketId}/replies/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to fetch replies (${res.status})`);
+    }
+
+    const replies = await res.json();
+    return coerceRepliesToArray(replies);
+  }
+
+  async function handleSendReply() {
+    if (!isTicketOpenForReply(selectedTicket)) return;
+
+    if (validateReplyBeforeSubmit(replyBody, setReplyError)) {
+      return;
+    }
+
+    const token = localStorage.getItem("access");
+    if (!token) {
+      nav("/login", { replace: true });
+      return;
+    }
+
+    setReplySubmitting(true);
+    setReplyError("");
+
+    try {
+      const createRes = await fetch(
+        `${API_BASE}/tickets/${selectedTicket.id}/replies/`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ body: replyBody.trim() }),
+        }
+      );
+
+      if (!createRes.ok) {
+        const err = await createRes.json().catch(() => ({}));
+        setReplyError(err.error || err.body?.[0] || "Could not send reply.");
+        return;
+      }
+
+      const updatedReplies = await fetchTicketReplies(selectedTicket.id, token);
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === selectedTicket.id ? { ...t, replies: updatedReplies } : t
+        )
+      );
+
+      setSelectedTicket((prev) =>
+        prev && prev.id === selectedTicket.id
+          ? { ...prev, replies: updatedReplies }
+          : prev
+      );
+
+      setReplyBody("");
+    } catch (err) {
+      setReplyError(`Could not send reply: ${err.message}`);
+    } finally {
+      setReplySubmitting(false);
     }
   }
 
@@ -224,12 +348,13 @@ function UserDashboardPage() {
 
       <div className="dashboard-page">
         <div className="dashboard-topbar">
-          <h1>
-            👋 Welcome,{" "}
-            {user.first_name || user.last_name
-              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-              : user.k_number || "Student"}
-          </h1>
+          <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
+            <NotificationBell
+              onNotificationClick={(notif) => {
+                const ticket = tickets.find((t) => t.id === notif.ticket_id);
+                if (ticket) setSelectedTicket(ticket);
+              }}
+            />
         </div>
 
 
@@ -332,19 +457,19 @@ function UserDashboardPage() {
                     <button
                       type="button"
                       className={`download-pdf-btn${
-                        ticket.status !== "closed"
+                        !isTicketClosed(ticket)
                           ? " download-pdf-btn--disabled"
                           : ""
                       }`}
-                      disabled={ticket.status !== "closed"}
+                      disabled={!isTicketClosed(ticket)}
                       title={
-                        ticket.status !== "closed"
+                        !isTicketClosed(ticket)
                           ? "Available once the ticket is closed"
                           : "Download PDF summary"
                       }
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDownloadPdf(ticket.id);
+                        handleDownloadPdf(ticket.id, ticket.status);
                       }}
                     >
                       📄 Download Summary
@@ -411,7 +536,7 @@ function UserDashboardPage() {
               )}
 
               <div className="ticket-responses">
-                <h4 className="ticket-responses-title">Responses From Staff:</h4>
+                <h4 className="ticket-responses-title">Conversation:</h4>
                 {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
                   selectedTicket.replies.map((reply) => (
                     <div key={reply.id} className="ticket-response">
@@ -427,20 +552,51 @@ function UserDashboardPage() {
                 )}
               </div>
 
+              {selectedTicket.status !== "closed" && (
+                <div className="ticket-reply-composer">
+                  <label className="ticket-reply-label" htmlFor="student-reply-box">
+                    Your reply
+                  </label>
+                  <textarea
+                    id="student-reply-box"
+                    className="ticket-reply-textarea"
+                    value={replyBody}
+                    onChange={(e) => {
+                      setReplyBody(e.target.value);
+                      if (replyError) setReplyError("");
+                    }}
+                    placeholder="Write your response to continue the conversation..."
+                    rows={4}
+                    maxLength={2000}
+                  />
+                  {replyError && <p className="ticket-reply-error">{replyError}</p>}
+                  <button
+                    type="button"
+                    className="ticket-reply-send-btn"
+                    onClick={handleSendReply}
+                    disabled={replySubmitting || !replyBody.trim()}
+                  >
+                    {replySubmitting ? "Sending..." : "Send reply"}
+                  </button>
+                </div>
+              )}
+
               <button
                 type="button"
                 className={`download-pdf-btn download-pdf-btn--modal${
-                  selectedTicket.status !== "closed"
+                  !isTicketClosed(selectedTicket)
                     ? " download-pdf-btn--disabled"
                     : ""
                 }`}
-                disabled={selectedTicket.status !== "closed"}
+                disabled={!isTicketClosed(selectedTicket)}
                 title={
-                  selectedTicket.status !== "closed"
+                  !isTicketClosed(selectedTicket)
                     ? "Available once the ticket is closed"
                     : "Download PDF summary"
                 }
-                onClick={() => handleDownloadPdf(selectedTicket.id)}
+                onClick={() =>
+                  handleDownloadPdf(selectedTicket.id, selectedTicket.status)
+                }
               >
                 📄 Download PDF Summary
               </button>

@@ -95,7 +95,7 @@ def ticket_replies(request, ticket_id):
         return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == "GET":
-        replies = ticket.replies.all().order_by("created_at")
+        replies = Reply.objects.filter(ticket=ticket, parent=None).order_by("created_at")
         serializer = ReplySerializer(replies, many=True)
         return Response(serializer.data)
 

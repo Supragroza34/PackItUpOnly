@@ -136,8 +136,8 @@ function TicketPage() {
 
     function Reply({ reply }) {
         return (
-            <div className="reply">
-                <div className="reply-content">
+            <div className="ticket-reply">
+                <div className="ticket-reply-body">
                     <strong>{reply.user_username}</strong>
                     <p>{reply.body}</p>
 
@@ -247,7 +247,7 @@ function TicketPage() {
                 )}
                 <form className="ticket-reply-form" onSubmit={submitReply}>
                     {parentReply_id && (
-                        <p className="reply-indicator">
+                        <p className="ticket-reply-indicator">
                             Replying to comment #{parentReply_id}
                             <button type="button" onClick={() => setParentReplyId(null)}>
                                 Cancel

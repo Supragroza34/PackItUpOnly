@@ -149,10 +149,51 @@
   border-left: 4px solid #0f3460;
 }
 
-.reply-children {
-    margin-left: 24px;
-    border-left: 2px solid #ddd;
-    padding-left: 12px;
+.ticket-reply button {
+  margin-bottom: 2px;
+  padding: 5px 10px;
+  background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.ticket-reply button:hover {
+  opacity: 0.95;
+}
+
+.ticket-reply-children {
+  margin-left: 24px;
+  border-left: 2px solid #ddd;
+  padding-left: 12px;
+}
+
+.ticket-reply-indicator {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+.ticket-reply-indicator button {
+  margin-left: 460px;
+  margin-bottom: 2px;
+  padding: 5px 10px;
+  background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.ticket-reply-indicator button:hover {
+  opacity: 0.95;
 }
 
 .ticket-reply-meta {

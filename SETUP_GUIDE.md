@@ -6,7 +6,6 @@ Before running the setup, ensure you have installed:
 
 1. **Python 3.8+** - [Download here](https://www.python.org/downloads/)
 2. **Node.js 14+** - [Download here](https://nodejs.org/)
-3. **Ollama** (for AI Chatbot) - [Download here](https://ollama.ai/download)
 
 ## Quick Setup
 
@@ -40,7 +39,6 @@ The automated setup script will:
 1. **Check Prerequisites** ✅
    - Verifies Python 3.8+ is installed
    - Verifies Node.js 14+ is installed
-   - Checks if Ollama is installed (for AI features)
 
 2. **Setup Backend** ✅
    - Installs all Python dependencies from requirements.txt
@@ -51,37 +49,18 @@ The automated setup script will:
    - Installs all Node.js/React dependencies
    - Configures React environment
 
-4. **Setup AI Chatbot** ✅
-   - Downloads llama2 model (~4GB, first time only)
-   - Tests Ollama connectivity
-   - Warms up the AI model
+4. **AI Chatbot** ✅
+   - Uses Google Gemini via the `GEMINI_API_KEY` environment variable
 
 **Total setup time**: 5-15 minutes (depending on internet speed)
 
 ## AI Chatbot Setup
 
-### Installing Ollama
+The AI Chatbot now uses the Google Gemini API:
 
-The AI Chatbot feature requires Ollama:
-
-1. Visit [https://ollama.ai/download](https://ollama.ai/download)
-2. Download the installer for your OS
-3. Install the application
-4. Run the setup script - it will automatically download the llama2 model (~4GB)
-
-**Note**: If Ollama isn't installed, the app will work but without AI Chatbot features.
-
-### Manual AI Setup (Optional)
-
-If you prefer to set up Ollama manually or the automatic setup fails:
-
-```bash
-# Download the llama2 model
-ollama pull llama2
-
-# Test it works
-ollama run llama2 "Hello"
-```
+1. Obtain a Gemini API key from your Google Cloud project.
+2. Set the `GEMINI_API_KEY` environment variable locally (e.g. in your `.env` file).
+3. Restart your Django server so the new key is picked up.
 
 ## Servers
 
@@ -132,13 +111,12 @@ After setup, the application runs on:
 
 ## What Gets Installed
 
-- **Backend**: Django, Django REST Framework, CORS headers, Ollama client
+- **Backend**: Django, Django REST Framework, CORS headers, Gemini client
 - **Frontend**: React, react-scripts, routing, state management
-- **AI Model**: llama2 (~4GB, for chatbot features)
 - **Database**: SQLite with all migrations applied
 
 ## Need More Help?
 
 - Check [README_SETUP.md](README_SETUP.md) for detailed manual setup
 - Check [TESTING.md](TESTING.md) for testing documentation
-- Use the AI Chatbot for quick questions (if Ollama is set up)
+- Use the AI Chatbot for quick questions (if `GEMINI_API_KEY` is configured)

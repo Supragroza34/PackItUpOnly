@@ -5,7 +5,7 @@ echo "  KCL Ticketing System - First Time Setup"
 echo "============================================"
 echo ""
 
-echo "[1/4] Checking Prerequisites..."
+echo "[1/3] Checking Prerequisites..."
 echo ""
 
 # Check if Python is installed
@@ -38,33 +38,9 @@ if ! command -v node &> /dev/null; then
 fi
 echo "  ✓ Node.js found"
 
-# Check if Ollama is installed
-OLLAMA_INSTALLED=0
-if ! command -v ollama &> /dev/null; then
-    echo "[WARNING] Ollama is not installed!"
-    echo ""
-    echo "The AI Chatbot feature requires Ollama."
-    echo ""
-    echo "Please install Ollama:"
-    echo "  1. Download from: https://ollama.ai/download"
-    echo "  2. Install the application"
-    echo "  3. Re-run this setup script"
-    echo ""
-    if [ -z "${NO_PROMPT:-}" ] && [ -t 0 ]; then
-        echo "Press any key to continue WITHOUT AI Chatbot support..."
-        read -n 1 -s
-        echo ""
-    else
-        echo "Continuing WITHOUT AI Chatbot support (non-interactive mode or NO_PROMPT set)..."
-        echo ""
-    fi
-else
-    echo "  ✓ Ollama found"
-    OLLAMA_INSTALLED=1
-fi
 echo ""
 
-echo "[2/4] Setting up Backend..."
+echo "[2/3] Setting up Backend..."
 echo "Installing Python dependencies..."
 
 $PYTHON_CMD -m pip install -r requirements.txt
@@ -82,7 +58,7 @@ fi
 echo "Backend setup complete!"
 echo ""
 
-echo "[3/4] Setting up Frontend..."
+echo "[3/3] Setting up Frontend..."
 cd frontend
 echo "Installing Node.js dependencies..."
 npm install
@@ -95,34 +71,6 @@ cd ..
 echo "Frontend setup complete!"
 echo ""
 
-if [ $OLLAMA_INSTALLED -eq 1 ]; then
-    echo "[4/4] Setting up AI Chatbot (Ollama)..."
-    echo "Checking for llama2 model..."
-    if ! ollama list | grep -q "llama2"; then
-        echo "  Model not found. Downloading llama2 model (~4GB, this may take several minutes)..."
-        ollama pull llama2
-        if [ $? -ne 0 ]; then
-            echo "[WARNING] Failed to download llama2 model."
-            echo "You can download it later by running: ollama pull llama2"
-        else
-            echo "  ✓ llama2 model downloaded successfully"
-        fi
-    else
-        echo "  ✓ llama2 model already installed"
-    fi
-    echo ""
-    echo "Testing Ollama..."
-    if ollama run llama2 "Hi" &> /dev/null; then
-        echo "  ✓ Ollama is working correctly"
-    else
-        echo "[WARNING] Ollama test failed. The AI Chatbot may not work."
-    fi
-    echo "AI Chatbot setup complete!"
-else
-    echo "[4/4] Skipping AI Chatbot setup (Ollama not installed)"
-fi
-echo ""
-
 echo "============================================"
 echo "  Setup Complete!"
 echo "============================================"
@@ -130,8 +78,3 @@ echo ""
 echo "To start the application:"
 echo "  Run ./start-all.sh to launch both servers."
 echo ""
-if [ $OLLAMA_INSTALLED -eq 0 ]; then
-    echo "NOTE: AI Chatbot is disabled. Install Ollama to enable it:"
-    echo "  https://ollama.ai/download"
-    echo ""
-fi

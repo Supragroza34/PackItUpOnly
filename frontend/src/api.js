@@ -1,8 +1,8 @@
 // Same origin in production (Heroku); localhost:8000 when developing
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = isLocal
-  ? `${window.location.protocol}//${window.location.hostname}:8000/api`
-  : `${window.location.origin}/api`;
+const API_BASE = process.env.NODE_ENV === 'production'
+  ? 'https://packituponly-940a2f158db0.herokuapp.com/api'
+  : 'http://localhost:8000/api';
 
 
 export function authHeaders() {

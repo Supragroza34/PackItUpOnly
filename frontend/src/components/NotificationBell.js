@@ -1,24 +1,21 @@
 import { useEffect, useState, useRef } from "react";
 import "./NotificationBell.css";
-
-const API_BASE = "http://localhost:8000/api";
+import { apiFetch } from "../api";
 
 function NotificationBell({ onNotificationClick }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const bellRef = useRef(null);
 
-  // Fetch notifications
+  // Fetch notifications using shared API client
   useEffect(() => {
-    const token = localStorage.getItem("access");
-    if (!token) return;
-
-    fetch(`${API_BASE}/notifications/`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then(setNotifications)
-      .catch((err) => console.error("Failed to fetch notifications:", err));
+    apiFetch("/notifications/", {}, { auth: true })
+      .then((data) => {
+        setNotifications(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch notifications:", err);
+      });
   }, []);
 
   // Close dropdown when clicking outside
@@ -40,21 +37,16 @@ function NotificationBell({ onNotificationClick }) {
   const handleClick = async (notif) => {
     setOpen(false);
 
-    // Optimistically mark as read
+    // Optimistically mark as read in the UI
     setNotifications((prev) =>
       prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
     );
 
-    // Persist in backend
-    const token = localStorage.getItem("access");
     try {
-      await fetch(`${API_BASE}/notifications/${notif.id}/read/`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiFetch(`/notifications/${notif.id}/read/`, { method: "POST" }, { auth: true });
     } catch (err) {
       console.error("Failed to mark notification as read:", err);
-      // Revert if backend fails
+      // Revert UI state if backend fails
       setNotifications((prev) =>
         prev.map((n) => (n.id === notif.id ? { ...n, is_read: false } : n))
       );

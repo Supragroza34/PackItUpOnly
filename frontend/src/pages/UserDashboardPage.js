@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
 import UserNavbar from "../components/UserNavbar";
+import NotificationBell from "../components/NotificationBell";
 
 const isLocal =
   window.location.hostname === "localhost" ||
@@ -19,9 +20,13 @@ function statusClass(status) {
 function getProgressWidth(status) {
   switch (status) {
     case "pending":
-      return "20%";
+        return "20%";
+    case "seen":
+        return "40%"
     case "in_progress":
-      return "60%";
+        return "60%";
+    case "awaiting_response":
+        return "75%"
     case "resolved":
       return "90%";
     case "closed":
@@ -30,6 +35,7 @@ function getProgressWidth(status) {
       return "0%";
   }
 }
+
 
 function getStatusLabel(ticket) {
   if (ticket.status !== "closed") {
@@ -342,12 +348,13 @@ function UserDashboardPage() {
 
       <div className="dashboard-page">
         <div className="dashboard-topbar">
-          <h1>
-            👋 Welcome,{" "}
-            {user.first_name || user.last_name
-              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-              : user.k_number || "Student"}
-          </h1>
+          <h1>👋 Welcome, {user ? `${user.first_name} ${user.last_name}` : "Student"}</h1>
+            <NotificationBell
+              onNotificationClick={(notif) => {
+                const ticket = tickets.find((t) => t.id === notif.ticket_id);
+                if (ticket) setSelectedTicket(ticket);
+              }}
+            />
         </div>
 
 

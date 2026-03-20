@@ -39,6 +39,9 @@ class Ticket(models.Model):
         IN_PROGRESS = "in_progress", "In Progress"
         RESOLVED = "resolved", "Resolved"
         CLOSED = "closed", "Closed"
+        NEW = "new", "New" 
+        SEEN = "seen", "Seen"
+        AWAITING_RESPONSE = "awaiting_response", "Awaiting Student Response"
 
     class Priority(models.TextChoices):
         LOW = "low", "Low"

@@ -41,19 +41,44 @@ def _get_genai_client():
     return genai
 
 
-def _get_ticket_context():
-    """Fetches recent tickets to give the AI background knowledge."""
-    tickets = Ticket.objects.all().order_by("-created_at")[:15]
-    context = "System Knowledge: The following tickets exist in the database:\n"
-    for t in tickets:
-        context += (
-            f"- ID: {t.id}, Issue: {t.type_of_issue}, "
-            f"Status: {t.status}, Priority: {t.priority}, Department: {t.department}\n"
+def _get_ticket_context(user=None):
+    """
+    Build context about this user's tickets plus a small global sample.
+    This helps Gemini answer questions like 'how many tickets do I have?'.
+    """
+    lines = []
+
+    # Per-user tickets (for the authenticated user)
+    if user is not None and getattr(user, "is_authenticated", False):
+        user_tickets = Ticket.objects.filter(user=user).order_by("-created_at")[:10]
+        lines.append(
+            f"This conversation is with user id={user.id}. "
+            f"They currently have {user_tickets.count()} ticket(s) in the system."
         )
-    return context
+        if user_tickets.exists():
+            lines.append("Their recent tickets are:")
+            for t in user_tickets:
+                lines.append(
+                    f"- ID: {t.id}, Issue: {t.type_of_issue}, "
+                    f"Status: {t.status}, Priority: {t.priority}, Department: {t.department}"
+                )
+        else:
+            lines.append("They have no tickets yet.")
+        lines.append("")  # blank line
+
+    # Global sample of tickets (optional extra context)
+    recent = Ticket.objects.all().order_by("-created_at")[:10]
+    lines.append("Global context: some recent tickets in the system:")
+    for t in recent:
+        lines.append(
+            f"- ID: {t.id}, Issue: {t.type_of_issue}, "
+            f"Status: {t.status}, Priority: {t.priority}, Department: {t.department}"
+        )
+
+    return "\n".join(lines)
 
 
-def _chat_with_gemini(messages, system_prompt=None):
+def _chat_with_gemini(messages, system_prompt=None, user=None):
     """
     Sends context + user messages to Gemini 1.5 Flash.
     messages: [{"role": "user"|"assistant", "content": "..."}, ...]
@@ -64,9 +89,15 @@ def _chat_with_gemini(messages, system_prompt=None):
 
     genai = _get_genai_client()
 
-    system_prompt = system_prompt or DEFAULT_SYSTEM
-    context = _get_ticket_context()
-    full_system = f"{system_prompt}\n\n{context}"
+    base_system = system_prompt or DEFAULT_SYSTEM
+    context = _get_ticket_context(user=user)
+    full_system = (
+        f"{base_system}\n\n"
+        "When the user says things like 'my tickets' or 'how many tickets I have', "
+        "they mean the tickets listed in the 'This conversation is with user id=...' "
+        "section of the context below.\n\n"
+        f"{context}"
+    )
 
     # Convert our format (user/assistant) to Gemini history (user/model)
     history = []
@@ -108,7 +139,7 @@ def chat_page(request):
             messages = list(messages)
             messages.append({"role": "user", "content": user_message})
             try:
-                content = _chat_with_gemini(messages)
+                content = _chat_with_gemini(messages, user=request.user)
                 messages.append({"role": "assistant", "content": content})
                 error = None
             except Exception as e:
@@ -148,7 +179,7 @@ def chat(request):
     system_prompt = request.data.get("system") or DEFAULT_SYSTEM
 
     try:
-        content = _chat_with_gemini(messages, system_prompt=system_prompt)
+        content = _chat_with_gemini(messages, system_prompt=system_prompt, user=request.user)
         return Response({"message": {"role": "assistant", "content": content}})
     except RuntimeError as e:
         if "GEMINI_API_KEY" in str(e):

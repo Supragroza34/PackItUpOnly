@@ -1,0 +1,94 @@
+/* NotificationBell.css */
+
+.notification-bell {
+  position: relative;
+  cursor: pointer;
+  font-weight: 600;
+  color: #1a237e;
+}
+
+.bell-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-count {
+  background-color: #e53935;
+  color: #fff;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+}
+
+/* Dropdown container */
+.notification-dropdown {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  width: 300px;
+  max-height: 400px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  overflow-y: auto;
+  z-index: 50;
+  padding: 10px 0;
+}
+
+/* Each notification item */
+.notification-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eceff1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: #f8f9ff;
+}
+
+/* Unread notifications */
+.notification-item.unread {
+  background-color: #e3f2fd;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #e53935;
+  flex-shrink: 0;
+}
+
+.notification-title {
+  font-size: 0.9rem;
+  color: #1a237e;
+  margin: 0;
+  font-weight: 600; 
+}
+
+.notification-item.unread .notification-message {
+  font-size: 0.8rem;
+  color: #546e7a;
+  margin: 4px 0 0;
+  font-weight: 700; /* bold message for unread */
+}
+
+.notification-item:not(.unread) .notification-message {
+  font-weight: 400; /* normal message for read */
+}
+
+.no-notifications {
+  text-align: center;
+  padding: 16px;
+  font-size: 0.85rem;
+  color: #90a4ae;
+}

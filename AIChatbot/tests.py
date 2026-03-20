@@ -45,7 +45,7 @@ class AIChatbotAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @patch("AIChatbot.views._chat_with_ollama")
+    @patch("AIChatbot.views._chat_with_gemini")
     def test_chat_returns_assistant_message(self, mock_chat):
         """Successful call returns assistant message content."""
         mock_chat.return_value = "Hello, how can I help you?"
@@ -137,7 +137,7 @@ class AIChatbotPageTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "AI Helper")
 
-    @patch("AIChatbot.views._chat_with_ollama")
+    @patch("AIChatbot.views._chat_with_gemini")
     def test_post_chat_page_appends_messages(self, mock_chat):
         """Posting a message appends user and assistant messages to the page."""
         mock_chat.return_value = "Assistant reply"

@@ -106,7 +106,14 @@ class StaffSelectionTests(TestCase):
             additional_details='Need help with software',
             assigned_to=self.staff2,
             status=Ticket.Status.PENDING
-        )                        
+        )
+
+        self.ticket_data = {
+            'user': self.ticket_user,
+            'department': 'Informatics',
+            'type_of_issue': 'Software Installation Issues',
+            'additional_details': 'Need help installing Python'
+        }                        
 
     def test_correct_number_of_tickets_returned_for_staff(self):
         staff_1_tickets = staff_selection.get_number_of_tickets_assigned_to_staff(self.staff1.id)
@@ -129,5 +136,21 @@ class StaffSelectionTests(TestCase):
 
     def test_correct_staff_member_returned(self):
         department = self.ticket_data.get("department")
-        staff_member_id = staff_selection.get_staff_id_with_least_tickets_in_department(department)
-        self.assertEqual(staff_member_id, self.staff3.id)
+        staff_member = staff_selection.get_staff_with_least_tickets_in_department(department)
+        self.assertEqual(staff_member["id"], self.staff3.id)
+
+    def test_ticket_can_be_created(self):
+        department = 'Informatics'
+        assigned_to_id = staff_selection.get_staff_with_least_tickets_in_department(department)["id"]
+        assigned_to = User.objects.get(id=assigned_to_id)
+        new_ticket_data = {
+            'user': self.ticket_user,
+            'department': 'Informatics',
+            'type_of_issue': 'Software Installation Issues',
+            'additional_details': 'Need help installing Python',
+            'assigned_to': assigned_to
+        }
+        count_before = Ticket.objects.count()
+        Ticket.objects.create(**new_ticket_data)
+        count_after = Ticket.objects.count()
+        self.assertEqual(count_before, count_after-1)

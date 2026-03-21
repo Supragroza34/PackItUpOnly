@@ -123,6 +123,7 @@ function StaffDashboardPage() {
     const countOpen = allTickets.filter((t) => ['pending', 'in_progress'].includes(t.status)).length;
     const countOverdue = allTickets.filter((t) => t.is_overdue).length;
     const countClosed = allTickets.filter((t) => ['closed', 'resolved'].includes(t.status)).length;
+    const countReported = allTickets.filter((t) => ['reported'].includes(t.status)).length;
 
     return (
         <div className="sd-page">
@@ -182,6 +183,10 @@ function StaffDashboardPage() {
                     <div className="sd-summary-count">{countClosed}</div>
                     <div className="sd-summary-label">Closed</div>
                 </div>
+                <div className="sd-summary-card">
+                    <div className="sd-summary-count">{countReported}</div>
+                    <div className="sd-summary-label">Reported</div>
+                </div>
             </div>
 
             {/* Ticket list */}
@@ -198,6 +203,7 @@ function StaffDashboardPage() {
                             <option value="open">Open</option>
                             <option value="overdue">Overdue</option>
                             <option value="closed">Closed</option>
+                            <option value="reported">Reported</option>
                             <option value="all">All</option>
                         </select>
                         <input

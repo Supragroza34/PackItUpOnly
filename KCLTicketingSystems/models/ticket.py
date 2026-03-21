@@ -42,6 +42,7 @@ class Ticket(models.Model):
         NEW = "new", "New" 
         SEEN = "seen", "Seen"
         AWAITING_RESPONSE = "awaiting_response", "Awaiting Student Response"
+        REPORTED = "reported", "Reported"
 
     class Priority(models.TextChoices):
         LOW = "low", "Low"

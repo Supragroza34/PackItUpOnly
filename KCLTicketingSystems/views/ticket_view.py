@@ -15,12 +15,17 @@ def ticket_form(request):
     return render(request, 'ticket_form.html')
 
 def _get_data_and_files(request):
+    """
+    Isolate data extraction to handle the architectural differences 
+    between standard JSON API requests and multipart form data containing files.
+    """
     if request.content_type and "multipart/form-data" in request.content_type:
         return request.POST, request.FILES.getlist("attachments")
     return request.data, []
 
 
 def _extract_fields(data):
+    """Safely extract string fields from the payload, stripping whitespace."""
     return {
         "name": data.get("name", "").strip(),
         "surname": data.get("surname", "").strip(),
@@ -33,6 +38,7 @@ def _extract_fields(data):
 
 
 def _validate_core_fields(fields):
+    """Run all field-level validation rules and aggregate errors."""
     errors = {}
     _validate_name(fields["name"], errors)
     _validate_surname(fields["surname"], errors)
@@ -48,6 +54,7 @@ def _validate_core_fields(fields):
 
 
 def _validate_name(name, errors):
+    """Enforce name formatting rules."""
     if not name:
         errors["name"] = "Name is required"
     elif re.search(r"\d", name):
@@ -55,6 +62,7 @@ def _validate_name(name, errors):
 
 
 def _validate_surname(surname, errors):
+    """Enforce surname formatting rules."""
     if not surname:
         errors["surname"] = "Surname is required"
     elif re.search(r"\d", surname):
@@ -62,6 +70,7 @@ def _validate_surname(surname, errors):
 
 
 def _validate_k_number(k_number, errors):
+    """Ensure K-number adheres to institutional formatting standard (digits only, max 8)."""
     if not k_number:
         errors["k_number"] = "K-Number is required"
     elif re.search(r"[a-zA-Z]", k_number):
@@ -71,6 +80,11 @@ def _validate_k_number(k_number, errors):
 
 
 def _validate_k_email(k_email, k_number, errors):
+    """
+    Strictly enforce the KCL domain structure for emails.
+    Regex is required here to dynamically match the provided K-number 
+    against the local-part of the email address.
+    """
     if not k_email:
         errors["k_email"] = "Email is required"
         return
@@ -80,6 +94,7 @@ def _validate_k_email(k_email, k_number, errors):
 
 
 def _validate_department(department, errors):
+    """Ensure department maps to an existing institutional group."""
     valid_departments = ["Informatics", "Engineering", "Medicine"]
     if not department:
         errors["department"] = "Department is required"
@@ -95,6 +110,7 @@ def _validate_issue_and_details(type_of_issue, additional_details, errors):
 
 
 def _validate_attachments(files):
+    """Enforce platform-wide file size and extension security limits."""
     errors = {}
     max_size = 10 * 1024 * 1024
     allowed_ext = [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".txt"]
@@ -119,6 +135,7 @@ def _single_file_error(file, max_size, allowed_ext):
 
 
 def _create_ticket_and_attachments(fields, files):
+    """Handle database persistence. Executed as a group to ensure logical association."""
     ticket = Ticket.objects.create(**fields)
     count = 0
     for file in files:

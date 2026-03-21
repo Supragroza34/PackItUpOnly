@@ -8,12 +8,20 @@ from ..utils import notify_admin_on_ticket
 
 
 class TicketCreateView(generics.CreateAPIView):
-    """Create a ticket for the authenticated user."""
+    """
+    API endpoint for authenticated students to create new support tickets.
+    Uses CreateAPIView to leverage built-in DRF validation and creation flows.
+    """
     queryset = Ticket.objects.all()
     serializer_class = TicketCreateSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
+        """
+        Overrides the default creation to automatically associate the ticket with the logged-in user
+        and to manually process multipart file uploads, as standard DRF JSON serializers 
+        do not natively handle bulk file arrays efficiently.
+        """
         ticket = serializer.save(user=self.request.user)
         
         # Handle file attachments

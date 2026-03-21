@@ -8,6 +8,9 @@ from ..serializers import StaffListSerializer
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def staff_directory(request):
+    """
+    Retrieves a list of staff members, optionally filtered by department.
+    """
     qs = User.objects.filter(role=User.Role.STAFF)
 
     department = request.query_params.get("department")

@@ -32,3 +32,4 @@ yarn-debug.log*
 yarn-error.log*
 frontend/coverage/
 .env
+.venv/

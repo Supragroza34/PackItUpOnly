@@ -15,26 +15,40 @@ class MeetingRequest(models.Model):
         ACCEPTED = "accepted", "Accepted"
         DENIED = "denied", "Denied"
     
+    # Foreign key linking the meeting
+    # request to the student requesting it
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="meeting_requests_as_student",
     )
+    # Foreign key linking the meeting
+    # request to the requested staff member
     staff = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="meeting_requests_as_staff",
         limit_choices_to={"role": "staff"}
     )
+    # Stores the exact date and time
+    # proposed for the meeting
     meeting_datetime = models.DateTimeField()
+    # Text field for the student to explain
+    # the purpose or agenda of the meeting
     description = models.TextField()
+    # Tracks whether the meeting is pending,
+    # accepted, or denied by the staff
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.PENDING,
     )
     
+    # Automatically set the field to the current
+    # date and time when the request is created
     created_at = models.DateTimeField(auto_now_add=True)
+    # Automatically update the field to the current
+    # date and time every time the request is saved
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:

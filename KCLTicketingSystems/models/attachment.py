@@ -7,6 +7,8 @@ def attachment_upload_path(instance, filename):
     """
     Generate upload path for attachments: attachments/ticket_{ticket_id}/{filename}
     """
+    # Dynamic function to determine the
+    # folder path for file uploads
     if instance.ticket and instance.ticket.id:
         return f'attachments/ticket_{instance.ticket.id}/{filename}'
     else:
@@ -18,10 +20,20 @@ class Attachment(models.Model):
     """
     Model to store file attachments for tickets
     """
+    # Foreign key linking the uploaded
+    # file to its parent support ticket
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='attachments')
+    # Field handling the actual file upload
+    # and storage mechanism via Django
     file = models.FileField(upload_to=attachment_upload_path)
+    # Preserves the original name of the
+    # file as uploaded by the user
     original_filename = models.CharField(max_length=255)
+    # Tracks the size of the uploaded
+    # file in bytes for quota management
     file_size = models.PositiveIntegerField(help_text="File size in bytes")
+    # Automatically set the field to the current
+    # date and time when the file is uploaded
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -40,4 +52,3 @@ class Attachment(models.Model):
         if self.file:
             self.file_size = self.file.size
         super().save(*args, **kwargs)
-

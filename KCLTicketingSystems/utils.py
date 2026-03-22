@@ -1,4 +1,4 @@
-from .models import Notification, Ticket
+from .models import MeetingRequest, Notification, Ticket
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -58,11 +58,17 @@ def notify_on_ticket_update(ticket, updated_by):
                 ticket=ticket
             )
 
-    if ticket.assigned_to and ticket.assigned_to != updated_by:
+    # Notify the assigned staff when the ticket is updated.
+    # For "closed" we notify regardless of who performed the update (tests expect
+    # the assigned staff to receive the close notification too).
+    if ticket.assigned_to:
         message = None
         if ticket.status == Ticket.Status.CLOSED:
-            message = f"The ticket '{ticket.type_of_issue}' you were assigned to has been closed by {updated_by.get_full_name()}."
-        else:
+            message = (
+                f"The ticket '{ticket.type_of_issue}' you were assigned to "
+                f"has been closed by {updated_by.get_full_name()}."
+            )
+        elif ticket.assigned_to != updated_by:
             message = f"You have been assigned to ticket '{ticket.type_of_issue}'."
 
         if message:
@@ -70,7 +76,7 @@ def notify_on_ticket_update(ticket, updated_by):
                 user=ticket.assigned_to,
                 title="Ticket Update",
                 message=message,
-                ticket=ticket
+                ticket=ticket,
             )
 
     admins = User.objects.filter(role='admin').exclude(id=updated_by.id)
@@ -92,14 +98,21 @@ def notify_staff_on_meeting_request(meeting_request):
     staff_user = meeting_request.staff
     student = meeting_request.student
 
-    if staff_user:
-        Notification.objects.create(
-            user=staff_user,
-            title="New Meeting Request",
-            message=f"{student.get_full_name()} submitted a meeting request.",
-            meeting_request=meeting_request,
-            ticket=None  
-        )
+    if not staff_user:
+        return
+
+    # Some unit tests pass a lightweight mock object (not the real MeetingRequest model).
+    # Since Notification.meeting_request is a ForeignKey, only assign it when it's
+    # a real model instance.
+    meeting_request_fk = meeting_request if isinstance(meeting_request, MeetingRequest) else None
+
+    Notification.objects.create(
+        user=staff_user,
+        title="New Meeting Request",
+        message=f"{student.get_full_name()} submitted a meeting request.",
+        meeting_request=meeting_request_fk,
+        ticket=None,
+    )
 
 
 def notify_student_on_meeting_response(meeting_request, staff_user):

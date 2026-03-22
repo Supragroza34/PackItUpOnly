@@ -21,6 +21,10 @@ media/
 Thumbs.db
 .DS_Store
 
+#Coverage 
+htmlcov/
+.coverage
+
 # Node/Frontend
 node_modules/
 npm-debug.log*

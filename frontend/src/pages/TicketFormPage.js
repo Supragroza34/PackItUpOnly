@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { authHeaders } from "../api";
 import "./TicketFormPage.css";
 import UserNavbar from "../components/UserNavbar";
+import RichTextEditor from "../components/RichTextEditor";
 
 const ISSUE_TYPES = {
   Informatics: [
@@ -59,6 +60,14 @@ export default function TicketFormPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [generalError, setGeneralError] = useState("");
 
+  function getPlainTextFromHtml(html) {
+    return html
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
   /* ---------- Handlers ---------- */
 
   function handleDepartmentChange(e) {
@@ -72,8 +81,8 @@ export default function TicketFormPage() {
     clearError("type_of_issue");
   }
 
-  function handleDetailsChange(e) {
-    setAdditionalDetails(e.target.value);
+  function handleDetailsChange(value) {
+    setAdditionalDetails(value);
     clearError("additional_details");
   }
 
@@ -123,7 +132,7 @@ export default function TicketFormPage() {
     const errs = {};
     if (!department) errs.department = "Department is required.";
     if (!typeOfIssue) errs.type_of_issue = "Type of issue is required.";
-    if (!additionalDetails.trim())
+    if (!getPlainTextFromHtml(additionalDetails))
       errs.additional_details = "Additional details are required.";
     return errs;
   }
@@ -288,14 +297,13 @@ export default function TicketFormPage() {
             {/* Additional details */}
             <div className="form-group">
               <label htmlFor="additional_details">Additional Details</label>
-              <textarea
+              <RichTextEditor
                 id="additional_details"
                 value={additionalDetails}
                 onChange={handleDetailsChange}
                 placeholder="Please describe your issue in detail…"
-                rows={6}
-                className={errors.additional_details ? "error" : ""}
                 disabled={submitting}
+                hasError={Boolean(errors.additional_details)}
               />
               {errors.additional_details && (
                 <p className="field-error">{errors.additional_details}</p>

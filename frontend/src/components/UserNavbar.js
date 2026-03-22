@@ -79,6 +79,7 @@ function NavLinks({ onLogout }) {
       <Link to="/my-meetings" className="navbar-link">My Meetings</Link>
       <Link to="/faqs" className="navbar-link">View FAQs</Link>
       <Link to="/staff" className="navbar-link">Staff Directory</Link>
+      <OfficeHoursButton />
       <Link to="/ai-chatbot" className="navbar-link">AI Chatbot</Link>
       <ProfileDropdown />
       <button className="navbar-logout-btn" onClick={onLogout}>Log Out</button>

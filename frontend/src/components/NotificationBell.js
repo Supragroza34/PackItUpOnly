@@ -6,9 +6,18 @@ function NotificationBell({ onNotificationClick }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const bellRef = useRef(null);
+  const hasFetchedRef = useRef(false);
 
-  // Fetch notifications using shared API client
+  // Fetch lazily only when the dropdown is opened.
+  // This avoids making extra `fetch()` calls during unrelated page renders/tests.
   useEffect(() => {
+    if (!open) return;
+    if (hasFetchedRef.current) return;
+
+    const token = localStorage.getItem("access");
+    if (!token) return;
+
+    hasFetchedRef.current = true;
     apiFetch("/notifications/", {}, { auth: true })
       .then((data) => {
         setNotifications(Array.isArray(data) ? data : []);
@@ -16,7 +25,7 @@ function NotificationBell({ onNotificationClick }) {
       .catch((err) => {
         console.error("Failed to fetch notifications:", err);
       });
-  }, []);
+  }, [open]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

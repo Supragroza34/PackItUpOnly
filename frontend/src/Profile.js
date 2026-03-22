@@ -3,12 +3,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { apiFetch, authHeaders } from "./api";
 import { checkAuth } from "./store/slices/authSlice";
 import UserNavbar from "./components/UserNavbar";
+import "./Profile.css";
 
 export default function Profile() {
   const dispatch = useDispatch();
   const { user: reduxUser, loading } = useSelector((state) => state.auth);
   const [editedUser, setEditedUser] = useState(null);
   const [err, setErr] = useState("");
+  const [success, setSuccess] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // Load user from Redux on mount
   useEffect(() => {
@@ -23,7 +26,12 @@ export default function Profile() {
   }, [reduxUser]);
 
   async function save() {
+    if (!editedUser) return;
+
     setErr("");
+    setSuccess("");
+    setSaving(true);
+
     try {
       const updated = await apiFetch("/users/me/", {
         method: "PATCH",
@@ -34,20 +42,31 @@ export default function Profile() {
           department: editedUser.department,
         }),
       });
+
       setEditedUser(updated);
       // Refresh auth to update Redux state
       dispatch(checkAuth());
+      setSuccess("Profile updated successfully.");
     } catch (e) {
-      setErr("Save failed");
+      setErr(e.message || "Save failed");
+    } finally {
+      setSaving(false);
     }
+  }
+
+  function resetChanges() {
+    if (!reduxUser) return;
+    setEditedUser(reduxUser);
+    setErr("");
+    setSuccess("");
   }
 
   if (loading || !editedUser) {
     return (
       <>
         <UserNavbar />
-        <div style={{ maxWidth: 520, margin: "40px auto", padding: "0 20px" }}>
-          {err || "Loading..."}
+        <div className="profile-page">
+          <div className="profile-card">{err || "Loading..."}</div>
         </div>
       </>
     );
@@ -56,34 +75,83 @@ export default function Profile() {
   return (
     <>
       <UserNavbar />
-      <div style={{ maxWidth: 520, margin: "40px auto", padding: "0 20px" }}>
-      <h2>Profile</h2>
-      {err && <p style={{ color: "crimson" }}>{err}</p>}
+      <div className="profile-page">
+        <section className="profile-card">
+          <h2 className="profile-title">My Profile</h2>
 
-      <div style={{ display: "grid", gap: 10 }}>
-        <div><b>Role:</b> {editedUser.role}</div>
-        <div><b>Email:</b> {editedUser.email}</div>
-        <div><b>K Number:</b> {editedUser.k_number}</div>
+          {err && <p className="profile-alert profile-alert-error">{err}</p>}
+          {success && <p className="profile-alert profile-alert-success">{success}</p>}
 
-        <input
-          value={editedUser.first_name ?? ""}
-          onChange={(e) => setEditedUser({ ...editedUser, first_name: e.target.value })}
-          placeholder="first name"
-        />
-        <input
-          value={editedUser.last_name ?? ""}
-          onChange={(e) => setEditedUser({ ...editedUser, last_name: e.target.value })}
-          placeholder="last name"
-        />
-        <input
-          value={editedUser.department ?? ""}
-          onChange={(e) => setEditedUser({ ...editedUser, department: e.target.value })}
-          placeholder="department"
-        />
+          <div className="profile-static-grid">
+            <div className="profile-static-item">
+              <span className="profile-label">Role</span>
+              <span className="profile-value">{editedUser.role}</span>
+            </div>
+            <div className="profile-static-item">
+              <span className="profile-label">Email</span>
+              <span className="profile-value">{editedUser.email}</span>
+            </div>
+            <div className="profile-static-item">
+              <span className="profile-label">K Number</span>
+              <span className="profile-value">{editedUser.k_number}</span>
+            </div>
+          </div>
 
-        <button onClick={save}>Save</button>
+          <div className="profile-form-grid">
+            <label className="profile-field">
+              <span className="profile-label">First name</span>
+              <input
+                value={editedUser.first_name ?? ""}
+                onChange={(e) =>
+                  setEditedUser({ ...editedUser, first_name: e.target.value })
+                }
+                placeholder="First name"
+              />
+            </label>
+
+            <label className="profile-field">
+              <span className="profile-label">Last name</span>
+              <input
+                value={editedUser.last_name ?? ""}
+                onChange={(e) =>
+                  setEditedUser({ ...editedUser, last_name: e.target.value })
+                }
+                placeholder="Last name"
+              />
+            </label>
+
+            <label className="profile-field profile-field-full">
+              <span className="profile-label">Department</span>
+              <input
+                value={editedUser.department ?? ""}
+                onChange={(e) =>
+                  setEditedUser({ ...editedUser, department: e.target.value })
+                }
+                placeholder="Department"
+              />
+            </label>
+          </div>
+
+          <div className="profile-actions">
+            <button
+              className="profile-btn profile-btn-secondary"
+              onClick={resetChanges}
+              type="button"
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              className="profile-btn profile-btn-primary"
+              onClick={save}
+              type="button"
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </section>
       </div>
-    </div>
     </>
   );
 }

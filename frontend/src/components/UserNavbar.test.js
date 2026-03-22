@@ -80,7 +80,7 @@ describe("UserNavbar — rendering", () => {
   test("renders the View Profile toggle button", () => {
     renderNavbar();
     expect(
-      screen.getByRole("button", { name: /view profile/i })
+      screen.getByRole("button", { name: /profile/i })
     ).toBeInTheDocument();
   });
 
@@ -104,16 +104,16 @@ describe("UserNavbar — Profile dropdown", () => {
     jest.clearAllMocks();
   });
 
-  test("dropdown opens when the View Profile button is clicked", () => {
+  test("dropdown opens when the Profile button is clicked", () => {
     renderNavbar();
-    const toggle = screen.getByRole("button", { name: /view profile/i });
+    const toggle = screen.getByRole("button", { name: /profile/i });
     fireEvent.click(toggle);
     expect(screen.getByRole("menu")).toBeInTheDocument();
   });
 
-  test("dropdown closes when the View Profile button is clicked again", () => {
+  test("dropdown closes when the Profile button is clicked again", () => {
     renderNavbar();
-    const toggle = screen.getByRole("button", { name: /view profile/i });
+    const toggle = screen.getByRole("button", { name: /profile/i });
     fireEvent.click(toggle);
     expect(screen.getByRole("menu")).toBeInTheDocument();
     fireEvent.click(toggle);
@@ -123,7 +123,7 @@ describe("UserNavbar — Profile dropdown", () => {
   test("dropdown opens on mouse enter and closes on mouse leave", () => {
     renderNavbar();
     const wrapper = screen
-      .getByRole("button", { name: /view profile/i })
+      .getByRole("button", { name: /profile/i })
       .closest(".navbar-dropdown-wrapper");
 
     fireEvent.mouseEnter(wrapper);
@@ -133,69 +133,49 @@ describe("UserNavbar — Profile dropdown", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  test("dropdown shows 'View Profile' and 'Edit Profile' menu items when open", () => {
+  test("dropdown shows 'Edit Profile' menu item when open", () => {
     renderNavbar();
-    fireEvent.click(screen.getByRole("button", { name: /view profile/i }));
+    fireEvent.click(screen.getByRole("button", { name: /profile/i }));
 
     const items = screen.getAllByRole("menuitem");
-    expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent("View Profile");
-    expect(items[1]).toHaveTextContent("Edit Profile");
-  });
-
-  test("'View Profile' menu item links to /profile", () => {
-    renderNavbar();
-    fireEvent.click(screen.getByRole("button", { name: /view profile/i }));
-
-    const viewProfileItem = screen.getAllByRole("menuitem")[0];
-    expect(viewProfileItem).toHaveAttribute("href", "/profile");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent("Edit Profile");
   });
 
   test("'Edit Profile' menu item links to /profile", () => {
     renderNavbar();
-    fireEvent.click(screen.getByRole("button", { name: /view profile/i }));
+    fireEvent.click(screen.getByRole("button", { name: /profile/i }));
 
-    const editProfileItem = screen.getAllByRole("menuitem")[1];
+    const editProfileItem = screen.getAllByRole("menuitem")[0];
     expect(editProfileItem).toHaveAttribute("href", "/profile");
   });
 
-  test("clicking a dropdown menu item closes the dropdown", () => {
+  test("clicking the Edit Profile menu item closes the dropdown", () => {
     renderNavbar();
-    fireEvent.click(screen.getByRole("button", { name: /view profile/i }));
+    fireEvent.click(screen.getByRole("button", { name: /profile/i }));
     expect(screen.getByRole("menu")).toBeInTheDocument();
 
-    const viewProfileItem = screen.getAllByRole("menuitem")[0];
-    fireEvent.click(viewProfileItem);
-
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-  });
-
-  test("clicking the Edit Profile menu item also closes the dropdown", () => {
-    renderNavbar();
-    fireEvent.click(screen.getByRole("button", { name: /view profile/i }));
-    expect(screen.getByRole("menu")).toBeInTheDocument();
-
-    const editProfileItem = screen.getAllByRole("menuitem")[1];
+    const editProfileItem = screen.getAllByRole("menuitem")[0];
     fireEvent.click(editProfileItem);
 
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  test("View Profile toggle has correct aria-haspopup attribute", () => {
+  test("Profile toggle has correct aria-haspopup attribute", () => {
     renderNavbar();
-    const toggle = screen.getByRole("button", { name: /view profile/i });
+    const toggle = screen.getByRole("button", { name: /profile/i });
     expect(toggle).toHaveAttribute("aria-haspopup", "true");
   });
 
-  test("View Profile toggle aria-expanded is false when dropdown is closed", () => {
+  test("Profile toggle aria-expanded is false when dropdown is closed", () => {
     renderNavbar();
-    const toggle = screen.getByRole("button", { name: /view profile/i });
+    const toggle = screen.getByRole("button", { name: /profile/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("View Profile toggle aria-expanded is true when dropdown is open", () => {
+  test("Profile toggle aria-expanded is true when dropdown is open", () => {
     renderNavbar();
-    const toggle = screen.getByRole("button", { name: /view profile/i });
+    const toggle = screen.getByRole("button", { name: /profile/i });
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
   });
@@ -257,15 +237,15 @@ describe("UserNavbar — navigation links", () => {
     expect(faqLinks).toHaveLength(1);
   });
 
-  test("profile links to /profile are only visible after opening the dropdown", () => {
+  test("profile link to /profile is only visible after opening the dropdown", () => {
     renderNavbar();
     // Before opening — dropdown not rendered, no menuitems
     expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
 
-    // After opening — two menuitems linking to /profile
-    fireEvent.click(screen.getByRole("button", { name: /view profile/i }));
+    // After opening — one menuitem linking to /profile
+    fireEvent.click(screen.getByRole("button", { name: /profile/i }));
     const items = screen.getAllByRole("menuitem");
-    expect(items).toHaveLength(2);
-    items.forEach((item) => expect(item).toHaveAttribute("href", "/profile"));
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveAttribute("href", "/profile");
   });
 });

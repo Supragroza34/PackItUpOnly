@@ -17,7 +17,11 @@ let notificationClickHandler;
 jest.mock('../NotificationBell', () => {
   return function MockNotificationBell(props) {
     notificationClickHandler = props.onNotificationClick;
-    return <button onClick={() => props.onNotificationClick({ ticket: 42 })}>Bell</button>;
+    return (
+      <button data-testid="notification-bell" onClick={() => props.onNotificationClick({ ticket: 42 })}>
+        Bell
+      </button>
+    );
   };
 });
 
@@ -33,6 +37,7 @@ describe('AdminTopbar', () => {
 
     expect(screen.getByText('👋 Welcome, Admin')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
+    expect(screen.getByTestId('notification-bell')).toBeInTheDocument();
   });
 
   test('renders user first_name when available', () => {

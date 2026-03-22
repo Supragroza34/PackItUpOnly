@@ -283,6 +283,9 @@
 /* Progress Bar */
 .ticket-progress-container {
   margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .ticket-progress-bar {
@@ -560,4 +563,46 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+  
+}
+
+.progress-info-btn {
+  border: none;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.progress-info-btn:hover {
+  opacity: 0.7;
+}
+
+.info-modal {
+  position: relative;
+  background: #ffffff;              
+  padding: 28px 24px;                
+  border-radius: 12px;               
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); 
+  font-family: 'Segoe UI', sans-serif;
+  color: #263238;                     
+}
+
+.info-modal h3 {
+  margin-top: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a237e;                    
+}
+
+.progress-info-list {
+  margin: 12px 0 0 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+  color: #546e7a;                   
+}
+
+.progress-info-list li {
+  margin-bottom: 8px;
 }

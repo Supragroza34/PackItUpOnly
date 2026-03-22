@@ -101,6 +101,7 @@ function UserDashboardPage() {
   const [replyError, setReplyError] = useState("");
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
+  const [showProgressInfo, setShowProgressInfo] = useState(false);
 
   useEffect(() => {
     dispatch(checkAuth());
@@ -501,7 +502,46 @@ function UserDashboardPage() {
                     {getProgressWidth(selectedTicket.status)}
                   </span>
                 </div>
+
+                <button
+                  className="progress-info-btn"
+                  onClick={() => setShowProgressInfo(true)}
+                  title="What do these stages mean?"
+                >
+                  ⓘ
+                </button>
+
               </div>
+
+              {showProgressInfo && (
+                  <div
+                    className="modal-overlay"
+                    onClick={() => setShowProgressInfo(false)}
+                  >
+                    <div
+                      className="info-modal"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        className="modal-close"
+                        onClick={() => setShowProgressInfo(false)}
+                      >
+                        X
+                      </button>
+
+                      <h3>Ticket Progress Stages</h3>
+
+                      <ul className="progress-info-list">
+                        <li><strong>Pending (20%)</strong> – Ticket submitted.</li>
+                        <li><strong>Seen (40%)</strong> – Staff has viewed the ticket.</li>
+                        <li><strong>In Progress (60%)</strong> – Work has started.</li>
+                        <li><strong>Awaiting Response (75%)</strong> – Waiting for student reply.</li>
+                        <li><strong>Resolved (90%)</strong> – Issue resolved.</li>
+                        <li><strong>Closed (100%)</strong> – Ticket finished.</li>
+                      </ul>
+                    </div>
+                  </div>
+              )}
 
               <p>
                 <strong>Department: </strong>

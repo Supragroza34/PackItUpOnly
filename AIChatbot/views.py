@@ -32,7 +32,8 @@ def _get_genai_client():
         import google.generativeai as genai
     except ImportError as exc:
         raise RuntimeError(
-            "google-generativeai is not installed. Install requirements to use AI chatbot features."
+            "Gemini configuration error: GEMINI_API_KEY or google-generativeai is not available. "
+            "Install the google-generativeai package and configure GEMINI_API_KEY to use AI chatbot features."
         ) from exc
 
     api_key = os.getenv("GEMINI_API_KEY")
@@ -182,12 +183,14 @@ def chat(request):
         content = _chat_with_gemini(messages, system_prompt=system_prompt, user=request.user)
         return Response({"message": {"role": "assistant", "content": content}})
     except RuntimeError as e:
-        if "GEMINI_API_KEY" in str(e):
-            return Response(
-                {"error": "GEMINI_API_KEY not configured. Set it in .env or Heroku config vars."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-        raise
+        err_msg = str(e).strip()
+        return Response(
+            {
+                "error": "Gemini service unavailable. Configure GEMINI_API_KEY and install google-generativeai.",
+                "detail": err_msg or "Gemini runtime configuration error.",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
     except Exception as e:
         logger.exception("Gemini chat error")
         err_msg = str(e).strip()

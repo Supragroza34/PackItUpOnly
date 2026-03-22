@@ -97,7 +97,25 @@ class AIChatbotAPITest(TestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-        self.assertIn("GEMINI_API_KEY not configured", resp.data["error"])
+        self.assertIn("Gemini service unavailable", resp.data["error"])
+        self.assertIn("GEMINI_API_KEY", resp.data["detail"])
+
+    @patch("AIChatbot.views._chat_with_gemini")
+    def test_chat_missing_package_runtime_error_maps_to_503(self, mock_chat):
+        """Missing google-generativeai dependency is returned as service unavailable."""
+        mock_chat.side_effect = RuntimeError(
+            "Gemini configuration error: GEMINI_API_KEY or google-generativeai is not available."
+        )
+
+        resp = self.client.post(
+            self.url,
+            {"messages": [{"role": "user", "content": "Hi"}]},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertIn("Gemini service unavailable", resp.data["error"])
+        self.assertIn("google-generativeai", resp.data["detail"])
 
     @patch("AIChatbot.views._chat_with_gemini")
     def test_chat_connection_error_maps_to_503(self, mock_chat):

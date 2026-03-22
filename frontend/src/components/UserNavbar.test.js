@@ -63,20 +63,18 @@ describe("UserNavbar — rendering", () => {
     expect(faqLink).toHaveAttribute("href", "/faqs");
   });
 
-  test("renders a disabled Staff Office Hours button", () => {
+  test("renders a Staff Directory link pointing to /staff", () => {
     renderNavbar();
-    const officeBtn = screen.getByRole("button", { name: /staff office hours/i });
-    expect(officeBtn).toBeInTheDocument();
-    expect(officeBtn).toBeDisabled();
+    const staffLink = screen.getByRole("link", { name: /staff directory/i });
+    expect(staffLink).toBeInTheDocument();
+    expect(staffLink).toHaveAttribute("href", "/staff");
   });
 
-  test("Staff Office Hours button has a coming-soon title tooltip", () => {
+  test("renders an AI Chatbot link pointing to /ai-chatbot", () => {
     renderNavbar();
-    const officeBtn = screen.getByRole("button", { name: /staff office hours/i });
-    expect(officeBtn).toHaveAttribute(
-      "title",
-      "Staff office hours information coming soon"
-    );
+    const chatbotLink = screen.getByRole("link", { name: /ai chatbot/i });
+    expect(chatbotLink).toBeInTheDocument();
+    expect(chatbotLink).toHaveAttribute("href", "/ai-chatbot");
   });
 
   test("renders the View Profile toggle button", () => {

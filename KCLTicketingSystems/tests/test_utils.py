@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from ..models import Ticket, Notification
+from django.utils import timezone
+from ..models import Ticket, Notification, MeetingRequest, OfficeHours
 from ..utils import (
     notify_admin_on_ticket,
     notify_staff_on_assignment,
@@ -33,13 +34,26 @@ class NotificationUtilsTests(TestCase):
             assigned_to=self.staff
         )
 
-        # Meeting request mock
-        class MeetingRequest:
-            def __init__(self, student, staff, status="pending"):
-                self.student = student
-                self.staff = staff
-                self.status = status
-        self.meeting_request = MeetingRequest(self.student, self.staff)
+        # Valid office hours + meeting request fixture for notification tests
+        meeting_time = (timezone.now() + timezone.timedelta(days=1)).replace(
+            hour=10,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        OfficeHours.objects.create(
+            staff=self.staff,
+            day_of_week=meeting_time.strftime("%A"),
+            start_time=meeting_time.replace(hour=9).time(),
+            end_time=meeting_time.replace(hour=17).time(),
+        )
+        self.meeting_request = MeetingRequest.objects.create(
+            student=self.student,
+            staff=self.staff,
+            meeting_datetime=meeting_time,
+            description="Need help with a ticket",
+            status=MeetingRequest.Status.PENDING,
+        )
 
     def test_notify_admin_on_ticket_creates_notifications(self):
         notify_admin_on_ticket(self.ticket)
@@ -65,12 +79,20 @@ class NotificationUtilsTests(TestCase):
         # Student should be notified
         notif_student = Notification.objects.filter(user=self.student).first()
         self.assertIn("has been closed", notif_student.message)
-        # Staff should be notified
+        # Updater should not be notified about their own action
         notif_staff = Notification.objects.filter(user=self.staff).first()
-        self.assertIn("has been closed", notif_staff.message)
+        self.assertIsNone(notif_staff)
         # Admin should be notified
         notif_admin = Notification.objects.filter(user=self.admin).first()
         self.assertIn("has been closed", notif_admin.message)
+
+    def test_notify_on_ticket_update_closed_notifies_assigned_staff_when_admin_closes(self):
+        self.ticket.status = Ticket.Status.CLOSED
+        notify_on_ticket_update(self.ticket, self.admin)
+
+        notif_staff = Notification.objects.filter(user=self.staff).first()
+        self.assertIsNotNone(notif_staff)
+        self.assertIn("has been closed", notif_staff.message)
 
     def test_notify_staff_on_meeting_request_creates_notification(self):
         notify_staff_on_meeting_request(self.meeting_request)

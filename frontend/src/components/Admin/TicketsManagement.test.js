@@ -112,7 +112,9 @@ describe('TicketsManagement', () => {
       expect(screen.getByText('Ticket Management')).toBeInTheDocument();
     });
 
-    expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/name, k-number, email, department/i)
+    ).toBeInTheDocument();
   });
 
   test('renders error state when API fails', async () => {

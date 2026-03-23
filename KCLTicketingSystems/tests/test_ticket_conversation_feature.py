@@ -99,6 +99,50 @@ class TicketConversationApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Reply.objects.filter(ticket=self.ticket, user=self.staff, body="Here is help").exists())
 
+    def test_owner_can_post_nested_reply(self):
+        parent = Reply.objects.create(user=self.staff, ticket=self.ticket, body="Can you confirm?")
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.post(
+            self._conversation_url(),
+            {"body": "Yes, still broken", "parent": parent.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        created = Reply.objects.get(ticket=self.ticket, body="Yes, still broken")
+        self.assertEqual(created.parent_id, parent.id)
+
+        get_response = self.client.get(self._conversation_url())
+        self.assertEqual(get_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_response.data[0]["id"], parent.id)
+        self.assertEqual(get_response.data[0]["children"][0]["parent"], parent.id)
+
+    def test_rejects_parent_from_another_ticket(self):
+        other_ticket = Ticket.objects.create(
+            user=self.owner,
+            department="IT",
+            type_of_issue="Network",
+            additional_details="VPN issue",
+            status=Ticket.Status.IN_PROGRESS,
+            assigned_to=self.staff,
+        )
+        other_parent = Reply.objects.create(
+            user=self.staff,
+            ticket=other_ticket,
+            body="Reply on other ticket",
+        )
+
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(
+            self._conversation_url(),
+            {"body": "invalid parent", "parent": other_parent.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("same ticket", str(response.data["parent"][0]).lower())
+
     def test_staff_reply_sets_ticket_to_awaiting_response(self):
         self.ticket.status = Ticket.Status.IN_PROGRESS
         self.ticket.save(update_fields=["status"])

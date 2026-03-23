@@ -92,9 +92,14 @@ class ReplyCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         """Block replies to closed tickets at the serializer level."""
         ticket = attrs.get('ticket')
+        parent = attrs.get('parent')
         if ticket and ticket.status == Ticket.Status.CLOSED:
             raise serializers.ValidationError(
                 {"ticket": "Cannot add a reply to a closed ticket."}
+            )
+        if ticket and parent and parent.ticket_id != ticket.id:
+            raise serializers.ValidationError(
+                {"parent": "Parent reply must belong to the same ticket."}
             )
         return attrs
 

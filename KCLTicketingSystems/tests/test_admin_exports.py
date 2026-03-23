@@ -13,58 +13,43 @@ from ..models.user import User
 class AdminExportStatisticsCSVTest(TestCase):
     """Test cases for admin statistics CSV export endpoint"""
 
-    def setUp(self):
-        """Set up test data"""
-        self.client = APIClient()
-        self.url = '/api/admin/export/statistics-csv/'
-        
-        # Create admin user
+    def _create_base_users(self):
         self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
-            is_superuser=True
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_superuser=True
         )
-        
-        # Create regular user
         self.student = User.objects.create_user(
-            username='student',
-            email='student@test.com',
-            password='testpass123',
-            k_number='11111111',
-            role=User.Role.STUDENT
+            username='student', email='student@test.com', password='testpass123',
+            k_number='11111111', role=User.Role.STUDENT
         )
-        
-        # Create test tickets across different departments
-        now = timezone.now()
-        
-        # Informatics tickets
+
+    def _create_department_tickets(self, now):
         for i in range(5):
             Ticket.objects.create(
-                user=self.student,
-                department='Informatics',
-                type_of_issue='Software Issue',
+                user=self.student, department='Informatics', type_of_issue='Software Issue',
                 additional_details=f'Test ticket {i}',
                 status=Ticket.Status.PENDING if i % 2 == 0 else Ticket.Status.CLOSED,
                 priority=Ticket.Priority.MEDIUM if i % 2 == 0 else Ticket.Priority.HIGH,
                 created_at=now - timedelta(days=i),
-                updated_at=now - timedelta(days=i) + timedelta(hours=i)
+                updated_at=now - timedelta(days=i) + timedelta(hours=i),
             )
-        
-        # Engineering tickets
         for i in range(3):
             Ticket.objects.create(
-                user=self.student,
-                department='Engineering',
-                type_of_issue='Hardware Issue',
+                user=self.student, department='Engineering', type_of_issue='Hardware Issue',
                 additional_details=f'Engineering ticket {i}',
                 status=Ticket.Status.IN_PROGRESS if i % 2 == 0 else Ticket.Status.RESOLVED,
                 priority=Ticket.Priority.LOW if i == 0 else Ticket.Priority.URGENT,
-                created_at=now - timedelta(days=i*2),
-                updated_at=now - timedelta(days=i*2) + timedelta(hours=i)
+                created_at=now - timedelta(days=i * 2),
+                updated_at=now - timedelta(days=i * 2) + timedelta(hours=i),
             )
+
+    def setUp(self):
+        """Set up test data"""
+        self.client = APIClient()
+        self.url = '/api/admin/export/statistics-csv/'
+        now = timezone.now()
+        self._create_base_users()
+        self._create_department_tickets(now)
 
     def test_export_statistics_unauthenticated(self):
         """Test that unauthenticated users cannot export statistics"""
@@ -204,81 +189,53 @@ class AdminExportStatisticsCSVTest(TestCase):
 class AdminExportTicketsCSVTest(TestCase):
     """Test cases for admin tickets CSV export endpoint"""
 
+    def _create_users(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_superuser=True
+        )
+        self.staff = User.objects.create_user(
+            username='staff', email='staff@test.com', password='testpass123',
+            first_name='Staff', last_name='Member', k_number='22222222', role=User.Role.STAFF
+        )
+        self.student1 = User.objects.create_user(
+            username='student1', email='student1@test.com', password='testpass123',
+            first_name='John', last_name='Doe', k_number='11111111', role=User.Role.STUDENT
+        )
+        self.student2 = User.objects.create_user(
+            username='student2', email='student2@test.com', password='testpass123',
+            first_name='Jane', last_name='Smith', k_number='33333333', role=User.Role.STUDENT
+        )
+
+    def _create_tickets(self):
+        self.ticket1 = Ticket.objects.create(
+            user=self.student1, department='Informatics', type_of_issue='Software Issue',
+            additional_details='Test ticket 1', status=Ticket.Status.PENDING, priority=Ticket.Priority.MEDIUM
+        )
+        self.ticket2 = Ticket.objects.create(
+            user=self.student2, department='Engineering', type_of_issue='Hardware Issue',
+            additional_details='Test ticket 2', status=Ticket.Status.IN_PROGRESS,
+            priority=Ticket.Priority.HIGH, assigned_to=self.staff
+        )
+        self.ticket3 = Ticket.objects.create(
+            user=self.student1, department='Medicine', type_of_issue='Access Issue',
+            additional_details='Test ticket 3', status=Ticket.Status.RESOLVED, priority=Ticket.Priority.LOW
+        )
+
+    def _create_old_ticket(self):
+        old_ticket = Ticket.objects.create(
+            department='Law', type_of_issue='General Inquiry', additional_details='Old ticket',
+            status='pending', priority='low', user=self.student1
+        )
+        old_ticket.created_at = timezone.now() - timedelta(days=40)
+        old_ticket.save()
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
         self.url = '/api/admin/export/tickets-csv/'
-        
-        # Create admin user
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
-            is_superuser=True
-        )
-        
-        # Create staff user
-        self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            first_name='Staff',
-            last_name='Member',
-            k_number='22222222',
-            role=User.Role.STAFF
-        )
-        
-        # Create student users
-        self.student1 = User.objects.create_user(
-            username='student1',
-            email='student1@test.com',
-            password='testpass123',
-            first_name='John',
-            last_name='Doe',
-            k_number='11111111',
-            role=User.Role.STUDENT
-        )
-        
-        self.student2 = User.objects.create_user(
-            username='student2',
-            email='student2@test.com',
-            password='testpass123',
-            first_name='Jane',
-            last_name='Smith',
-            k_number='33333333',
-            role=User.Role.STUDENT
-        )
-        
-        # Create test tickets
-        self.ticket1 = Ticket.objects.create(
-            user=self.student1,
-            department='Informatics',
-            type_of_issue='Software Issue',
-            additional_details='Test ticket 1',
-            status=Ticket.Status.PENDING,
-            priority=Ticket.Priority.MEDIUM
-        )
-        
-        self.ticket2 = Ticket.objects.create(
-            user=self.student2,
-            department='Engineering',
-            type_of_issue='Hardware Issue',
-            additional_details='Test ticket 2',
-            status=Ticket.Status.IN_PROGRESS,
-            priority=Ticket.Priority.HIGH,
-            assigned_to=self.staff
-        )
-        
-        self.ticket3 = Ticket.objects.create(
-            user=self.student1,
-            department='Medicine',
-            type_of_issue='Access Issue',
-            additional_details='Test ticket 3',
-            status=Ticket.Status.RESOLVED,
-            priority=Ticket.Priority.LOW
-        )
+        self._create_users()
+        self._create_tickets()
 
     def test_export_tickets_unauthenticated(self):
         """Test that unauthenticated users cannot export tickets"""
@@ -345,23 +302,7 @@ class AdminExportTicketsCSVTest(TestCase):
     def test_export_tickets_date_range_filter(self):
         """Test tickets export with date range filter"""
         self.client.force_authenticate(user=self.admin)
-        
-        # Create tickets at different times
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        old_ticket = Ticket.objects.create(
-            department='Law',
-            type_of_issue='General Inquiry',
-            additional_details='Old ticket',
-            status='pending',
-            priority='low',
-            user=self.student1
-        )
-        # Set created_at to 40 days ago
-        old_ticket.created_at = timezone.now() - timedelta(days=40)
-        old_ticket.save()
-        
+        self._create_old_ticket()
         # Export only last 30 days (should not include old ticket)
         response = self.client.get(self.url, {'days': '30'})
         

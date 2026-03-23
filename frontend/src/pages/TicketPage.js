@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { reassignTicket, fetchStaffList } from '../store/slices/staffSlice';
 import { checkAuth } from '../store/slices/authSlice';
 import { useAuth } from '../context/AuthContext';
+import { HtmlContent } from '../components/HtmlContent';
 import './TicketPage.css';
 
 const STATUS_OPTIONS = [
@@ -28,6 +29,7 @@ function TicketPage() {
     const user = reduxUser ?? contextUser;
     const [ticket, setTicket] = useState(null);
     const [body, setBody] = useState("");
+    const [parentReply_id, setParentReplyId] = useState(null);
     const navigate = useNavigate();
 
     const authHeaders = () => ({
@@ -126,14 +128,38 @@ function TicketPage() {
         fetch("/api/replies/create/", {
             method: "POST",
             headers: { "Content-Type": "application/json", ...authHeaders() },
-            body: JSON.stringify({ ticket: ticket_id, body: body.trim() }),
+            body: JSON.stringify({ ticket: ticket_id, body: body.trim(), parent: parentReply_id }),
         })
             .then(res => res.ok ? res.json() : Promise.reject(res))
             .then(() => {
                 setBody("");
+                setParentReplyId(null);
                 fetchTicket();
             })
             .catch(err => console.error('Reply failed:', err));
+    }
+
+    function Reply({ reply }) {
+        return (
+            <div className="ticket-reply">
+                <div className="ticket-reply-body">
+                    <strong>{reply.user_username}</strong>
+                    <p>{reply.body}</p>
+
+                    <button onClick={() => setParentReplyId(reply.id)}>
+                        Reply
+                    </button>
+                </div>
+
+                {reply.children?.length > 0 && (
+                    <div className="reply-children">
+                        {reply.children.map(child => (
+                            <Reply key={child.id} reply={child} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
     }
 
     if (ticket === null) {
@@ -148,14 +174,6 @@ function TicketPage() {
             </div>
         );
     }
-
-    const statusClass = (ticket.status || 'pending').replace('_', '-');
-    const getStatusLabel = () => {
-        if (ticket.status !== 'closed') return (ticket.status || 'pending').replace('_', ' ');
-        if (!ticket.closed_by_role) return 'Closed';
-        const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
-        return `Closed by ${label}`;
-    };
 
     return (
         <div className="ticket-page">
@@ -191,7 +209,11 @@ function TicketPage() {
 
             <div className="ticket-card">
                 <h2 className="ticket-card-title">Issue description</h2>
-                <p className="ticket-description">{ticket.additional_details || 'No description provided.'}</p>
+                {ticket.additional_details ? (
+                  <HtmlContent html={ticket.additional_details} className="ticket-description" />
+                ) : (
+                  <p className="ticket-description">No description provided.</p>
+                )}
                 {ticket.department && <span className="ticket-department">📁 {ticket.department}</span>}
             </div>
 
@@ -225,18 +247,21 @@ function TicketPage() {
                 {ticket.replies?.length ? (
                     <div className="ticket-replies-list">
                         {ticket.replies.map(reply => (
-                            <div key={reply.id} className="ticket-reply">
-                                <p className="ticket-reply-meta">
-                                    <strong>{reply.user_username}</strong> · {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}
-                                </p>
-                                <p className="ticket-reply-body">{reply.body}</p>
-                            </div>
+                            <Reply key={reply.id} reply={reply} />
                         ))}
                     </div>
                 ) : (
                     <p className="ticket-replies-empty">No replies yet.</p>
                 )}
                 <form className="ticket-reply-form" onSubmit={submitReply}>
+                    {parentReply_id && (
+                        <p className="ticket-reply-indicator">
+                            Replying to comment #{parentReply_id}
+                            <button type="button" onClick={() => setParentReplyId(null)}>
+                                Cancel
+                            </button>
+                        </p>
+                    )}
                     <textarea
                         value={body}
                         onChange={e => setBody(e.target.value)}

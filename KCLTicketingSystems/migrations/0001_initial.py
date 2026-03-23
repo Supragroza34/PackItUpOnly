@@ -95,20 +95,6 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='tickets', to=settings.AUTH_USER_MODEL),
         ),
         migrations.CreateModel(
-            name='Reply',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('body', models.TextField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('leaf_replies', models.ManyToManyField(blank=True, to='KCLTicketingSystems.reply')),
-                ('ticket', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='replies', to='KCLTicketingSystems.ticket')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'ordering': ('created_at',),
-            },
-        ),
-        migrations.CreateModel(
             name='OfficeHours',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -152,6 +138,21 @@ class Migration(migrations.Migration):
             options={
                 'db_table': 'KCLTicketingSystems_meeting_request',
                 'ordering': ['-created_at'],
+            },
+        ),
+        migrations.CreateModel(
+            name='Reply',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('body', models.TextField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='children', to='KCLTicketingSystems.reply')),
+                ('ticket', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='replies', to='KCLTicketingSystems.ticket')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                'ordering': ('created_at',),
+                'indexes': [models.Index(fields=['ticket', 'parent'], name='KCLTicketin_ticket__73c24d_idx')],
             },
         ),
     ]

@@ -65,7 +65,7 @@ class ReplyModelTest(TestCase):
     def test_reply_str_method(self):
         """Test the __str__ method of Reply model"""
         reply = Reply.objects.create(**self.reply_data)
-        expected_str = reply.body + "     (posted at " + str(reply.created_at) + ")"
+        expected_str = reply.body + " (posted at " + str(reply.created_at) + ")"
         self.assertEqual(str(reply), expected_str)
 
     def test_reply_auto_timestamps(self):

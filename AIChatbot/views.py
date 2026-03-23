@@ -26,6 +26,119 @@ SESSION_KEY_MESSAGES = "ai_chatbot_messages"
 SESSION_KEY_ERROR = "ai_chatbot_error"
 
 
+def _is_leaked_or_blocked_key_error(message: str) -> bool:
+    msg = (message or "").lower()
+    return (
+        "api key was reported as leaked" in msg
+        or "permissiondenied" in msg
+        or "403" in msg and "api key" in msg
+    )
+
+
+def _format_ticket_line(ticket):
+    return (
+        f"- ID: {ticket.id}, Issue: {ticket.type_of_issue}, "
+        f"Status: {ticket.status}, Priority: {ticket.priority}, Department: {ticket.department}"
+    )
+
+
+def _build_user_ticket_context_lines(user):
+    lines = []
+    user_tickets = Ticket.objects.filter(user=user).order_by("-created_at")[:10]
+    lines.append(
+        f"This conversation is with user id={user.id}. "
+        f"They currently have {user_tickets.count()} ticket(s) in the system."
+    )
+    if user_tickets.exists():
+        lines.append("Their recent tickets are:")
+        lines.extend(_format_ticket_line(ticket) for ticket in user_tickets)
+    else:
+        lines.append("They have no tickets yet.")
+    lines.append("")
+    return lines
+
+
+def _build_global_ticket_context_lines():
+    lines = ["Global context: some recent tickets in the system:"]
+    recent = Ticket.objects.all().order_by("-created_at")[:10]
+    lines.extend(_format_ticket_line(ticket) for ticket in recent)
+    return lines
+
+
+def _normalize_messages_to_gemini_history(messages):
+    role_map = {"user": "user", "assistant": "model"}
+    history = []
+    for message in messages:
+        gemini_role = role_map.get(message.get("role"))
+        content = (message.get("content") or "").strip()
+        if not content or not gemini_role:
+            continue
+        history.append({"role": gemini_role, "parts": [content]})
+    return history
+
+
+def _require_gemini_api_key():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is not set. Add it to .env or Heroku config vars.")
+    return api_key
+
+
+def _build_full_system_prompt(system_prompt, user):
+    base_system = system_prompt or DEFAULT_SYSTEM
+    context = _get_ticket_context(user=user)
+    return (
+        f"{base_system}\n\n"
+        "When the user says things like 'my tickets' or 'how many tickets I have', "
+        "they mean the tickets listed in the 'This conversation is with user id=...' "
+        "section of the context below.\n\n"
+        f"{context}"
+    )
+
+
+def _chat_page_error_message(exception):
+    err_msg = str(exception).strip()
+    if "GEMINI_API_KEY" in err_msg or "api_key" in err_msg.lower():
+        return "Gemini API key not configured. Set GEMINI_API_KEY in .env or Heroku config."
+    if _is_leaked_or_blocked_key_error(err_msg):
+        return (
+            "Gemini API key is blocked (reported leaked). "
+            "Create a new key in Google AI Studio/Cloud, update GEMINI_API_KEY, then restart the server."
+        )
+    return err_msg or "Chat request failed."
+
+
+def _handle_chat_page_post(request, messages):
+    user_message = (request.POST.get("message") or "").strip()
+    if not user_message:
+        return messages, None
+
+    updated_messages = list(messages)
+    updated_messages.append({"role": "user", "content": user_message})
+    try:
+        content = _chat_with_gemini(updated_messages, user=request.user)
+        updated_messages.append({"role": "assistant", "content": content})
+        return updated_messages, None
+    except Exception as exc:
+        logger.exception("Gemini chat error")
+        return updated_messages, _chat_page_error_message(exc)
+
+
+def _api_error_response(err_msg):
+    if _is_leaked_or_blocked_key_error(err_msg):
+        return Response(
+            {
+                "error": "Gemini API key is blocked (reported leaked).",
+                "detail": "Create a new Gemini key, update GEMINI_API_KEY, and restart the backend process.",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    return Response(
+        {"error": "Chat request failed.", "detail": err_msg},
+        status=status.HTTP_502_BAD_GATEWAY,
+    )
+
+
 def _get_genai_client():
     """Import and configure Gemini so missing package doesn't crash Django startup."""
     try:
@@ -47,34 +160,9 @@ def _get_ticket_context(user=None):
     This helps Gemini answer questions like 'how many tickets do I have?'.
     """
     lines = []
-
-    # Per-user tickets (for the authenticated user)
     if user is not None and getattr(user, "is_authenticated", False):
-        user_tickets = Ticket.objects.filter(user=user).order_by("-created_at")[:10]
-        lines.append(
-            f"This conversation is with user id={user.id}. "
-            f"They currently have {user_tickets.count()} ticket(s) in the system."
-        )
-        if user_tickets.exists():
-            lines.append("Their recent tickets are:")
-            for t in user_tickets:
-                lines.append(
-                    f"- ID: {t.id}, Issue: {t.type_of_issue}, "
-                    f"Status: {t.status}, Priority: {t.priority}, Department: {t.department}"
-                )
-        else:
-            lines.append("They have no tickets yet.")
-        lines.append("")  # blank line
-
-    # Global sample of tickets (optional extra context)
-    recent = Ticket.objects.all().order_by("-created_at")[:10]
-    lines.append("Global context: some recent tickets in the system:")
-    for t in recent:
-        lines.append(
-            f"- ID: {t.id}, Issue: {t.type_of_issue}, "
-            f"Status: {t.status}, Priority: {t.priority}, Department: {t.department}"
-        )
-
+        lines.extend(_build_user_ticket_context_lines(user))
+    lines.extend(_build_global_ticket_context_lines())
     return "\n".join(lines)
 
 
@@ -83,33 +171,10 @@ def _chat_with_gemini(messages, system_prompt=None, user=None):
     Sends context + user messages to Gemini 1.5 Flash.
     messages: [{"role": "user"|"assistant", "content": "..."}, ...]
     """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not set. Add it to .env or Heroku config vars.")
-
+    _require_gemini_api_key()
     genai = _get_genai_client()
-
-    base_system = system_prompt or DEFAULT_SYSTEM
-    context = _get_ticket_context(user=user)
-    full_system = (
-        f"{base_system}\n\n"
-        "When the user says things like 'my tickets' or 'how many tickets I have', "
-        "they mean the tickets listed in the 'This conversation is with user id=...' "
-        "section of the context below.\n\n"
-        f"{context}"
-    )
-
-    # Convert our format (user/assistant) to Gemini history (user/model)
-    history = []
-    for m in messages:
-        role = m.get("role")
-        content = (m.get("content") or "").strip()
-        if not content:
-            continue
-        if role == "user":
-            history.append({"role": "user", "parts": [content]})
-        elif role == "assistant":
-            history.append({"role": "model", "parts": [content]})
+    full_system = _build_full_system_prompt(system_prompt, user)
+    history = _normalize_messages_to_gemini_history(messages)
 
     if not history or history[-1]["role"] != "user":
         raise ValueError("At least one user message required.")
@@ -134,24 +199,10 @@ def chat_page(request):
     error = request.session.pop(SESSION_KEY_ERROR, None)
 
     if request.method == "POST":
-        user_message = (request.POST.get("message") or "").strip()
-        if user_message:
-            messages = list(messages)
-            messages.append({"role": "user", "content": user_message})
-            try:
-                content = _chat_with_gemini(messages, user=request.user)
-                messages.append({"role": "assistant", "content": content})
-                error = None
-            except Exception as e:
-                logger.exception("Gemini chat error")
-                err_msg = str(e).strip()
-                if "GEMINI_API_KEY" in err_msg or "api_key" in err_msg.lower():
-                    error = "Gemini API key not configured. Set GEMINI_API_KEY in .env or Heroku config."
-                else:
-                    error = err_msg or "Chat request failed."
-            request.session[SESSION_KEY_MESSAGES] = messages
-            if error:
-                request.session[SESSION_KEY_ERROR] = error
+        messages, error = _handle_chat_page_post(request, messages)
+        request.session[SESSION_KEY_MESSAGES] = messages
+        if error:
+            request.session[SESSION_KEY_ERROR] = error
         return redirect("chat_page")
 
     return render(
@@ -191,7 +242,4 @@ def chat(request):
     except Exception as e:
         logger.exception("Gemini chat error")
         err_msg = str(e).strip()
-        return Response(
-            {"error": "Chat request failed.", "detail": err_msg},
-            status=status.HTTP_502_BAD_GATEWAY,
-        )
+        return _api_error_response(err_msg)

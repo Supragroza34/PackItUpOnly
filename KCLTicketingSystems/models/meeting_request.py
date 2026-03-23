@@ -2,7 +2,6 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from datetime import datetime, time
 
 
 class MeetingRequest(models.Model):
@@ -44,38 +43,37 @@ class MeetingRequest(models.Model):
     
     def __str__(self):
         return f"{self.student} -> {self.staff} on {self.meeting_datetime}"
-    
-    def clean(self):
-        """
-        Validates that the meeting datetime falls within the staff's office hours.
-        """
-        if not self.meeting_datetime:
-            return
-        
+
+    def _validate_office_hours_window(self):
         # Import here to avoid circular import
         from .office_hours import OfficeHours
-        
-        # Get the day of week (e.g., "Monday")
+
         day_name = self.meeting_datetime.strftime("%A")
         meeting_time = self.meeting_datetime.time()
-        
-        # Check if there's an office hours block that matches
         office_hours = OfficeHours.objects.filter(
             staff=self.staff,
             day_of_week=day_name,
             start_time__lte=meeting_time,
             end_time__gte=meeting_time,
         )
-        
-        if not office_hours.exists():
-            raise ValidationError(
-                f"The selected time is not within {self.staff}'s office hours. "
-                f"Please choose a time slot during their available hours."
-            )
-        
-        # Ensure meeting is not in the past
-        if self.meeting_datetime < timezone.now():
-            raise ValidationError("Cannot schedule a meeting in the past.")
+        if office_hours.exists():
+            return
+        raise ValidationError(
+            f"The selected time is not within {self.staff}'s office hours. "
+            f"Please choose a time slot during their available hours."
+        )
+
+    def _validate_not_in_past(self):
+        if self.meeting_datetime >= timezone.now():
+            return
+        raise ValidationError("Cannot schedule a meeting in the past.")
+
+    def clean(self):
+        """Validates meeting datetime is in office hours and not in the past."""
+        if not self.meeting_datetime:
+            return
+        self._validate_office_hours_window()
+        self._validate_not_in_past()
     
     def save(self, *args, **kwargs):
         self.full_clean()

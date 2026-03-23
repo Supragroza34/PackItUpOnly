@@ -12,87 +12,52 @@ from ..models.user import User
 class AdminDashboardStatsTest(TestCase):
     """Test cases for admin dashboard statistics endpoint"""
 
-    def setUp(self):
-        """Set up test data"""
-        self.client = APIClient()
-        self.url = '/api/admin/dashboard/stats/'
-        
-        # Create admin user
+    def _create_users(self):
         self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
-            is_staff=True,
-            is_superuser=True
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_staff=True, is_superuser=True
         )
-        
-        # Create regular user
         self.student = User.objects.create_user(
-            username='student',
-            email='student@test.com',
-            password='testpass123',
-            k_number='11111111',
-            role=User.Role.STUDENT
+            username='student', email='student@test.com', password='testpass123',
+            k_number='11111111', role=User.Role.STUDENT
         )
-        
-        # Create staff user
         self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='22222222',
-            role=User.Role.STAFF
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='22222222', role=User.Role.STAFF
         )
-        
-        # Create test tickets
+        self.user2 = User.objects.create_user(
+            username='user2', email='user2@test.com', password='testpass123',
+            first_name='Jane', last_name='Smith', k_number='87654321', role=User.Role.STUDENT
+        )
+        self.user3 = User.objects.create_user(
+            username='user3', email='user3@test.com', password='testpass123',
+            first_name='Bob', last_name='Johnson', k_number='11223344', role=User.Role.STUDENT
+        )
+
+    def _create_tickets(self):
         self.ticket1 = Ticket.objects.create(
-            user=self.student,
-            department='Informatics',
+            user=self.student, department='Informatics',
             type_of_issue='Software Installation Issues',
             additional_details='Need help installing software',
             status=Ticket.Status.PENDING
         )
-        
-        # Create another user for ticket2
-        self.user2 = User.objects.create_user(
-            username='user2',
-            email='user2@test.com',
-            password='testpass123',
-            first_name='Jane',
-            last_name='Smith',
-            k_number='87654321',
-            role=User.Role.STUDENT
-        )
-        
         self.ticket2 = Ticket.objects.create(
-            user=self.user2,
-            department='Engineering',
-            type_of_issue='Hardware Issues',
-            additional_details='Hardware not working',
-            status=Ticket.Status.IN_PROGRESS,
-            assigned_to=self.staff
+            user=self.user2, department='Engineering',
+            type_of_issue='Hardware Issues', additional_details='Hardware not working',
+            status=Ticket.Status.IN_PROGRESS, assigned_to=self.staff
         )
-        
-        # Create another user for ticket3
-        self.user3 = User.objects.create_user(
-            username='user3',
-            email='user3@test.com',
-            password='testpass123',
-            first_name='Bob',
-            last_name='Johnson',
-            k_number='11223344',
-            role=User.Role.STUDENT
-        )
-        
         self.ticket3 = Ticket.objects.create(
-            user=self.user3,
-            department='Mathematics',
-            type_of_issue='Network Issues',
-            additional_details='Cannot connect to network',
+            user=self.user3, department='Mathematics',
+            type_of_issue='Network Issues', additional_details='Cannot connect to network',
             status=Ticket.Status.RESOLVED
         )
+
+    def setUp(self):
+        """Set up test data"""
+        self.client = APIClient()
+        self.url = '/api/admin/dashboard/stats/'
+        self._create_users()
+        self._create_tickets()
 
     def test_dashboard_stats_unauthenticated(self):
         """Test that unauthenticated users cannot access dashboard stats"""
@@ -144,38 +109,33 @@ class AdminDashboardStatsTest(TestCase):
 class AdminTicketsListTest(TestCase):
     """Test cases for admin tickets list endpoint"""
 
-    def setUp(self):
-        """Set up test data"""
-        self.client = APIClient()
-        self.url = '/api/admin/tickets/'
-        
-        # Create admin user
+    def _create_admin(self):
         self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN
         )
-        
-        # Create test tickets with users
+
+    def _seed_tickets(self):
         for i in range(25):
             user = User.objects.create_user(
-                username=f'ticketuser{i}',
-                email=f'ticketuser{i}@test.com',
-                password='testpass123',
-                first_name=f'User{i}',
-                last_name='Test',
-                k_number=f'1000000{i:02d}',
-                role=User.Role.STUDENT
+                username=f'ticketuser{i}', email=f'ticketuser{i}@test.com',
+                password='testpass123', first_name=f'User{i}', last_name='Test',
+                k_number=f'1000000{i:02d}', role=User.Role.STUDENT
             )
             Ticket.objects.create(
                 user=user,
                 department='Informatics' if i % 2 == 0 else 'Engineering',
                 type_of_issue='Software Installation Issues',
                 additional_details=f'Test ticket {i}',
-                status=Ticket.Status.PENDING if i % 3 == 0 else Ticket.Status.IN_PROGRESS
+                status=Ticket.Status.PENDING if i % 3 == 0 else Ticket.Status.IN_PROGRESS,
             )
+
+    def setUp(self):
+        """Set up test data"""
+        self.client = APIClient()
+        self.url = '/api/admin/tickets/'
+        self._create_admin()
+        self._seed_tickets()
 
     def test_tickets_list_unauthenticated(self):
         """Test that unauthenticated users cannot access tickets list"""
@@ -237,29 +197,20 @@ class AdminTicketsListTest(TestCase):
 class AdminTicketDetailTest(TestCase):
     """Test cases for admin ticket detail endpoint"""
 
+    def _create_admin_and_ticket_owner(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN
+        )
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser', email='ticketuser@test.com', password='testpass123',
+            first_name='John', last_name='Doe', k_number='12345678', role=User.Role.STUDENT
+        )
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        
-        # Create admin user
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN
-        )
-        
-        # Create test user for ticket
-        self.ticket_user = User.objects.create_user(
-            username='ticketuser',
-            email='ticketuser@test.com',
-            password='testpass123',
-            first_name='John',
-            last_name='Doe',
-            k_number='12345678',
-            role=User.Role.STUDENT
-        )
+        self._create_admin_and_ticket_owner()
         
         # Create test ticket
         self.ticket = Ticket.objects.create(
@@ -298,37 +249,24 @@ class AdminTicketDetailTest(TestCase):
 class AdminTicketUpdateTest(TestCase):
     """Test cases for admin ticket update endpoint"""
 
+    def _create_users(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN
+        )
+        self.staff = User.objects.create_user(
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='22222222', role=User.Role.STAFF
+        )
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser', email='ticketuser@test.com', password='testpass123',
+            first_name='John', last_name='Doe', k_number='12345678', role=User.Role.STUDENT
+        )
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        
-        # Create users
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN
-        )
-        
-        self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='22222222',
-            role=User.Role.STAFF
-        )
-        
-        # Create test user for ticket
-        self.ticket_user = User.objects.create_user(
-            username='ticketuser',
-            email='ticketuser@test.com',
-            password='testpass123',
-            first_name='John',
-            last_name='Doe',
-            k_number='12345678',
-            role=User.Role.STUDENT
-        )
+        self._create_users()
         
         # Create test ticket
         self.ticket = Ticket.objects.create(
@@ -427,29 +365,20 @@ class AdminTicketUpdateTest(TestCase):
 class AdminTicketDeleteTest(TestCase):
     """Test cases for admin ticket delete endpoint"""
 
+    def _create_admin_and_ticket_owner(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN
+        )
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser', email='ticketuser@test.com', password='testpass123',
+            first_name='John', last_name='Doe', k_number='12345678', role=User.Role.STUDENT
+        )
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        
-        # Create admin user
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN
-        )
-        
-        # Create test user for ticket
-        self.ticket_user = User.objects.create_user(
-            username='ticketuser',
-            email='ticketuser@test.com',
-            password='testpass123',
-            first_name='John',
-            last_name='Doe',
-            k_number='12345678',
-            role=User.Role.STUDENT
-        )
+        self._create_admin_and_ticket_owner()
         
         # Create test ticket
         self.ticket = Ticket.objects.create(

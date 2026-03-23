@@ -9,6 +9,7 @@ __pycache__/
 
 # Django
 db.sqlite3
+db.sqlite3.*
 *.log
 staticfiles/
 media/
@@ -19,6 +20,10 @@ media/
 # OS
 Thumbs.db
 .DS_Store
+
+#Coverage 
+htmlcov/
+.coverage
 
 # Node/Frontend
 node_modules/

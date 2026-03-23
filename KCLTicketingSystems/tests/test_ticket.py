@@ -4,7 +4,6 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from ..models import Ticket, User
 from datetime import datetime
-from unittest import skip
 
 
 class TicketModelTest(TestCase):
@@ -66,7 +65,6 @@ class TicketModelTest(TestCase):
         self.assertIsInstance(ticket.updated_at, datetime)
 
 
-@skip("Ticket submission API tests require ticket_view.py to be updated first")
 class TicketAPITest(TestCase):
     """Test cases for the Ticket API endpoint"""
     # These tests are for the old ticket creation API that uses name, surname, k_number, k_email

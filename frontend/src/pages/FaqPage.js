@@ -30,6 +30,7 @@ const FaqPage = ({ userRole, onNavigate }) => {
 
   const handleNavigateToCreateTicket = (event) => {
     if (onNavigate) {
+      event.preventDefault();
       onNavigate(event, '/create-ticket');
     }
   };

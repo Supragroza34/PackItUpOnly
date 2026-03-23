@@ -5,7 +5,6 @@ Uses Google Gemini API with ticket context.
 import logging
 import os
 
-import google.generativeai as genai
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_http_methods
@@ -18,8 +17,6 @@ from KCLTicketingSystems.models import Ticket
 
 logger = logging.getLogger(__name__)
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
 DEFAULT_SYSTEM = (
     "You are a helpful support assistant for students at KCL. "
     "Answer questions about the ticketing system, FAQs, and general study support briefly and clearly."
@@ -27,6 +24,21 @@ DEFAULT_SYSTEM = (
 
 SESSION_KEY_MESSAGES = "ai_chatbot_messages"
 SESSION_KEY_ERROR = "ai_chatbot_error"
+
+
+def _get_genai_client():
+    """Import and configure Gemini so missing package doesn't crash Django startup."""
+    try:
+        import google.generativeai as genai
+    except ImportError as exc:
+        raise RuntimeError(
+            "google-generativeai is not installed. Install requirements to use AI chatbot features."
+        ) from exc
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key:
+        genai.configure(api_key=api_key)
+    return genai
 
 
 def _get_ticket_context(user=None):
@@ -74,6 +86,8 @@ def _chat_with_gemini(messages, system_prompt=None, user=None):
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set. Add it to .env or Heroku config vars.")
+
+    genai = _get_genai_client()
 
     base_system = system_prompt or DEFAULT_SYSTEM
     context = _get_ticket_context(user=user)

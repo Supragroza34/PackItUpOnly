@@ -97,7 +97,6 @@ function UserDashboardPage() {
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [parentReply_id, setParentReplyId] = useState(null);
   const [replyBody, setReplyBody] = useState("");
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");

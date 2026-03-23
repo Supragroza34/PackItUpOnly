@@ -201,7 +201,7 @@ class TicketUpdateSerializer(serializers.ModelSerializer):
 class StaffReassignTicket(serializers.ModelSerializer):
     """Serializer for staff to reassign tickets"""
     assigned_to = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role="staff"),
+        queryset=User.objects.filter(role__in=["staff", "Staff", "admin", "Admin"]),
         required=False,
         allow_null=True
     )

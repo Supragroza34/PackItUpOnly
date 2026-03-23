@@ -18,46 +18,30 @@ class TestView(APIView):
 class IsAdminPermissionTest(TestCase):
     """Test cases for IsAdmin permission class"""
 
+    def _create_users(self):
+        self.admin_user = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN
+        )
+        self.staff_user = User.objects.create_user(
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='88888888', role=User.Role.STAFF, is_staff=True
+        )
+        self.superuser = User.objects.create_user(
+            username='superuser', email='super@test.com', password='testpass123',
+            k_number='77777777', role=User.Role.STUDENT, is_superuser=True
+        )
+        self.student_user = User.objects.create_user(
+            username='student', email='student@test.com', password='testpass123',
+            k_number='11111111', role=User.Role.STUDENT
+        )
+
     def setUp(self):
         """Set up test data"""
         self.factory = APIRequestFactory()
         self.permission = IsAdmin()
         self.view = TestView.as_view()
-        
-        # Create users with different roles
-        self.admin_user = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN
-        )
-        
-        self.staff_user = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='88888888',
-            role=User.Role.STAFF,
-            is_staff=True
-        )
-        
-        self.superuser = User.objects.create_user(
-            username='superuser',
-            email='super@test.com',
-            password='testpass123',
-            k_number='77777777',
-            role=User.Role.STUDENT,  # Even with student role
-            is_superuser=True
-        )
-        
-        self.student_user = User.objects.create_user(
-            username='student',
-            email='student@test.com',
-            password='testpass123',
-            k_number='11111111',
-            role=User.Role.STUDENT
-        )
+        self._create_users()
 
     def test_admin_role_has_permission(self):
         """Test that user with admin role has permission"""

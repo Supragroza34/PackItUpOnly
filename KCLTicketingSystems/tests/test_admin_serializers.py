@@ -200,29 +200,19 @@ class RegisterSerializerTest(TestCase):
 class TicketSerializerTest(TestCase):
     """Test cases for TicketSerializer"""
 
+    def _create_ticket_users(self):
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser', email='ticketuser@test.com', password='testpass123',
+            k_number='12345678', first_name='John', last_name='Doe', role=User.Role.STUDENT
+        )
+        self.staff = User.objects.create_user(
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='99999999', first_name='Staff', last_name='Member', role=User.Role.STAFF
+        )
+
     def setUp(self):
         """Set up test data"""
-        # Create ticket user
-        self.ticket_user = User.objects.create_user(
-            username='ticketuser',
-            email='ticketuser@test.com',
-            password='testpass123',
-            k_number='12345678',
-            first_name='John',
-            last_name='Doe',
-            role=User.Role.STUDENT
-        )
-        
-        self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='99999999',
-            first_name='Staff',
-            last_name='Member',
-            role=User.Role.STAFF
-        )
-        
+        self._create_ticket_users()
         self.ticket = Ticket.objects.create(
             user=self.ticket_user,
             department='Informatics',
@@ -283,29 +273,19 @@ class TicketSerializerTest(TestCase):
 class TicketListSerializerTest(TestCase):
     """Test cases for TicketListSerializer"""
 
+    def _create_ticket_users(self):
+        self.ticket_user = User.objects.create_user(
+            username='ticketuser', email='ticketuser@test.com', password='testpass123',
+            k_number='12345678', first_name='John', last_name='Doe', role=User.Role.STUDENT
+        )
+        self.staff = User.objects.create_user(
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='99999999', first_name='Staff', last_name='Member', role=User.Role.STAFF
+        )
+
     def setUp(self):
         """Set up test data"""
-        # Create ticket user
-        self.ticket_user = User.objects.create_user(
-            username='ticketuser',
-            email='ticketuser@test.com',
-            password='testpass123',
-            k_number='12345678',
-            first_name='John',
-            last_name='Doe',
-            role=User.Role.STUDENT
-        )
-        
-        self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='99999999',
-            first_name='Staff',
-            last_name='Member',
-            role=User.Role.STAFF
-        )
-        
+        self._create_ticket_users()
         self.ticket = Ticket.objects.create(
             user=self.ticket_user,
             department='Informatics',
@@ -428,45 +408,31 @@ class TicketUpdateSerializerTest(TestCase):
 class DashboardStatsSerializerTest(TestCase):
     """Test cases for DashboardStatsSerializer"""
 
+    def _create_ticket_users(self):
+        self.user1 = User.objects.create_user(
+            username='user1', email='user1@test.com', password='testpass123',
+            k_number='12345678', first_name='John', last_name='Doe', role=User.Role.STUDENT
+        )
+        self.user2 = User.objects.create_user(
+            username='user2', email='user2@test.com', password='testpass123',
+            k_number='87654321', first_name='Jane', last_name='Smith', role=User.Role.STUDENT
+        )
+
+    def _create_tickets(self):
+        self.ticket1 = Ticket.objects.create(
+            user=self.user1, department='Informatics',
+            type_of_issue='Software Installation Issues',
+            additional_details='Need help', status=Ticket.Status.PENDING
+        )
+        self.ticket2 = Ticket.objects.create(
+            user=self.user2, department='Engineering', type_of_issue='Hardware Issues',
+            additional_details='Hardware problem', status=Ticket.Status.IN_PROGRESS
+        )
+
     def setUp(self):
         """Set up test data"""
-        # Create ticket users
-        self.user1 = User.objects.create_user(
-            username='user1',
-            email='user1@test.com',
-            password='testpass123',
-            k_number='12345678',
-            first_name='John',
-            last_name='Doe',
-            role=User.Role.STUDENT
-        )
-        
-        self.user2 = User.objects.create_user(
-            username='user2',
-            email='user2@test.com',
-            password='testpass123',
-            k_number='87654321',
-            first_name='Jane',
-            last_name='Smith',
-            role=User.Role.STUDENT
-        )
-        
-        # Create some tickets
-        self.ticket1 = Ticket.objects.create(
-            user=self.user1,
-            department='Informatics',
-            type_of_issue='Software Installation Issues',
-            additional_details='Need help',
-            status=Ticket.Status.PENDING
-        )
-        
-        self.ticket2 = Ticket.objects.create(
-            user=self.user2,
-            department='Engineering',
-            type_of_issue='Hardware Issues',
-            additional_details='Hardware problem',
-            status=Ticket.Status.IN_PROGRESS
-        )
+        self._create_ticket_users()
+        self._create_tickets()
 
     def test_dashboard_stats_serializer_fields(self):
         """Test that DashboardStatsSerializer includes all stat fields"""

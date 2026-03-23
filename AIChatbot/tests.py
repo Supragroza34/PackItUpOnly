@@ -16,6 +16,42 @@ from . import views
 
 User = get_user_model()
 
+SAMPLE_CHAT_MESSAGES = [
+    {"role": "ignored", "content": "nope"},
+    {"role": "user", "content": "  Hi  "},
+    {"role": "assistant", "content": "  Previous  "},
+    {"role": "user", "content": "  Next  "},
+    {"role": "user", "content": None},
+]
+
+
+class FakeChat:
+    def __init__(self, captured):
+        self.captured = captured
+
+    def send_message(self, message):
+        self.captured["new_message"] = message
+        return types.SimpleNamespace(text="  Reply text  ")
+
+
+class FakeModel:
+    def __init__(self, captured, model_name, system_instruction):
+        self.captured = captured
+        self.captured["model_name"] = model_name
+        self.captured["system_instruction"] = system_instruction
+
+    def start_chat(self, history):
+        self.captured["history"] = history
+        return FakeChat(self.captured)
+
+
+def build_fake_genai(captured):
+    return types.SimpleNamespace(
+        GenerativeModel=lambda model_name, system_instruction: FakeModel(
+            captured, model_name, system_instruction
+        )
+    )
+
 
 class AIChatbotAPITest(TestCase):
     """Tests for the JSON AI chat API."""
@@ -204,36 +240,12 @@ class ChatWithGeminiHelperTest(TestCase):
 
     def test_helper_builds_messages_and_strips_content(self):
         captured = {}
-
-        class FakeChat:
-            def __init__(self):
-                self.history = None
-
-            def send_message(self, message):
-                captured["new_message"] = message
-                return types.SimpleNamespace(text="  Reply text  ")
-
-        class FakeModel:
-            def __init__(self, model_name, system_instruction):
-                captured["model_name"] = model_name
-                captured["system_instruction"] = system_instruction
-
-            def start_chat(self, history):
-                captured["history"] = history
-                return FakeChat()
-
-        fake_genai = types.SimpleNamespace(GenerativeModel=FakeModel)
+        fake_genai = build_fake_genai(captured)
         with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}, clear=False), patch(
             "AIChatbot.views._get_genai_client", return_value=fake_genai
         ), patch("AIChatbot.views._get_ticket_context", return_value="Ticket context"):
             content = views._chat_with_gemini(
-                [
-                    {"role": "ignored", "content": "nope"},
-                    {"role": "user", "content": "  Hi  "},
-                    {"role": "assistant", "content": "  Previous  "},
-                    {"role": "user", "content": "  Next  "},
-                    {"role": "user", "content": None},
-                ],
+                SAMPLE_CHAT_MESSAGES,
                 system_prompt="Custom system",
             )
 

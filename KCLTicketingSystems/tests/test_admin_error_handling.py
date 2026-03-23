@@ -10,36 +10,24 @@ from ..models.user import User
 class AdminErrorHandlingTest(TestCase):
     """Test error handling in admin endpoints"""
 
+    def _create_users_and_ticket(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_superuser=True
+        )
+        self.student = User.objects.create_user(
+            username='student', email='student@test.com', password='testpass123',
+            k_number='11111111', role=User.Role.STUDENT
+        )
+        self.ticket = Ticket.objects.create(
+            user=self.student, department='Informatics',
+            type_of_issue='Test Issue', additional_details='Test details'
+        )
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        
-        # Create admin user
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
-            is_superuser=True
-        )
-        
-        # Create student user
-        self.student = User.objects.create_user(
-            username='student',
-            email='student@test.com',
-            password='testpass123',
-            k_number='11111111',
-            role=User.Role.STUDENT
-        )
-        
-        # Create test ticket
-        self.ticket = Ticket.objects.create(
-            user=self.student,
-            department='Informatics',
-            type_of_issue='Test Issue',
-            additional_details='Test details'
-        )
+        self._create_users_and_ticket()
 
     def test_ticket_update_invalid_status(self):
         """Test updating ticket with invalid status"""
@@ -383,39 +371,24 @@ class AdminDataValidationTest(TestCase):
 class AdminPermissionEdgeCasesTest(TestCase):
     """Test edge cases for admin permissions"""
 
+    def _create_base_users(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_superuser=True
+        )
+        self.staff = User.objects.create_user(
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='22222222', role=User.Role.STAFF, is_staff=True
+        )
+        self.superuser = User.objects.create_user(
+            username='superuser', email='super@test.com', password='testpass123',
+            k_number='33333333', role=User.Role.STUDENT, is_superuser=True
+        )
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        
-        # Create admin user
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
-            is_superuser=True
-        )
-        
-        # Create staff user (not admin)
-        self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='22222222',
-            role=User.Role.STAFF,
-            is_staff=True  # Staff flag but not admin role
-        )
-        
-        # Create superuser without admin role
-        self.superuser = User.objects.create_user(
-            username='superuser',
-            email='super@test.com',
-            password='testpass123',
-            k_number='33333333',
-            role=User.Role.STUDENT,  # Student role but superuser flag
-            is_superuser=True
-        )
+        self._create_base_users()
 
     def test_superuser_has_admin_access(self):
         """Test that superuser has admin access regardless of role"""

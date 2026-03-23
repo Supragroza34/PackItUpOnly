@@ -4,109 +4,56 @@ from KCLTicketingSystems.models import Ticket, User
 
 class StaffSelectionTests(TestCase):
 
-    def setUp(self):
-        # Create three staff
+    def _create_staff_users(self):
         self.staff1 = User.objects.create_user(
-            username='staff1',
-            email='staff1@test.com',
-            password='testpass123',
-            k_number='22222221',
-            department='Informatics',    
-            role=User.Role.STAFF
+            username='staff1', email='staff1@test.com', password='testpass123',
+            k_number='22222221', department='Informatics', role=User.Role.STAFF
         )
-
         self.staff2 = User.objects.create_user(
-            username='staff2',
-            email='staff2@test.com',
-            password='testpass123',
-            k_number='22222222',
-            department='Informatics',
-            role=User.Role.STAFF
-        )        
-        
+            username='staff2', email='staff2@test.com', password='testpass123',
+            k_number='22222222', department='Informatics', role=User.Role.STAFF
+        )
         self.staff3 = User.objects.create_user(
-            username='staff3',
-            email='staff3@test.com',
-            password='testpass123',
-            department='Informatics',
-            k_number='22222223',
-            role=User.Role.STAFF
+            username='staff3', email='staff3@test.com', password='testpass123',
+            department='Informatics', k_number='22222223', role=User.Role.STAFF
         )
-
         self.staff4 = User.objects.create_user(
-            username='staff4',
-            email='staff4@test.com',
-            password='testpass123',
-            department='Medicine',
-            k_number='22222223',
-            role=User.Role.STAFF
+            username='staff4', email='staff4@test.com', password='testpass123',
+            department='Medicine', k_number='22222223', role=User.Role.STAFF
         )
-
         self.staff5 = User.objects.create_user(
-            username='staff5',
-            email='staff5@test.com',
-            password='testpass123',
-            department='Engineering',
-            k_number='22222223',
-            role=User.Role.STAFF
-        )                
+            username='staff5', email='staff5@test.com', password='testpass123',
+            department='Engineering', k_number='22222223', role=User.Role.STAFF
+        )
 
-        # Create test user for ticket
+    def _create_ticket_owner(self):
         self.ticket_user = User.objects.create_user(
-            username='ticketuser',
-            email='ticketuser@test.com',
-            password='testpass123',
-            first_name='Jame',
-            last_name='Does',
-            k_number='12345679',
-            role=User.Role.STUDENT
-        )  
-
-        # Create test ticket
-        self.ticket = Ticket.objects.create(
-            user=self.ticket_user,
-            department='Informatics',
-            type_of_issue='Software Installation Issues',
-            additional_details='Need help with software',
-            assigned_to=self.staff1,
-            status=Ticket.Status.PENDING
+            username='ticketuser', email='ticketuser@test.com', password='testpass123',
+            first_name='Jame', last_name='Does', k_number='12345679', role=User.Role.STUDENT
         )
 
-        self.ticket = Ticket.objects.create(
-            user=self.ticket_user,
-            department='Informatics',
-            type_of_issue='Software Installation Issues',
-            additional_details='Need help with software again',
-            assigned_to=self.staff1,
-            status=Ticket.Status.PENDING
-        )
+    def _create_existing_tickets(self):
+        ticket_payloads = [
+            (self.staff1, 'Need help with software'),
+            (self.staff1, 'Need help with software again'),
+            (self.staff1, 'Need help with software still'),
+            (self.staff2, 'Need help with software'),
+            (self.staff2, 'Need help with software'),
+        ]
+        for assigned_to, details in ticket_payloads:
+            Ticket.objects.create(
+                user=self.ticket_user,
+                department='Informatics',
+                type_of_issue='Software Installation Issues',
+                additional_details=details,
+                assigned_to=assigned_to,
+                status=Ticket.Status.PENDING,
+            )
 
-        self.ticket = Ticket.objects.create(
-            user=self.ticket_user,
-            department='Informatics',
-            type_of_issue='Software Installation Issues',
-            additional_details='Need help with software still',
-            assigned_to=self.staff1,
-            status=Ticket.Status.PENDING
-        )
-
-        self.ticket = Ticket.objects.create(
-            user=self.ticket_user,
-            department='Informatics',
-            type_of_issue='Software Installation Issues',
-            additional_details='Need help with software',
-            assigned_to=self.staff2,
-            status=Ticket.Status.PENDING
-        )
-
-        self.ticket = Ticket.objects.create(
-            user=self.ticket_user,
-            department='Informatics',
-            type_of_issue='Software Installation Issues',
-            additional_details='Need help with software',
-            assigned_to=self.staff2,
-            status=Ticket.Status.PENDING
-        )
+    def setUp(self):
+        self._create_staff_users()
+        self._create_ticket_owner()
+        self._create_existing_tickets()
 
         self.ticket_data = {
             'user': self.ticket_user,

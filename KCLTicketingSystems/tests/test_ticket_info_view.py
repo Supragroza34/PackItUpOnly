@@ -145,3 +145,14 @@ class TicketInfoAndStaffListViewTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(response.data["error"], "boom")
+
+    def test_ticket_reassigns_correctly(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch("/api/staff/dashboard/{self.ticket.id}/reassign/", {
+            "assigned_to": self.other_staff.id
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.assigned_to, self.other_staff)

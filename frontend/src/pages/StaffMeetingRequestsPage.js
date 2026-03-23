@@ -1,27 +1,99 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logout as logoutAction } from "../store/slices/authSlice";
 import { apiFetch } from "../api";
+import NotificationBell from "../components/NotificationBell";
+import WeeklyCalendar from "./WeeklyCalendar";
+import "./StaffDashboardPage.css";
+import "./StaffMeetingRequestsPage.css";
 
+const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+const TABS = [
+  { key: "pending",  label: "Pending" },
+  { key: "accepted", label: "Accepted" },
+  { key: "denied",   label: "Declined" },
+];
+
+function initials(name = "") {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase();
+}
+
+function StatusBadge({ status }) {
+  const labels = { pending: "Pending", accepted: "Accepted", denied: "Declined" };
+  return (
+    <span className={`smr-badge smr-badge-${status}`}>
+      {labels[status] || status}
+    </span>
+  );
+}
+
+function RequestCard({ req, onAccept, onDeny }) {
+  const dt = new Date(req.meeting_datetime).toLocaleString("en-GB", {
+    weekday: "short", day: "numeric", month: "short",
+    year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+
+  return (
+    <div className="smr-card">
+      <div className="smr-card-avatar">{initials(req.student_name)}</div>
+      <div className="smr-card-body">
+        <div className="smr-card-top-row">
+          <div>
+            <span className="smr-card-name">{req.student_name}</span>
+            <span className="smr-card-knumber"> ({req.student_k_number})</span>
+          </div>
+          <StatusBadge status={req.status} />
+        </div>
+        <div className="smr-card-email">{req.student_email}</div>
+        <div className="smr-card-when">{dt}</div>
+        <div className="smr-card-desc">{req.description}</div>
+        {req.status === "pending" && (
+          <div className="smr-card-actions">
+            <button className="smr-btn smr-btn-accept" onClick={() => onAccept(req.id)}>
+              Accept
+            </button>
+            <button className="smr-btn smr-btn-deny" onClick={() => onDeny(req.id)}>
+              Decline
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Page
 function StaffMeetingRequestsPage() {
-  const [meetingRequests, setMeetingRequests] = useState([]);
-  const [officeHours, setOfficeHours] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [success, setSuccess] = useState("");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  // Office hours form
-  const [dayOfWeek, setDayOfWeek] = useState("Monday");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("17:00");
+  const [meetingRequests, setMeetingRequests] = useState([]);
+  const [officeHours, setOfficeHours]         = useState([]);
+  const [loading, setLoading]                 = useState(true);
+  const [err, setErr]                         = useState("");
+  const [success, setSuccess]                 = useState("");
+  const [activeTab, setActiveTab]             = useState("pending");
+
+  // Office-hours form state
+  const [dayOfWeek, setDayOfWeek]     = useState("Monday");
+  const [startTime, setStartTime]     = useState("09:00");
+  const [endTime, setEndTime]         = useState("17:00");
   const [addingHours, setAddingHours] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const handleLogout = async () => {
+    await dispatch(logoutAction());
+    navigate("/login");
+  };
+
+  // Data Loading
+  useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
     setErr("");
-    setSuccess("");
     try {
       const [requestsData, hoursData] = await Promise.all([
         apiFetch("/staff/dashboard/meeting-requests/", {}, { auth: true }),
@@ -30,317 +102,269 @@ function StaffMeetingRequestsPage() {
       setMeetingRequests(requestsData);
       setOfficeHours(hoursData);
     } catch (e) {
-      const errorMsg = String(e.message || e);
-      setErr(errorMsg.replace(/^HTTP \\d+:\\s*/, ''));
+      setErr(String(e.message || e).replace(/^HTTP \d+:\s*/, ""));
     } finally {
       setLoading(false);
     }
   }
 
+  // Meeting request actions (optimistic updates) 
   async function handleAccept(requestId) {
+    // Optimistic: move to accepted immediately
+    setMeetingRequests((prev) =>
+      prev.map((r) => (r.id === requestId ? { ...r, status: "accepted" } : r))
+    );
     try {
-      await apiFetch(`/staff/dashboard/meeting-requests/${requestId}/accept/`, {
-        method: "POST",
-      }, { auth: true });
-      setErr("");
-      setSuccess("Meeting request accepted successfully!");
-      setTimeout(() => setSuccess(""), 3000);
-      loadData(); // Reload data
+      await apiFetch(
+        `/staff/dashboard/meeting-requests/${requestId}/accept/`,
+        { method: "POST" },
+        { auth: true }
+      );
     } catch (e) {
-      const errorMsg = String(e.message || e).replace(/^HTTP \d+:\s*/, '');
-      setErr(`Error accepting request: ${errorMsg}`);
+      // Rollback on failure
+      setMeetingRequests((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status: "pending" } : r))
+      );
+      setErr(String(e.message || e).replace(/^HTTP \d+:\s*/, ""));
     }
   }
 
   async function handleDeny(requestId) {
+    setMeetingRequests((prev) =>
+      prev.map((r) => (r.id === requestId ? { ...r, status: "denied" } : r))
+    );
     try {
-      await apiFetch(`/staff/dashboard/meeting-requests/${requestId}/deny/`, {
-        method: "POST",
-      }, { auth: true });
-      setErr("");
-      setSuccess("Meeting request denied.");
-      setTimeout(() => setSuccess(""), 3000);
-      loadData(); // Reload data
+      await apiFetch(
+        `/staff/dashboard/meeting-requests/${requestId}/deny/`,
+        { method: "POST" },
+        { auth: true }
+      );
     } catch (e) {
-      const errorMsg = String(e.message || e).replace(/^HTTP \d+:\s*/, '');
-      setErr(`Error denying request: ${errorMsg}`);
+      setMeetingRequests((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status: "pending" } : r))
+      );
+      setErr(String(e.message || e).replace(/^HTTP \d+:\s*/, ""));
     }
   }
 
+  // Office-hours actions 
   async function handleAddOfficeHours(e) {
     e.preventDefault();
     setAddingHours(true);
     setErr("");
-
     try {
-      await apiFetch("/staff/office-hours/", {
-        method: "POST",
-        body: JSON.stringify({
-          day_of_week: dayOfWeek,
-          start_time: startTime,
-          end_time: endTime,
-        }),
-      }, { auth: true });
-      
-      // Reset form
+      const created = await apiFetch(
+        "/staff/office-hours/",
+        {
+          method: "POST",
+          body: JSON.stringify({ day_of_week: dayOfWeek, start_time: startTime, end_time: endTime }),
+        },
+        { auth: true }
+      );
+      setOfficeHours((prev) =>
+        [...prev, created].sort(
+          (a, b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)
+        )
+      );
       setDayOfWeek("Monday");
       setStartTime("09:00");
       setEndTime("17:00");
-      
-      setSuccess("Office hours added successfully!");
+      setSuccess("Office hours added.");
       setTimeout(() => setSuccess(""), 3000);
-      loadData(); // Reload data
     } catch (e) {
-      const errorMsg = String(e.message || e).replace(/^HTTP \d+:\s*/, '');
-      setErr(errorMsg);
+      setErr(String(e.message || e).replace(/^HTTP \d+:\s*/, ""));
     } finally {
       setAddingHours(false);
     }
   }
 
   async function handleDeleteOfficeHours(hoursId) {
-    if (!window.confirm("Are you sure you want to delete this office hours block?")) {
-      return;
-    }
-
+    if (!window.confirm("Delete this office hours block?")) return;
     try {
-      await apiFetch(`/staff/office-hours/${hoursId}/`, {
-        method: "DELETE",
-      }, { auth: true });
-      setErr("");
-      setSuccess("Office hours deleted successfully!");
+      await apiFetch(`/staff/office-hours/${hoursId}/`, { method: "DELETE" }, { auth: true });
+      setOfficeHours((prev) => prev.filter((oh) => oh.id !== hoursId));
+      setSuccess("Office hours deleted.");
       setTimeout(() => setSuccess(""), 3000);
-      loadData(); // Reload data
     } catch (e) {
-      const errorMsg = String(e.message || e).replace(/^HTTP \d+:\s*/, '');
-      setErr(`Error deleting office hours: ${errorMsg}`);
+      setErr(String(e.message || e).replace(/^HTTP \d+:\s*/, ""));
     }
   }
 
-  const formatDateTime = (datetime) => {
-    const date = new Date(datetime);
-    return date.toLocaleString('en-GB', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Derived data
+
+  const tabCounts = {
+    pending:  meetingRequests.filter((r) => r.status === "pending").length,
+    accepted: meetingRequests.filter((r) => r.status === "accepted").length,
+    denied:   meetingRequests.filter((r) => r.status === "denied").length,
   };
 
-  const getStatusBadge = (status) => {
-    const colors = {
-      pending: { bg: "#fff3cd", text: "#856404" },
-      accepted: { bg: "#d4edda", text: "#155724" },
-      denied: { bg: "#f8d7da", text: "#721c24" }
-    };
-    const color = colors[status] || colors.pending;
-    
-    return (
-      <span style={{
-        padding: "4px 8px",
-        borderRadius: 4,
-        fontSize: 12,
-        fontWeight: 500,
-        backgroundColor: color.bg,
-        color: color.text
-      }}>
-        {status.toUpperCase()}
-      </span>
-    );
-  };
+  const filteredRequests  = meetingRequests.filter((r) => r.status === activeTab);
+  const acceptedMeetings  = meetingRequests.filter((r) => r.status === "accepted");
+  const sortedOfficeHours = [...officeHours].sort(
+    (a, b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)
+  );
 
-  if (loading) return <div style={{ padding: 24 }}>Loading...</div>;
+  // Render 
 
   return (
-    <div style={{ padding: 24, maxWidth: 1000 }}>
-      <h1>Meeting Requests & Office Hours</h1>
+    <div className="sd-page">
 
-      {err && <div style={{ padding: 12, backgroundColor: "#f8d7da", color: "#721c24", borderRadius: 6, marginBottom: 18 }}>{err}</div>}
-      {success && <div style={{ padding: 12, backgroundColor: "#d4edda", color: "#155724", borderRadius: 6, marginBottom: 18 }}>{success}</div>}
+      {/*  Topbar */}
+      <div className="sd-topbar">
+        <h1>Meeting Requests</h1>
+        <div className="sd-topbar-actions">
+          <NotificationBell
+            onNotificationClick={(notif) => {
+              if (notif.meeting_request_id) navigate("/staff/dashboard/meeting-requests");
+              else if (notif.ticket_id)     navigate(`/staff/dashboard/${notif.ticket_id}`);
+            }}
+          />
+          <button className="sd-meeting-btn" onClick={() => navigate("/staff/dashboard")}>
+            ← Dashboard
+          </button>
+          <button className="sd-logout-btn" onClick={handleLogout}>Log Out</button>
+        </div>
+      </div>
 
-      {/* Meeting Requests Section */}
-      <section style={{ marginBottom: 40 }}>
-        <h2>Incoming Meeting Requests</h2>
-        {meetingRequests.length === 0 ? (
-          <p style={{ color: "#666", fontStyle: "italic" }}>No meeting requests yet.</p>
-        ) : (
-          <div style={{ display: "grid", gap: 16 }}>
-            {meetingRequests.map(request => (
-              <div key={request.id} style={{
-                border: "1px solid #ddd",
-                borderRadius: 8,
-                padding: 16,
-                backgroundColor: "#fff"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
-                  <div>
-                    <h3 style={{ margin: 0, marginBottom: 4 }}>
-                      {request.student_name} ({request.student_k_number})
-                    </h3>
-                    <div style={{ fontSize: 14, color: "#666" }}>
-                      {request.student_email}
-                    </div>
-                  </div>
-                  {getStatusBadge(request.status)}
-                </div>
+      {/* Global alerts */}
+      {err     && <div className="smr-alert smr-alert-error">{err}</div>}
+      {success && <div className="smr-alert smr-alert-success">{success}</div>}
 
-                <div style={{ marginBottom: 8 }}>
-                  <strong>Requested Time:</strong> {formatDateTime(request.meeting_datetime)}
-                </div>
+      {/* Body */}
+      {loading ? (
+        <p className="smr-loading">Loading…</p>
+      ) : (
+        <div className="smr-layout">
 
-                <div style={{ marginBottom: 12 }}>
-                  <strong>Description:</strong>
-                  <div style={{ marginTop: 4, padding: 8, backgroundColor: "#f9f9f9", borderRadius: 4 }}>
-                    {request.description}
-                  </div>
-                </div>
+          {/* ══ Left column ══ */}
+          <div className="smr-main">
 
-                {request.status === "pending" && (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => handleAccept(request.id)}
-                      style={{
-                        padding: "8px 16px",
-                        backgroundColor: "#28a745",
-                        color: "white",
-                        border: "none",
-                        borderRadius: 4,
-                        cursor: "pointer"
-                      }}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleDeny(request.id)}
-                      style={{
-                        padding: "8px 16px",
-                        backgroundColor: "#dc3545",
-                        color: "white",
-                        border: "none",
-                        borderRadius: 4,
-                        cursor: "pointer"
-                      }}
-                    >
-                      Deny
-                    </button>
-                  </div>
+            {/* Requests panel */}
+            <div className="smr-panel">
+
+              {/* Tabs */}
+              <div className="smr-tabs" role="tablist">
+                {TABS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    role="tab"
+                    aria-selected={activeTab === key}
+                    className={`smr-tab${activeTab === key ? " smr-tab-active" : ""}`}
+                    onClick={() => setActiveTab(key)}
+                  >
+                    {label}
+                    {tabCounts[key] > 0 && (
+                      <span className="smr-tab-count">{tabCounts[key]}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Scrollable request cards */}
+              <div className="smr-requests-scroll">
+                {filteredRequests.length === 0 ? (
+                  <p className="smr-empty">
+                    No {TABS.find((t) => t.key === activeTab)?.label.toLowerCase()} requests.
+                  </p>
+                ) : (
+                  filteredRequests.map((req) => (
+                    <RequestCard
+                      key={req.id}
+                      req={req}
+                      onAccept={handleAccept}
+                      onDeny={handleDeny}
+                    />
+                  ))
                 )}
               </div>
-            ))}
+            </div>
+
+            {/* Calendar panel */}
+            <div className="smr-panel">
+              <h2 className="smr-panel-title">Weekly Schedule</h2>
+              <WeeklyCalendar
+                officeHours={officeHours}
+                acceptedMeetings={acceptedMeetings}
+              />
+            </div>
           </div>
-        )}
-      </section>
 
-      {/* Office Hours Section */}
-      <section>
-        <h2>My Office Hours</h2>
-        
-        {/* Current Office Hours */}
-        <div style={{ marginBottom: 20 }}>
-          <h3 style={{ fontSize: 18 }}>Current Schedule</h3>
-          {officeHours.length === 0 ? (
-            <p style={{ color: "#666", fontStyle: "italic" }}>No office hours set. Add some below.</p>
-          ) : (
-            <div style={{ display: "grid", gap: 8 }}>
-              {officeHours.map(oh => (
-                <div key={oh.id} style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: 12,
-                  border: "1px solid #ddd",
-                  borderRadius: 6,
-                  backgroundColor: "#f8f9fa"
-                }}>
-                  <span>
-                    <strong>{oh.day_of_week}:</strong> {oh.start_time.substring(0, 5)} - {oh.end_time.substring(0, 5)}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteOfficeHours(oh.id)}
-                    style={{
-                      padding: "4px 12px",
-                      backgroundColor: "#dc3545",
-                      color: "white",
-                      border: "none",
-                      borderRadius: 4,
-                      cursor: "pointer",
-                      fontSize: 12
-                    }}
+          {/* ══ Right sidebar ══ */}
+          <aside className="smr-sidebar">
+
+            {/* Office hours list */}
+            <div className="smr-panel">
+              <h2 className="smr-panel-title">Office Hours</h2>
+              {sortedOfficeHours.length === 0 ? (
+                <p className="smr-empty">No office hours set.</p>
+              ) : (
+                <ul className="smr-oh-list">
+                  {sortedOfficeHours.map((oh) => (
+                    <li key={oh.id} className="smr-oh-item">
+                      <span className="smr-oh-day">{oh.day_of_week.slice(0, 3)}</span>
+                      <span className="smr-oh-time">
+                        {oh.start_time.slice(0, 5)} – {oh.end_time.slice(0, 5)}
+                      </span>
+                      <button
+                        className="smr-oh-del"
+                        onClick={() => handleDeleteOfficeHours(oh.id)}
+                        title="Delete block"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Add office hours form */}
+            <div className="smr-panel">
+              <h2 className="smr-panel-title">Add Office Hours</h2>
+              <form onSubmit={handleAddOfficeHours} className="smr-oh-form">
+                <div className="smr-oh-field">
+                  <label className="smr-oh-label">Day</label>
+                  <select
+                    value={dayOfWeek}
+                    onChange={(e) => setDayOfWeek(e.target.value)}
+                    className="smr-oh-input"
                   >
-                    Delete
-                  </button>
+                    {DAY_ORDER.map((d) => <option key={d}>{d}</option>)}
+                  </select>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Add Office Hours Form */}
-        <div style={{ padding: 16, border: "1px solid #ddd", borderRadius: 8, backgroundColor: "#f9f9f9" }}>
-          <h3 style={{ fontSize: 18, marginTop: 0 }}>Add Office Hours Block</h3>
-          <form onSubmit={handleAddOfficeHours} style={{ display: "grid", gap: 12 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Day</label>
-                <select
-                  value={dayOfWeek}
-                  onChange={(e) => setDayOfWeek(e.target.value)}
-                  style={{ width: "100%", padding: 8 }}
+                <div className="smr-oh-field">
+                  <label className="smr-oh-label">Start</label>
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="smr-oh-input"
+                    required
+                  />
+                </div>
+                <div className="smr-oh-field">
+                  <label className="smr-oh-label">End</label>
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="smr-oh-input"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={addingHours}
+                  className="smr-btn smr-btn-primary"
                 >
-                  <option>Monday</option>
-                  <option>Tuesday</option>
-                  <option>Wednesday</option>
-                  <option>Thursday</option>
-                  <option>Friday</option>
-                  <option>Saturday</option>
-                  <option>Sunday</option>
-                </select>
-              </div>
-              
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Start Time</label>
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  style={{ width: "100%", padding: 8 }}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>End Time</label>
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  style={{ width: "100%", padding: 8 }}
-                  required
-                />
-              </div>
+                  {addingHours ? "Adding…" : "Add Block"}
+                </button>
+              </form>
             </div>
-            
-            <button
-              type="submit"
-              disabled={addingHours}
-              style={{
-                padding: "10px 16px",
-                backgroundColor: "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: 4,
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 500
-              }}
-            >
-              {addingHours ? "Adding..." : "Add Office Hours"}
-            </button>
-          </form>
+
+          </aside>
         </div>
-      </section>
+      )}
     </div>
   );
 }

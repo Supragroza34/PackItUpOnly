@@ -98,6 +98,7 @@ function UserDashboardPage() {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [replyDraftsByTicketId, setReplyDraftsByTicketId] = useState({});
+  const [parentReplyId, setParentReplyId] = useState(null);
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -109,6 +110,13 @@ function UserDashboardPage() {
 
   function openTicket(ticket) {
     setSelectedTicket(ticket);
+    setReplyError("");
+    setParentReplyId(null);
+  }
+
+  function closeSelectedTicket() {
+    setSelectedTicket(null);
+    setParentReplyId(null);
     setReplyError("");
   }
 
@@ -181,6 +189,45 @@ function UserDashboardPage() {
       return false;
     }
     return true;
+  }
+
+  function Reply({ reply }) {
+    return (
+      <div className="ticket-reply">
+        <p className="ticket-response-meta">
+          <strong>{reply.user_username}</strong>
+          {" · "}
+          {reply.created_at
+            ? new Date(reply.created_at).toLocaleString()
+            : ""}
+        </p>
+        <p className="ticket-response-body">{reply.body}</p>
+
+        {reply.children?.length > 0 && (
+          <div className="reply-children">
+              {reply.children.map(child => (
+                  <Reply key={child.id} reply={child} />
+              ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function findReplyById(replies, targetId) {
+    if (!Array.isArray(replies) || !targetId) return null;
+
+    for (const reply of replies) {
+      if (reply.id === targetId) {
+        return reply;
+      }
+      const childMatch = findReplyById(reply.children, targetId);
+      if (childMatch) {
+        return childMatch;
+      }
+    }
+
+    return null;
   }
 
   async function handleCloseTicket(ticketId) {
@@ -297,6 +344,11 @@ function UserDashboardPage() {
     setReplyError("");
 
     try {
+      const payload = { body: selectedReplyBody.trim() };
+      if (parentReplyId) {
+        payload.parent = parentReplyId;
+      }
+
       const createRes = await fetch(
         `${API_BASE}/tickets/${selectedTicket.id}/replies/`,
         {
@@ -305,7 +357,7 @@ function UserDashboardPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ body: selectedReplyBody.trim() }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -333,6 +385,7 @@ function UserDashboardPage() {
         ...prev,
         [selectedTicket.id]: "",
       }));
+      setParentReplyId(null);
     } catch (err) {
       setReplyError(`Could not send reply: ${err.message}`);
     } finally {
@@ -441,17 +494,8 @@ function UserDashboardPage() {
                     {ticket.replies && ticket.replies.length > 0 && (
                       <div className="ticket-responses">
                         <h4 className="ticket-responses-title">Responses from staff</h4>
-                        {ticket.replies.map((reply) => (
-                          <div key={reply.id} className="ticket-response">
-                            <p className="ticket-response-meta">
-                              <strong>{reply.user_username}</strong>
-                              {" · "}
-                              {reply.created_at
-                                ? new Date(reply.created_at).toLocaleString()
-                                : ""}
-                            </p>
-                            <p className="ticket-response-body">{reply.body}</p>
-                          </div>
+                        {ticket.replies?.filter(r => r.parent ===null).map(reply => (
+                            <Reply key={reply.id} reply={reply} />
                         ))}
                       </div>
                     )}
@@ -511,7 +555,7 @@ function UserDashboardPage() {
         
     
         {selectedTicket && (
-          <div className="modal-overlay" onClick={() => setSelectedTicket(null)}>
+          <div className="modal-overlay" onClick={closeSelectedTicket}>
             <div className="ticket-modal" onClick={(e) => e.stopPropagation()}>
               <div className="ticket-modal-header">
                 <h2>{selectedTicket.type_of_issue}</h2>
@@ -519,7 +563,7 @@ function UserDashboardPage() {
                   className="modal-close"
                   type="button"
                   aria-label="Close ticket details"
-                  onClick={() => setSelectedTicket(null)}
+                  onClick={closeSelectedTicket}
                 >
                   X
                 </button>
@@ -617,15 +661,21 @@ function UserDashboardPage() {
                   <h4 className="ticket-responses-title">Conversation:</h4>
                   <div className="ticket-responses-scroll">
                     {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
-                      selectedTicket.replies.map((reply) => (
-                        <div key={reply.id} className="ticket-response">
-                          <p className="ticket-response-meta">
-                            <strong>{reply.user_username}</strong> ·{" "}
-                            {new Date(reply.created_at).toLocaleString()}
-                          </p>
-                          <p className="ticket-response-body">{reply.body}</p>
-                        </div>
-                      ))
+                      selectedTicket.replies
+                        .filter((reply) => reply.parent == null)
+                        .map((reply) => (
+                          <ThreadedReply
+                            key={reply.id}
+                            reply={reply}
+                            depth={0}
+                            onReply={(replyId) => {
+                              setParentReplyId(replyId);
+                              if (replyError) setReplyError("");
+                            }}
+                            activeReplyId={parentReplyId}
+                            isTicketClosed={selectedTicket.status === "closed"}
+                          />
+                        ))
                     ) : (
                       <p className="ticket-response-none">No Responses Yet.</p>
                     )}
@@ -634,6 +684,20 @@ function UserDashboardPage() {
 
                 {selectedTicket.status !== "closed" && (
                   <div className="ticket-reply-composer">
+                    {parentReplyId && (
+                      <div className="ticket-reply-target">
+                        <span>
+                          Replying to {findReplyById(selectedTicket.replies, parentReplyId)?.user_username || "message"}
+                        </span>
+                        <button
+                          type="button"
+                          className="ticket-reply-target-clear"
+                          onClick={() => setParentReplyId(null)}
+                        >
+                          Cancel reply target
+                        </button>
+                      </div>
+                    )}
                     <label className="ticket-reply-label" htmlFor="student-reply-box">
                       Your reply
                     </label>
@@ -690,3 +754,45 @@ function UserDashboardPage() {
 }
 
 export default UserDashboardPage;
+
+function ThreadedReply({
+  reply,
+  depth,
+  onReply,
+  activeReplyId,
+  isTicketClosed,
+}) {
+  return (
+    <div className={`ticket-response ticket-response-depth-${Math.min(depth, 4)}`}>
+      <p className="ticket-response-meta">
+        <strong>{reply.user_username}</strong> · {new Date(reply.created_at).toLocaleString()}
+      </p>
+      <p className="ticket-response-body">{reply.body}</p>
+
+      {!isTicketClosed && (
+        <button
+          type="button"
+          className={`ticket-inline-reply-btn${activeReplyId === reply.id ? " is-active" : ""}`}
+          onClick={() => onReply(reply.id)}
+        >
+          {activeReplyId === reply.id ? "Reply target selected" : "Reply to this"}
+        </button>
+      )}
+
+      {reply.children?.length > 0 && (
+        <div className="ticket-response-children">
+          {reply.children.map((child) => (
+            <ThreadedReply
+              key={child.id}
+              reply={child}
+              depth={depth + 1}
+              onReply={onReply}
+              activeReplyId={activeReplyId}
+              isTicketClosed={isTicketClosed}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

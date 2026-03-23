@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from datetime import timedelta
 
-from ..models import Ticket, User
+from ..models import Ticket, User, Reply
 from ..serializers import ReplySerializer, TicketUpdateSerializer, StaffReassignTicket
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,7 +21,7 @@ class TicketSerializer(serializers.ModelSerializer):
     is_overdue = serializers.SerializerMethodField()
     closed_by_role = serializers.SerializerMethodField()
     user = UserSerializer(read_only=True)
-    replies = ReplySerializer(many=True, read_only=True)
+    replies = serializers.SerializerMethodField()
     assigned_to_details = UserSerializer(source='assigned_to', read_only=True)
     assigned_to = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -42,6 +42,10 @@ class TicketSerializer(serializers.ModelSerializer):
         cutoff = timezone.now() - timedelta(days=3)
         return obj.status in (Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS) and obj.created_at < cutoff
 
+    def get_replies(self, obj):
+        replies = Reply.objects.filter(ticket=obj, parent=None)
+        return ReplySerializer(replies, many=True).data
+    
 class TicketDetailView(RetrieveAPIView):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer

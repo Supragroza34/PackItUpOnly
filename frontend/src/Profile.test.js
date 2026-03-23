@@ -79,7 +79,7 @@ describe("Profile", () => {
 
     await userEvent.clear(screen.getByPlaceholderText(/last name/i));
     await userEvent.type(screen.getByPlaceholderText(/last name/i), "Updated");
-    await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /save changes/i }));
 
     await waitFor(() => {
       expect(apiFetch).toHaveBeenCalledWith(

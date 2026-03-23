@@ -7,10 +7,19 @@ class Reply(models.Model):
     ticket = models.ForeignKey(Ticket, related_name= "replies", on_delete=models.CASCADE)
     body = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    leaf_replies = models.ManyToManyField("self", symmetrical=False, blank=True)
-    
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        related_name="children",
+        on_delete=models.CASCADE
+    )
+
     class Meta:
         ordering = ('created_at',)
+        indexes = [
+            models.Index(fields=["ticket", "parent"]),
+        ]
 
     def __str__(self):
-        return self.body + "     (posted at " + str(self.created_at) + ")"
+        return f"{self.body} (posted at {self.created_at})"

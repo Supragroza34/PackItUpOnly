@@ -84,6 +84,9 @@ urlpatterns = [
     
     # Meeting Requests - Student Side
     path('api/meeting-requests/', staff_meeting_requests_views.meeting_request_create, name="meeting_request_create"),
+
+    # Available 15-minute slots for a staff member on a given date
+    path('api/staff/<int:staff_id>/available-slots/', staff_meeting_requests_views.staff_available_slots, name="staff_available_slots"),
     
     path('api/dashboard/', views.user_dashboard, name="user_dashboard"),
     path('api/dashboard/tickets/<int:ticket_id>/close/', views.student_close_ticket, name='student_close_ticket'),

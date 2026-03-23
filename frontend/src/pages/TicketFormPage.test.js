@@ -27,6 +27,20 @@ jest.mock("../api", () => ({
   authHeaders: jest.fn(() => ({ Authorization: "Bearer tok" })),
 }));
 
+jest.mock("../components/RichTextEditor", () => {
+  return function MockRichTextEditor({ id, value, onChange, disabled }) {
+    return (
+      <textarea
+        id={id}
+        data-testid="mock-rich-text-editor"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+      />
+    );
+  };
+});
+
 describe("TicketFormPage", () => {
   const originalFetch = global.fetch;
 
@@ -46,6 +60,21 @@ describe("TicketFormPage", () => {
     expect(await screen.findByText(/Department is required/i)).toBeInTheDocument();
   });
 
+  test("shows additional details validation error when editor HTML has no plain text", async () => {
+    renderWithRouter(<TicketFormPage />);
+
+    await userEvent.selectOptions(screen.getByLabelText(/^Department$/i), "Informatics");
+    await userEvent.selectOptions(
+      screen.getByLabelText(/^Type of Issue$/i),
+      "Software Installation Issues"
+    );
+    await userEvent.type(screen.getByTestId("mock-rich-text-editor"), "<p><br></p>");
+
+    await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
+
+    expect(await screen.findByText(/Additional details are required/i)).toBeInTheDocument();
+  });
+
   test("submits multipart form and redirects on success", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -59,10 +88,7 @@ describe("TicketFormPage", () => {
       screen.getByLabelText(/^Type of Issue$/i),
       "Software Installation Issues"
     );
-    await userEvent.type(
-      screen.getByLabelText(/^Additional Details$/i),
-      "Cannot install IDE"
-    );
+    await userEvent.type(screen.getByTestId("mock-rich-text-editor"), "<p><strong>Cannot install IDE</strong></p>");
 
     await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
 

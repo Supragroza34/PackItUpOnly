@@ -146,14 +146,6 @@ function TicketPage() {
         );
     }
 
-    const statusClass = (ticket.status || 'pending').replace('_', '-');
-    const getStatusLabel = () => {
-        if (ticket.status !== 'closed') return (ticket.status || 'pending').replace('_', ' ');
-        if (!ticket.closed_by_role) return 'Closed';
-        const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
-        return `Closed by ${label}`;
-    };
-
     return (
         <div className="ticket-page">
             <div className="ticket-page-header">

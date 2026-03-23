@@ -18,12 +18,15 @@ function sanitizeHtml(html) {
     if (node.nodeType === Node.ELEMENT_NODE) {
       // For list items and divs with indent, preserve their structure
       // For other elements, remove all attributes
-      if (node.tagName === "LI" || (node.tagName === "OL" || node.tagName === "UL")) {
+      if (node.tagName === "LI" || node.tagName === "OL" || node.tagName === "UL") {
         // Keep list structure intact
       } else if (node.tagName === "DIV" || node.tagName === "P") {
         // Check for data-indent attribute
         const indent = node.getAttribute("data-indent");
-        node.attributes.length = 0; // Clear all attributes
+        // Remove all attributes properly
+        while (node.attributes.length > 0) {
+          node.removeAttribute(node.attributes[0].name);
+        }
         if (indent) {
           node.setAttribute("data-indent", indent);
         }

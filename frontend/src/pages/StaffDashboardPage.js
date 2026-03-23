@@ -37,7 +37,6 @@ function StaffDashboardPage() {
     const [allTickets, setAllTickets] = useState([]);
     const [filter, setFilter] = useState('open');
     const [nameSearch, setNameSearch] = useState('');
-    const [selectedTicket, setSelectedTicket] = useState(null);
     const navigate = useNavigate();
 
     // Hard guard: only staff (and admin) should see this page

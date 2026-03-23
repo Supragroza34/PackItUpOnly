@@ -12,84 +12,55 @@ from ..models.reply import Reply
 class AdminTicketStatisticsTest(TestCase):
     """Test cases for admin ticket statistics endpoint"""
 
+    def _create_users(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_superuser=True
+        )
+        self.student = User.objects.create_user(
+            username='student', email='student@test.com', password='testpass123',
+            k_number='11111111', role=User.Role.STUDENT
+        )
+        self.staff = User.objects.create_user(
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='22222222', role=User.Role.STAFF
+        )
+
+    def _seed_department_tickets(self, now):
+        for i in range(5):
+            created_at = now - timedelta(days=i * 10)
+            Ticket.objects.create(
+                user=self.student, department='Informatics', type_of_issue='Software Issue',
+                additional_details=f'Test ticket {i}',
+                status=Ticket.Status.PENDING if i % 2 == 0 else Ticket.Status.RESOLVED,
+                priority=Ticket.Priority.MEDIUM if i % 2 == 0 else Ticket.Priority.HIGH,
+                created_at=created_at, updated_at=created_at + timedelta(hours=i * 2),
+            )
+        for i in range(3):
+            created_at = now - timedelta(days=i * 15)
+            Ticket.objects.create(
+                user=self.student, department='Engineering', type_of_issue='Hardware Issue',
+                additional_details=f'Engineering ticket {i}',
+                status=Ticket.Status.IN_PROGRESS if i % 2 == 0 else Ticket.Status.CLOSED,
+                priority=Ticket.Priority.LOW if i == 0 else Ticket.Priority.URGENT,
+                created_at=created_at, updated_at=created_at + timedelta(hours=i * 3),
+            )
+        for i in range(2):
+            created_at = now - timedelta(days=i * 5)
+            Ticket.objects.create(
+                user=self.student, department='Medicine', type_of_issue='Access Issue',
+                additional_details=f'Medicine ticket {i}',
+                status=Ticket.Status.PENDING, priority=Ticket.Priority.MEDIUM,
+                created_at=created_at, updated_at=created_at + timedelta(hours=i),
+            )
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
         self.url = '/api/admin/statistics/'
-        
-        # Create admin user
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
-            is_superuser=True
-        )
-        
-        # Create regular user
-        self.student = User.objects.create_user(
-            username='student',
-            email='student@test.com',
-            password='testpass123',
-            k_number='11111111',
-            role=User.Role.STUDENT
-        )
-        
-        # Create staff user
-        self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='22222222',
-            role=User.Role.STAFF
-        )
-        
-        # Create test tickets across different departments, statuses, and priorities
-        # Created at different times for date filtering tests
         now = timezone.now()
-        
-        # Informatics tickets (5 total)
-        for i in range(5):
-            created_at = now - timedelta(days=i*10)
-            Ticket.objects.create(
-                user=self.student,
-                department='Informatics',
-                type_of_issue='Software Issue',
-                additional_details=f'Test ticket {i}',
-                status=Ticket.Status.PENDING if i % 2 == 0 else Ticket.Status.RESOLVED,
-                priority=Ticket.Priority.MEDIUM if i % 2 == 0 else Ticket.Priority.HIGH,
-                created_at=created_at,
-                updated_at=created_at + timedelta(hours=i*2)
-            )
-        
-        # Engineering tickets (3 total)
-        for i in range(3):
-            created_at = now - timedelta(days=i*15)
-            Ticket.objects.create(
-                user=self.student,
-                department='Engineering',
-                type_of_issue='Hardware Issue',
-                additional_details=f'Engineering ticket {i}',
-                status=Ticket.Status.IN_PROGRESS if i % 2 == 0 else Ticket.Status.CLOSED,
-                priority=Ticket.Priority.LOW if i == 0 else Ticket.Priority.URGENT,
-                created_at=created_at,
-                updated_at=created_at + timedelta(hours=i*3)
-            )
-        
-        # Medicine tickets (2 total)
-        for i in range(2):
-            created_at = now - timedelta(days=i*5)
-            Ticket.objects.create(
-                user=self.student,
-                department='Medicine',
-                type_of_issue='Access Issue',
-                additional_details=f'Medicine ticket {i}',
-                status=Ticket.Status.PENDING,
-                priority=Ticket.Priority.MEDIUM,
-                created_at=created_at,
-                updated_at=created_at + timedelta(hours=i)
-            )
+        self._create_users()
+        self._seed_department_tickets(now)
 
     def test_statistics_unauthenticated(self):
         """Test that unauthenticated users cannot access statistics"""
@@ -290,10 +261,7 @@ class AdminTicketStatisticsTest(TestCase):
 class AdminAvgResponseTimeTest(TestCase):
     """Test cases for average staff response time in statistics"""
 
-    def setUp(self):
-        self.client = APIClient()
-        self.url = '/api/admin/statistics/'
-
+    def _create_users(self):
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True,
@@ -307,43 +275,28 @@ class AdminAvgResponseTimeTest(TestCase):
             k_number='11111111', role=User.Role.STUDENT,
         )
 
+    def _create_informatics_ticket_with_response(self, now, issue, details, status, created_hours_ago, reply_hours):
+        ticket = Ticket.objects.create(
+            user=self.student, department='Informatics',
+            type_of_issue=issue, additional_details=details, status=status,
+        )
+        Ticket.objects.filter(id=ticket.id).update(created_at=now - timedelta(hours=created_hours_ago))
+        ticket.refresh_from_db()
+        staff_reply = Reply.objects.create(user=self.staff, ticket=ticket, body='Staff reply')
+        Reply.objects.filter(id=staff_reply.id).update(created_at=ticket.created_at + timedelta(hours=reply_hours))
+        return ticket
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = '/api/admin/statistics/'
+        self._create_users()
         now = timezone.now()
-
-        # Ticket with a staff reply after 2 hours
-        self.ticket1 = Ticket.objects.create(
-            user=self.student, department='Informatics',
-            type_of_issue='Software Issue', additional_details='Help',
-            status=Ticket.Status.PENDING,
+        self.ticket1 = self._create_informatics_ticket_with_response(
+            now, 'Software Issue', 'Help', Ticket.Status.PENDING, 4, 2
         )
-        # Override created_at
-        Ticket.objects.filter(id=self.ticket1.id).update(created_at=now - timedelta(hours=4))
-        self.ticket1.refresh_from_db()
-
-        # Student reply first (should be ignored), then staff reply 2h after ticket creation
-        Reply.objects.create(
-            user=self.student, ticket=self.ticket1, body='Student note',
-        )
-        staff_reply1 = Reply.objects.create(
-            user=self.staff, ticket=self.ticket1, body='Staff reply',
-        )
-        Reply.objects.filter(id=staff_reply1.id).update(
-            created_at=self.ticket1.created_at + timedelta(hours=2),
-        )
-
-        # Ticket with a staff reply after 4 hours (same department)
-        self.ticket2 = Ticket.objects.create(
-            user=self.student, department='Informatics',
-            type_of_issue='Hardware Issue', additional_details='Broken',
-            status=Ticket.Status.IN_PROGRESS,
-        )
-        Ticket.objects.filter(id=self.ticket2.id).update(created_at=now - timedelta(hours=6))
-        self.ticket2.refresh_from_db()
-
-        staff_reply2 = Reply.objects.create(
-            user=self.staff, ticket=self.ticket2, body='Staff reply 2',
-        )
-        Reply.objects.filter(id=staff_reply2.id).update(
-            created_at=self.ticket2.created_at + timedelta(hours=4),
+        Reply.objects.create(user=self.student, ticket=self.ticket1, body='Student note')
+        self.ticket2 = self._create_informatics_ticket_with_response(
+            now, 'Hardware Issue', 'Broken', Ticket.Status.IN_PROGRESS, 6, 4
         )
 
         # Ticket with no staff reply
@@ -401,32 +354,21 @@ class AdminAvgResponseTimeTest(TestCase):
 class AdminUserDetailTest(TestCase):
     """Test cases for admin user detail endpoint"""
 
+    def _create_admin_and_user(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_superuser=True
+        )
+        self.test_user = User.objects.create_user(
+            username='testuser', email='testuser@test.com', password='testpass123',
+            first_name='John', last_name='Doe', k_number='12345678',
+            department='Informatics', role=User.Role.STUDENT
+        )
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        
-        # Create admin user
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
-            is_superuser=True
-        )
-        
-        # Create test user
-        self.test_user = User.objects.create_user(
-            username='testuser',
-            email='testuser@test.com',
-            password='testpass123',
-            first_name='John',
-            last_name='Doe',
-            k_number='12345678',
-            department='Informatics',
-            role=User.Role.STUDENT
-        )
-        
+        self._create_admin_and_user()
         self.url = f'/api/admin/users/{self.test_user.id}/'
 
     def test_user_detail_unauthenticated(self):

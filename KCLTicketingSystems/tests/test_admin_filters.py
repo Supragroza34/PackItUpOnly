@@ -9,121 +9,69 @@ from ..models.user import User
 class AdminTicketsAdvancedFilterTest(TestCase):
     """Test cases for advanced filtering scenarios in admin tickets list"""
 
+    def _create_users(self):
+        self.admin = User.objects.create_user(
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN, is_superuser=True
+        )
+        self.staff1 = User.objects.create_user(
+            username='staff1', email='staff1@test.com', password='testpass123',
+            first_name='Alice', last_name='Staff', k_number='22222222', role=User.Role.STAFF
+        )
+        self.staff2 = User.objects.create_user(
+            username='staff2', email='staff2@test.com', password='testpass123',
+            first_name='Bob', last_name='Staff', k_number='33333333', role=User.Role.STAFF
+        )
+        self.student1 = User.objects.create_user(
+            username='student1', email='student1@test.com', password='testpass123',
+            first_name='Charlie', last_name='Student', k_number='11111111', role=User.Role.STUDENT
+        )
+        self.student2 = User.objects.create_user(
+            username='student2', email='student2@test.com', password='testpass123',
+            first_name='Diana', last_name='Student', k_number='44444444', role=User.Role.STUDENT
+        )
+
+    def _create_tickets(self):
+        self.ticket1 = Ticket.objects.create(
+            user=self.student1, department='Informatics', type_of_issue='Software Issue',
+            additional_details='Need help with Python', status=Ticket.Status.PENDING,
+            priority=Ticket.Priority.MEDIUM
+        )
+        self.ticket2 = Ticket.objects.create(
+            user=self.student1, department='Informatics', type_of_issue='Network Issue',
+            additional_details='Cannot connect to VPN', status=Ticket.Status.IN_PROGRESS,
+            priority=Ticket.Priority.HIGH, assigned_to=self.staff1
+        )
+        self.ticket3 = Ticket.objects.create(
+            user=self.student2, department='Engineering', type_of_issue='Hardware Issue',
+            additional_details='Laptop not working', status=Ticket.Status.PENDING,
+            priority=Ticket.Priority.URGENT, assigned_to=self.staff1
+        )
+        self.ticket4 = Ticket.objects.create(
+            user=self.student2, department='Engineering', type_of_issue='Access Issue',
+            additional_details='Cannot access lab', status=Ticket.Status.RESOLVED,
+            priority=Ticket.Priority.LOW, assigned_to=self.staff2
+        )
+        self.ticket5 = Ticket.objects.create(
+            user=self.student1, department='Medicine', type_of_issue='Database Issue',
+            additional_details='Cannot query patient records', status=Ticket.Status.CLOSED,
+            priority=Ticket.Priority.HIGH
+        )
+
+    def _create_unassigned_ticket(self):
+        self.ticket6 = Ticket.objects.create(
+            user=self.student2, department='Informatics', type_of_issue='Email Issue',
+            additional_details='Email not working', status=Ticket.Status.PENDING,
+            priority=Ticket.Priority.MEDIUM
+        )
+
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
         self.url = '/api/admin/tickets/'
-        
-        # Create admin user
-        self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
-            is_superuser=True
-        )
-        
-        # Create staff users
-        self.staff1 = User.objects.create_user(
-            username='staff1',
-            email='staff1@test.com',
-            password='testpass123',
-            first_name='Alice',
-            last_name='Staff',
-            k_number='22222222',
-            role=User.Role.STAFF
-        )
-        
-        self.staff2 = User.objects.create_user(
-            username='staff2',
-            email='staff2@test.com',
-            password='testpass123',
-            first_name='Bob',
-            last_name='Staff',
-            k_number='33333333',
-            role=User.Role.STAFF
-        )
-        
-        # Create student users
-        self.student1 = User.objects.create_user(
-            username='student1',
-            email='student1@test.com',
-            password='testpass123',
-            first_name='Charlie',
-            last_name='Student',
-            k_number='11111111',
-            role=User.Role.STUDENT
-        )
-        
-        self.student2 = User.objects.create_user(
-            username='student2',
-            email='student2@test.com',
-            password='testpass123',
-            first_name='Diana',
-            last_name='Student',
-            k_number='44444444',
-            role=User.Role.STUDENT
-        )
-        
-        # Create tickets with various combinations of filters
-        self.ticket1 = Ticket.objects.create(
-            user=self.student1,
-            department='Informatics',
-            type_of_issue='Software Issue',
-            additional_details='Need help with Python',
-            status=Ticket.Status.PENDING,
-            priority=Ticket.Priority.MEDIUM
-        )
-        
-        self.ticket2 = Ticket.objects.create(
-            user=self.student1,
-            department='Informatics',
-            type_of_issue='Network Issue',
-            additional_details='Cannot connect to VPN',
-            status=Ticket.Status.IN_PROGRESS,
-            priority=Ticket.Priority.HIGH,
-            assigned_to=self.staff1
-        )
-        
-        self.ticket3 = Ticket.objects.create(
-            user=self.student2,
-            department='Engineering',
-            type_of_issue='Hardware Issue',
-            additional_details='Laptop not working',
-            status=Ticket.Status.PENDING,
-            priority=Ticket.Priority.URGENT,
-            assigned_to=self.staff1
-        )
-        
-        self.ticket4 = Ticket.objects.create(
-            user=self.student2,
-            department='Engineering',
-            type_of_issue='Access Issue',
-            additional_details='Cannot access lab',
-            status=Ticket.Status.RESOLVED,
-            priority=Ticket.Priority.LOW,
-            assigned_to=self.staff2
-        )
-        
-        self.ticket5 = Ticket.objects.create(
-            user=self.student1,
-            department='Medicine',
-            type_of_issue='Database Issue',
-            additional_details='Cannot query patient records',
-            status=Ticket.Status.CLOSED,
-            priority=Ticket.Priority.HIGH
-        )
-        
-        # Unassigned ticket
-        self.ticket6 = Ticket.objects.create(
-            user=self.student2,
-            department='Informatics',
-            type_of_issue='Email Issue',
-            additional_details='Email not working',
-            status=Ticket.Status.PENDING,
-            priority=Ticket.Priority.MEDIUM
-        )
+        self._create_users()
+        self._create_tickets()
+        self._create_unassigned_ticket()
 
     def test_filter_unassigned_tickets(self):
         """Test filtering for unassigned tickets"""
@@ -336,17 +284,15 @@ class AdminTicketsAdvancedFilterTest(TestCase):
     def test_filter_by_department(self):
         """Test filtering by different departments"""
         self.client.force_authenticate(user=self.admin)
-        
         departments = ['Informatics', 'Engineering', 'Medicine']
-        
         for department in departments:
             response = self.client.get(self.url, {'department': department})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-            
             tickets = response.data['tickets']
-            if len(tickets) > 0:
-                for ticket in tickets:
-                    self.assertEqual(ticket['department'], department)
+            self.assertTrue(
+                all(ticket['department'] == department for ticket in tickets),
+                f"Found ticket outside {department}",
+            )
 
     def test_multiple_unassigned_tickets(self):
         """Test that multiple unassigned tickets are returned correctly"""

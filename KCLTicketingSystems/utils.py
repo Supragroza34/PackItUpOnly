@@ -59,9 +59,8 @@ def notify_on_ticket_update(ticket, updated_by):
             )
 
     # Notify the assigned staff when the ticket is updated.
-    # For "closed" we notify regardless of who performed the update (tests expect
-    # the assigned staff to receive the close notification too).
-    if ticket.assigned_to:
+    # Don't notify staff about their own actions, but do notify if someone else (e.g., admin) closes it.
+    if ticket.assigned_to and ticket.assigned_to != updated_by:
         message = None
         if ticket.status == Ticket.Status.CLOSED:
             message = (

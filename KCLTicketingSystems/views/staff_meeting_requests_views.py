@@ -3,11 +3,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
+from datetime import datetime, timedelta
 
 from ..models.meeting_request import MeetingRequest
 from ..models.office_hours import OfficeHours
 from ..serializers import (
-    MeetingRequestSerializer, 
+    MeetingRequestSerializer,
     MeetingRequestCreateSerializer,
     OfficeHoursSerializer
 )
@@ -117,6 +119,65 @@ def office_hours_delete(request, hours_id):
     office_hours = get_object_or_404(OfficeHours, id=hours_id, staff=request.user)
     office_hours.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def staff_available_slots(request, staff_id):
+    """
+    Returns available 15-minute meeting slots for a staff member on a given date.
+    Slots occupied by PENDING or ACCEPTED meeting requests are excluded.
+    Query param: date=YYYY-MM-DD
+    """
+    from django.utils import timezone as dj_timezone
+
+    User = get_user_model()
+
+    date_str = request.query_params.get('date')
+    if not date_str:
+        return Response({'error': 'date parameter required (YYYY-MM-DD).'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    staff = get_object_or_404(User, id=staff_id, role='staff')
+    day_name = selected_date.strftime('%A')
+
+    office_hours_blocks = OfficeHours.objects.filter(staff=staff, day_of_week=day_name)
+    if not office_hours_blocks.exists():
+        return Response({'slots': []})
+
+    current_tz = dj_timezone.get_current_timezone()
+    now = dj_timezone.now()
+    slot_duration = timedelta(minutes=15)
+
+    all_slots = []
+    for oh in office_hours_blocks:
+        current_slot = dj_timezone.make_aware(
+            datetime.combine(selected_date, oh.start_time), current_tz
+        )
+        end_dt = dj_timezone.make_aware(
+            datetime.combine(selected_date, oh.end_time), current_tz
+        )
+        while current_slot + slot_duration <= end_dt:
+            if current_slot > now:
+                all_slots.append(current_slot)
+            current_slot += slot_duration
+
+    all_slots.sort()
+
+    # Collect booked datetimes (PENDING or ACCEPTED) for this staff member
+    booked = set(
+        MeetingRequest.objects.filter(
+            staff=staff,
+            status__in=[MeetingRequest.Status.PENDING, MeetingRequest.Status.ACCEPTED]
+        ).values_list('meeting_datetime', flat=True)
+    )
+
+    available = [slot.isoformat() for slot in all_slots if slot not in booked]
+
+    return Response({'slots': available})
 
 
 @api_view(['GET', 'POST'])

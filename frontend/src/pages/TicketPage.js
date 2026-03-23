@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { reassignTicket, fetchStaffList } from '../store/slices/staffSlice';
 import { checkAuth } from '../store/slices/authSlice';
 import { useAuth } from '../context/AuthContext';
+import { HtmlContent } from '../components/HtmlContent';
 import './TicketPage.css';
 
 const STATUS_OPTIONS = [
@@ -145,14 +146,6 @@ function TicketPage() {
         );
     }
 
-    const statusClass = (ticket.status || 'pending').replace('_', '-');
-    const getStatusLabel = () => {
-        if (ticket.status !== 'closed') return (ticket.status || 'pending').replace('_', ' ');
-        if (!ticket.closed_by_role) return 'Closed';
-        const label = ticket.closed_by_role.charAt(0).toUpperCase() + ticket.closed_by_role.slice(1);
-        return `Closed by ${label}`;
-    };
-
     return (
         <div className="ticket-page">
             <div className="ticket-page-header">
@@ -187,7 +180,11 @@ function TicketPage() {
 
             <div className="ticket-card">
                 <h2 className="ticket-card-title">Issue description</h2>
-                <p className="ticket-description">{ticket.additional_details || 'No description provided.'}</p>
+                {ticket.additional_details ? (
+                  <HtmlContent html={ticket.additional_details} className="ticket-description" />
+                ) : (
+                  <p className="ticket-description">No description provided.</p>
+                )}
                 {ticket.department && <span className="ticket-department">📁 {ticket.department}</span>}
             </div>
 

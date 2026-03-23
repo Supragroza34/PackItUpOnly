@@ -5,6 +5,7 @@ import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
 import UserNavbar from "../components/UserNavbar";
 import NotificationBell from "../components/NotificationBell";
+import { HtmlContent } from "../components/HtmlContent";
 
 const isLocal =
   window.location.hostname === "localhost" ||
@@ -101,6 +102,7 @@ function UserDashboardPage() {
   const [replyError, setReplyError] = useState("");
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
+  const [showProgressInfo, setShowProgressInfo] = useState(false);
 
   useEffect(() => {
     dispatch(checkAuth());
@@ -368,8 +370,16 @@ function UserDashboardPage() {
             <div className="summary-label">Pending</div>
           </div>
           <div className="summary-card">
+            <div className="summary-count">{countByStatus("seen")}</div>
+            <div className="summary-label">Seen</div>
+          </div>
+          <div className="summary-card">
             <div className="summary-count">{countByStatus("in_progress")}</div>
             <div className="summary-label">In Progress</div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-count">{countByStatus("awaiting_response")}</div>
+            <div className="summary-label">Awaiting Response</div>
           </div>
           <div className="summary-card">
             <div className="summary-count">{countByStatus("resolved")}</div>
@@ -408,7 +418,9 @@ function UserDashboardPage() {
                   <div className="ticket-item-info">
                     <h3>{ticket.type_of_issue}</h3>
                     <div className="ticket-dept">📁 {ticket.department}</div>
-                    <div className="ticket-details">{ticket.additional_details}</div>
+                    {ticket.additional_details && (
+                      <HtmlContent html={ticket.additional_details} className="ticket-details" />
+                    )}
 
                     {ticket.replies && ticket.replies.length > 0 && (
                       <div className="ticket-responses">
@@ -480,7 +492,8 @@ function UserDashboardPage() {
             </div>
           )}
         </div>
-
+        
+    
         {selectedTicket && (
           <div className="modal-overlay" onClick={() => setSelectedTicket(null)}>
             <div className="ticket-modal" onClick={(e) => e.stopPropagation()}>
@@ -508,7 +521,45 @@ function UserDashboardPage() {
                       {getProgressWidth(selectedTicket.status)}
                     </span>
                   </div>
+
+                  <button
+                    className="progress-info-btn"
+                    onClick={() => setShowProgressInfo(true)}
+                    title="What do these stages mean?"
+                  >
+                    ⓘ
+                  </button>
                 </div>
+
+                {showProgressInfo && (
+                  <div
+                    className="modal-overlay"
+                    onClick={() => setShowProgressInfo(false)}
+                  >
+                    <div
+                      className="info-modal"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        className="modal-close"
+                        onClick={() => setShowProgressInfo(false)}
+                      >
+                        X
+                      </button>
+
+                      <h3>Ticket Progress Stages</h3>
+
+                      <ul className="progress-info-list">
+                        <li><strong>Pending (20%)</strong> - Ticket submitted.</li>
+                        <li><strong>Seen (40%)</strong> - Staff has viewed the ticket.</li>
+                        <li><strong>In Progress (60%)</strong> - Work has started.</li>
+                        <li><strong>Awaiting Response (75%)</strong> - Waiting for student reply.</li>
+                        <li><strong>Resolved (90%)</strong> - Issue resolved.</li>
+                        <li><strong>Closed (100%)</strong> - Ticket finished.</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
 
                 <p>
                   <strong>Department: </strong>
@@ -530,7 +581,11 @@ function UserDashboardPage() {
                 <p>
                   <strong>Description:</strong>
                 </p>
-                <p>{selectedTicket.additional_details}</p>
+                {selectedTicket.additional_details ? (
+                  <HtmlContent html={selectedTicket.additional_details} />
+                ) : (
+                  <p>No description provided.</p>
+                )}
 
                 {selectedTicket.status !== "closed" && (
                   <button
@@ -544,19 +599,21 @@ function UserDashboardPage() {
 
                 <div className="ticket-responses">
                   <h4 className="ticket-responses-title">Conversation:</h4>
-                  {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
-                    selectedTicket.replies.map((reply) => (
-                      <div key={reply.id} className="ticket-response">
-                        <p className="ticket-response-meta">
-                          <strong>{reply.user_username}</strong> ·{" "}
-                          {new Date(reply.created_at).toLocaleString()}
-                        </p>
-                        <p className="ticket-response-body">{reply.body}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="ticket-response-none">No Responses Yet.</p>
-                  )}
+                  <div className="ticket-responses-scroll">
+                    {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
+                      selectedTicket.replies.map((reply) => (
+                        <div key={reply.id} className="ticket-response">
+                          <p className="ticket-response-meta">
+                            <strong>{reply.user_username}</strong> ·{" "}
+                            {new Date(reply.created_at).toLocaleString()}
+                          </p>
+                          <p className="ticket-response-body">{reply.body}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="ticket-response-none">No Responses Yet.</p>
+                    )}
+                  </div>
                 </div>
 
                 {selectedTicket.status !== "closed" && (

@@ -84,8 +84,10 @@
 .dashboard-summary {
   max-width: 900px;
   margin: 0 auto 28px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  display: flex;
+  /*grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));*/
+  justify-content: center;      
+  flex-wrap: nowrap;      
   gap: 16px;
 }
 
@@ -95,6 +97,8 @@
   padding: 20px;
   text-align: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+  flex: 0 0 140px;               
+  min-width: 140px;               
 }
 
 .summary-card .summary-count {
@@ -201,6 +205,7 @@
   font-size: 0.88rem;
   color: #546e7a;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -302,6 +307,9 @@
 /* Progress Bar */
 .ticket-progress-container {
   margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .ticket-progress-bar {
@@ -320,7 +328,9 @@
 }
 
 .ticket-progress-fill.status-pending { background: #e65100; }
+.ticket-progress-fill.status-seen {background: #ffb300; }
 .ticket-progress-fill.status-in_progress { background: #0277bd; }
+.ticket-progress-fill.status-awaiting_response {background: #0288d1; }
 .ticket-progress-fill.status-resolved { background: #2e7d32; }
 .ticket-progress-fill.status-closed { background: #880e4f; }
 
@@ -523,7 +533,9 @@
 }
 
 .status-pending { background: #fff3e0; color: #e65100; }
+.status-seen { background: #e8eaf6; color: #3949ab; } 
 .status-in_progress { background: #e3f2fd; color: #0277bd; }
+.status-awaiting_response { background: #fff8e1; color: #ffb300; }
 .status-resolved { background: #e8f5e9; color: #2e7d32; }
 .status-closed { background: #fce4ec; color: #880e4f; }
 
@@ -579,4 +591,93 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+  
+}
+
+.progress-info-btn {
+  border: none;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.progress-info-btn:hover {
+  opacity: 0.7;
+}
+
+.info-modal {
+  position: relative;
+  background: #ffffff;              
+  padding: 28px 24px;                
+  border-radius: 12px;               
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); 
+  font-family: 'Segoe UI', sans-serif;
+  color: #263238;                     
+}
+
+.info-modal h3 {
+  margin-top: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a237e;                    
+}
+
+.progress-info-list {
+  margin: 12px 0 0 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+  color: #546e7a;                   
+}
+
+.progress-info-list li {
+  margin-bottom: 8px;
+}
+
+.ticket-responses-scroll {
+  max-height: 200px;       /* smaller than before so modal fits */
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-top: 8px;
+}
+
+/* Optional: style the scrollbar */
+.ticket-responses-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ticket-responses-scroll::-webkit-scrollbar-track {
+  background: #f0f2f5;
+  border-radius: 3px;
+}
+
+.ticket-responses-scroll::-webkit-scrollbar-thumb {
+  background: #c5cae9;
+  border-radius: 3px;
+}
+
+.ticket-responses-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9fa8da;
+}
+
+.ticket-responses {
+  max-height: 250px;           
+  overflow-y: auto;            
+  padding-right: 6px;          
+  margin-top: 14px;
+  border-top: 1px solid #e8eaf6;
+}
+
+.ticket-responses::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ticket-responses::-webkit-scrollbar-thumb {
+  background-color: rgba(57, 73, 171, 0.3);
+  border-radius: 3px;
+}
+
+.ticket-responses::-webkit-scrollbar-track {
+  background: transparent;
 }

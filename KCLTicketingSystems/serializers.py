@@ -6,6 +6,7 @@ from .models.reply import Reply
 from .models.user import User
 from .models.office_hours import OfficeHours
 from .models.meeting_request import MeetingRequest
+from .sanitizer import sanitize_additional_details
 
 User = get_user_model()
 
@@ -161,6 +162,11 @@ class TicketCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         department = validated_data.get("department")
+        
+        # Sanitize additional_details to only allow safe HTML formatting
+        additional_details = validated_data.get("additional_details", "")
+        if additional_details:
+            validated_data["additional_details"] = sanitize_additional_details(additional_details)
 
         # Find staff in the same department with the least tickets
         staff = User.objects.filter(
@@ -262,31 +268,54 @@ class MeetingRequestCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = MeetingRequest
         fields = ['staff', 'meeting_datetime', 'description']
-    
+
     def validate(self, data):
-        """Validate that meeting time falls within office hours"""
+        """Validate meeting time: must be a 15-min slot, within office hours, and not already taken."""
+        from datetime import timedelta, datetime as dt_type
+
         meeting_datetime = data.get('meeting_datetime')
         staff = data.get('staff')
-        
+
         if meeting_datetime and staff:
-            # Get the day of week
+            # Enforce 15-minute boundary
+            if meeting_datetime.minute % 15 != 0 or meeting_datetime.second != 0:
+                raise serializers.ValidationError({
+                    'meeting_datetime': 'Meetings must start at a 15-minute interval (e.g. 09:00, 09:15, 09:30, 09:45).'
+                })
+
             day_name = meeting_datetime.strftime("%A")
             meeting_time = meeting_datetime.time()
-            
-            # Check if there's an office hours block that matches
+            slot_end_time = (
+                dt_type.combine(meeting_datetime.date(), meeting_time) + timedelta(minutes=15)
+            ).time()
+
+            # Check the full 15-minute slot fits within office hours
             office_hours = OfficeHours.objects.filter(
                 staff=staff,
                 day_of_week=day_name,
                 start_time__lte=meeting_time,
-                end_time__gte=meeting_time,
+                end_time__gte=slot_end_time,
             )
-            
+
             if not office_hours.exists():
                 raise serializers.ValidationError({
-                    'meeting_datetime': f"The selected time is not within the staff member's office hours. "
-                                       f"Please choose a time slot during their available hours."
+                    'meeting_datetime': (
+                        "The selected time is not within the staff member's office hours. "
+                        "Please choose an available slot."
+                    )
                 })
-        
+
+            # Check for slot conflicts (PENDING or ACCEPTED already occupies this slot)
+            conflict = MeetingRequest.objects.filter(
+                staff=staff,
+                meeting_datetime=meeting_datetime,
+                status__in=[MeetingRequest.Status.PENDING, MeetingRequest.Status.ACCEPTED]
+            )
+            if conflict.exists():
+                raise serializers.ValidationError({
+                    'meeting_datetime': 'This time slot is already taken. Please choose another.'
+                })
+
         return data
 
 

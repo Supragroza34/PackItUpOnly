@@ -59,6 +59,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ReplySerializer(serializers.ModelSerializer):
     user_username = serializers.CharField(source="user.username", read_only=True)
     user_role = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
 
     class Meta:
         model = Reply
@@ -73,10 +74,14 @@ class ReplySerializer(serializers.ModelSerializer):
             return "admin"
         return (obj.user.role or "student").lower()
 
+    def get_children(self, obj):
+        children = obj.children.all()
+        return ReplySerializer(children, many=True, context=self.context).data    
+
 class ReplyCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Reply
-        fields = ['ticket', 'body']
+        model=Reply
+        fields = ['ticket', 'body', 'parent',]   
 
     def validate_body(self, value):
         """Reject blank or whitespace-only reply bodies."""

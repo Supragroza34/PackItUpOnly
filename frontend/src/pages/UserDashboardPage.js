@@ -97,6 +97,7 @@ function UserDashboardPage() {
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [parentReply_id, setParentReplyId] = useState(null);
   const [replyBody, setReplyBody] = useState("");
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
@@ -164,6 +165,29 @@ function UserDashboardPage() {
       return false;
     }
     return true;
+  }
+
+  function Reply({ reply }) {
+    return (
+      <div className="ticket-reply">
+        <p className="ticket-response-meta">
+          <strong>{reply.user_username}</strong>
+          {" · "}
+          {reply.created_at
+            ? new Date(reply.created_at).toLocaleString()
+            : ""}
+        </p>
+        <p className="ticket-response-body">{reply.body}</p>
+
+        {reply.children?.length > 0 && (
+          <div className="reply-children">
+              {reply.children.map(child => (
+                  <Reply key={child.id} reply={child} />
+              ))}
+          </div>
+        )}
+      </div>
+    );
   }
 
   async function handleCloseTicket(ticketId) {
@@ -425,17 +449,8 @@ function UserDashboardPage() {
                     {ticket.replies && ticket.replies.length > 0 && (
                       <div className="ticket-responses">
                         <h4 className="ticket-responses-title">Responses from staff</h4>
-                        {ticket.replies.map((reply) => (
-                          <div key={reply.id} className="ticket-response">
-                            <p className="ticket-response-meta">
-                              <strong>{reply.user_username}</strong>
-                              {" · "}
-                              {reply.created_at
-                                ? new Date(reply.created_at).toLocaleString()
-                                : ""}
-                            </p>
-                            <p className="ticket-response-body">{reply.body}</p>
-                          </div>
+                        {ticket.replies?.filter(r => r.parent ===null).map(reply => (
+                            <Reply key={reply.id} reply={reply} />
                         ))}
                       </div>
                     )}

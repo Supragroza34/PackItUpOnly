@@ -6,6 +6,7 @@ from .models.reply import Reply
 from .models.user import User
 from .models.office_hours import OfficeHours
 from .models.meeting_request import MeetingRequest
+from .sanitizer import sanitize_additional_details
 
 User = get_user_model()
 
@@ -161,6 +162,11 @@ class TicketCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         department = validated_data.get("department")
+        
+        # Sanitize additional_details to only allow safe HTML formatting
+        additional_details = validated_data.get("additional_details", "")
+        if additional_details:
+            validated_data["additional_details"] = sanitize_additional_details(additional_details)
 
         # Find staff in the same department with the least tickets
         staff = User.objects.filter(

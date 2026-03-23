@@ -115,7 +115,7 @@ const Statistics = () => {
     };
     
     const formatHours = (hours) => {
-        if (!hours) return 'N/A';
+        if (hours === null || hours === undefined) return 'N/A';
         if (hours < 24) return `${hours.toFixed(1)} hours`;
         const days = Math.floor(hours / 24);
         const remainingHours = Math.floor(hours % 24);

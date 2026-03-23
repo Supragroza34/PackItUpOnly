@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { reassignTicket, fetchStaffList } from '../store/slices/staffSlice';
 import { checkAuth } from '../store/slices/authSlice';
 import { useAuth } from '../context/AuthContext';
+import { HtmlContent } from '../components/HtmlContent';
 import './TicketPage.css';
 
 const STATUS_OPTIONS = [
@@ -187,7 +188,11 @@ function TicketPage() {
 
             <div className="ticket-card">
                 <h2 className="ticket-card-title">Issue description</h2>
-                <p className="ticket-description">{ticket.additional_details || 'No description provided.'}</p>
+                {ticket.additional_details ? (
+                  <HtmlContent html={ticket.additional_details} className="ticket-description" />
+                ) : (
+                  <p className="ticket-description">No description provided.</p>
+                )}
                 {ticket.department && <span className="ticket-department">📁 {ticket.department}</span>}
             </div>
 

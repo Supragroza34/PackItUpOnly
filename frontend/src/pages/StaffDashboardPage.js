@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { logout as logoutAction } from '../store/slices/authSlice';
 import './StaffDashboardPage.css';
 import NotificationBell from "../components/NotificationBell";
+import { HtmlContent } from '../components/HtmlContent';
 
 
 function statusClass(status, isOverdue) {
@@ -228,7 +229,7 @@ function StaffDashboardPage() {
                                         <h3>{ticket.type_of_issue}</h3>
                                         <div className="sd-ticket-dept">📁 {ticket.department}</div>
                                         {ticket.additional_details && (
-                                            <div className="sd-ticket-details">{ticket.additional_details}</div>
+                                            <HtmlContent html={ticket.additional_details} className="sd-ticket-details" />
                                         )}
                                         <div className="sd-ticket-submitter">
                                             👤 {ticket.user?.first_name} {ticket.user?.last_name}

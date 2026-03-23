@@ -17,7 +17,7 @@ from rest_framework.test import APITestCase, APIClient
 from ..models.ticket import Ticket
 from ..models.reply import Reply
 from ..models.user import User
-from ..views.ticket_pdf_view import _build_pdf, _format_datetime, _user_display_name
+from ..views.ticket_pdf_view import _build_pdf, _format_datetime, _user_display_name, _pdf_safe_text
 
 
 # ---------------------------------------------------------------------------
@@ -146,6 +146,32 @@ class TicketPdfResponseFormatTests(APITestCase):
 
     def test_response_body_starts_with_pdf_magic_bytes(self):
         self.assertTrue(self.response.content.startswith(b'%PDF'))
+
+
+class TicketPdfRichTextRegressionTests(APITestCase):
+    """Regression tests for rich-text additional_details in PDF generation."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.student = _make_student('stu_rich', 'stu_rich@kcl.ac.uk')
+        self.ticket = Ticket.objects.create(
+            user=self.student,
+            department='Informatics',
+            type_of_issue='Software Installation Issues',
+            status=Ticket.Status.CLOSED,
+            additional_details=(
+                '<p data-indent="1">Line 1 <strong>bold</strong><br />'
+                'Line 2 &amp; symbols <script>alert(1)</script></p>'
+            ),
+        )
+        self.client.force_authenticate(user=self.student)
+
+    def test_download_pdf_succeeds_with_rich_text_details(self):
+        response = self.client.get(f'/api/tickets/{self.ticket.id}/pdf/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertTrue(response.content.startswith(b'%PDF'))
 
 
 # ===========================================================================
@@ -296,3 +322,16 @@ class UserDisplayNameTests(TestCase):
             first_name='', last_name='Smith',
         )
         self.assertEqual(_user_display_name(user), 'Smith')
+
+
+class PdfSafeTextTests(TestCase):
+    """Unit tests for _pdf_safe_text helper."""
+
+    def test_none_returns_empty_string(self):
+        self.assertEqual(_pdf_safe_text(None), '')
+
+    def test_html_is_converted_to_safe_text_with_breaks(self):
+        text = _pdf_safe_text('<p>Hello <strong>World</strong><br/>A &amp; B</p>')
+        self.assertIn('Hello World', text)
+        self.assertIn('A &amp; B', text)
+        self.assertIn('<br/>', text)

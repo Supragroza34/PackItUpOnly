@@ -5,6 +5,7 @@ import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
 import UserNavbar from "../components/UserNavbar";
 import NotificationBell from "../components/NotificationBell";
+import { HtmlContent } from "../components/HtmlContent";
 
 const isLocal =
   window.location.hostname === "localhost" ||
@@ -417,7 +418,9 @@ function UserDashboardPage() {
                   <div className="ticket-item-info">
                     <h3>{ticket.type_of_issue}</h3>
                     <div className="ticket-dept">📁 {ticket.department}</div>
-                    <div className="ticket-details">{ticket.additional_details}</div>
+                    {ticket.additional_details && (
+                      <HtmlContent html={ticket.additional_details} className="ticket-details" />
+                    )}
 
                     {ticket.replies && ticket.replies.length > 0 && (
                       <div className="ticket-responses">
@@ -572,7 +575,11 @@ function UserDashboardPage() {
               <p>
                 <strong>Description:</strong>
               </p>
-              <p>{selectedTicket.additional_details}</p>
+              {selectedTicket.additional_details ? (
+                <HtmlContent html={selectedTicket.additional_details} />
+              ) : (
+                <p>No description provided.</p>
+              )}
 
               {selectedTicket.status !== "closed" && (
                 <button

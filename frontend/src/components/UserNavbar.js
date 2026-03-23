@@ -13,26 +13,10 @@ export async function handleLogout(logout, navigate) {
   navigate("/login", { replace: true });
 }
 
-// Disabled placeholder button for the Staff Office Hours feature
-function OfficeHoursButton() {
-  return (
-    <button
-      className="navbar-link navbar-plain-btn navbar-office-btn"
-      title="Staff office hours information coming soon"
-      disabled
-    >
-      Staff Office Hours
-    </button>
-  );
-}
-
-// The dropdown menu panel with View Profile and Edit Profile links
+// The dropdown menu panel with Edit Profile link
 function DropdownMenu({ onClose }) {
   return (
     <div className="navbar-dropdown" role="menu">
-      <Link to="/profile" className="navbar-dropdown-item" role="menuitem" onClick={onClose}>
-        View Profile
-      </Link>
       <Link to="/profile" className="navbar-dropdown-item" role="menuitem" onClick={onClose}>
         Edit Profile
       </Link>
@@ -49,7 +33,7 @@ function ProfileToggle({ open, onToggle }) {
       aria-haspopup="true"
       aria-expanded={open}
     >
-      View Profile <span className="dropdown-caret">▾</span>
+      Profile <span className="dropdown-caret">▾</span>
     </button>
   );
 }

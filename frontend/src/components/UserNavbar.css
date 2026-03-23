@@ -71,16 +71,6 @@
   gap: 4px;
 }
 
-/* Staff Office Hours — disabled state */
-.navbar-office-btn:disabled {
-  cursor: default;
-  opacity: 0.72;
-}
-
-.navbar-office-btn:disabled:hover {
-  background: transparent;
-}
-
 /* Dropdown caret */
 .dropdown-caret {
   font-size: 0.72rem;

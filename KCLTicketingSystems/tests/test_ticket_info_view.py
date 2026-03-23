@@ -145,3 +145,49 @@ class TicketInfoAndStaffListViewTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(response.data["error"], "boom")
+
+    def test_unauthenticated_user_cannot_reassign_ticket(self):
+        response = self.client.patch(f"/api/staff/dashboard/{self.ticket.id}/reassign/", {
+            "assigned_to": self.other_staff.id
+        }, format='json')        
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_student_cannot_reassign_ticket(self):
+        self.client.force_authenticate(user=self.student)
+
+        response = self.client.patch(f"/api/staff/dashboard/{self.ticket.id}/reassign/", {
+            "assigned_to": self.other_staff.id
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_ticket_reassigns_correctly(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/staff/dashboard/{self.ticket.id}/reassign/", {
+            "assigned_to": self.other_staff.id
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.assigned_to, self.other_staff)
+
+    def test_invalid_patch_returns_400_error(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/staff/dashboard/{self.ticket.id}/reassign/", {
+            "assigned_to": "not_valid_data"
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_non_existent_ticket_cannot_be_reassigned(self):
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.patch(f"/api/staff/dashboard/9999999999999999/reassign/", {
+            "assigned_to": self.other_staff.id
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+       

@@ -1,8 +1,11 @@
 import io
+import re
+from html import unescape
 from datetime import timezone as dt_timezone
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils.html import strip_tags
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -141,6 +144,33 @@ def _user_display_name(user):
     return full if full else user.username
 
 
+def _pdf_safe_text(value):
+    """Convert user-provided text/HTML into ReportLab-safe paragraph content."""
+    if value is None:
+        return ""
+
+    text = str(value)
+
+    # Preserve intentional breaks from HTML-rich text before stripping tags.
+    text = re.sub(r"(?i)<\s*br\s*/?\s*>", "\n", text)
+    text = re.sub(r"(?i)</\s*(p|div|li)\s*>", "\n", text)
+
+    # Remove remaining markup and decode HTML entities.
+    text = strip_tags(text)
+    text = unescape(text)
+
+    # Escape XML-sensitive characters for reportlab Paragraph parser.
+    text = (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+    # Normalize line breaks for Paragraph rendering.
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    return text.replace("\n", "<br/>")
+
+
 def _build_pdf(ticket) -> bytes:
     """Construct the PDF in memory and return the raw bytes."""
     buffer = io.BytesIO()
@@ -185,14 +215,14 @@ def _build_pdf(ticket) -> bytes:
     closed_by_name = _user_display_name(ticket.closed_by) if ticket.closed_by else "—"
 
     meta_rows = [
-        [Paragraph("Student",     styles["label"]), Paragraph(student_name,  styles["value"])],
-        [Paragraph("Department",  styles["label"]), Paragraph(ticket.department, styles["value"])],
-        [Paragraph("Issue Type",  styles["label"]), Paragraph(ticket.type_of_issue, styles["value"])],
-        [Paragraph("Status",      styles["label"]), Paragraph(ticket.status.replace("_", " ").title(), styles["value"])],
-        [Paragraph("Priority",    styles["label"]), Paragraph(ticket.priority.title(), styles["value"])],
-        [Paragraph("Assigned To", styles["label"]), Paragraph(assigned_name, styles["value"])],
-        [Paragraph("Closed By",   styles["label"]), Paragraph(closed_by_name, styles["value"])],
-        [Paragraph("Opened",      styles["label"]), Paragraph(_format_datetime(ticket.created_at), styles["value"])],
+        [Paragraph("Student",     styles["label"]), Paragraph(_pdf_safe_text(student_name),  styles["value"])],
+        [Paragraph("Department",  styles["label"]), Paragraph(_pdf_safe_text(ticket.department), styles["value"])],
+        [Paragraph("Issue Type",  styles["label"]), Paragraph(_pdf_safe_text(ticket.type_of_issue), styles["value"])],
+        [Paragraph("Status",      styles["label"]), Paragraph(_pdf_safe_text(ticket.status.replace("_", " ").title()), styles["value"])],
+        [Paragraph("Priority",    styles["label"]), Paragraph(_pdf_safe_text(ticket.priority.title()), styles["value"])],
+        [Paragraph("Assigned To", styles["label"]), Paragraph(_pdf_safe_text(assigned_name), styles["value"])],
+        [Paragraph("Closed By",   styles["label"]), Paragraph(_pdf_safe_text(closed_by_name), styles["value"])],
+        [Paragraph("Opened",      styles["label"]), Paragraph(_pdf_safe_text(_format_datetime(ticket.created_at)), styles["value"])],
     ]
 
     meta_table = Table(meta_rows, colWidths=[40 * mm, None])
@@ -212,7 +242,8 @@ def _build_pdf(ticket) -> bytes:
     # Original message
     # ------------------------------------------------------------------
     story.append(Paragraph("Original Message", styles["section_heading"]))
-    story.append(Paragraph(ticket.additional_details or "(no message)", styles["message"]))
+    original_message = _pdf_safe_text(ticket.additional_details) or "(no message)"
+    story.append(Paragraph(original_message, styles["message"]))
     story.append(Spacer(1, 4 * mm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER_GREY, spaceAfter=4 * mm))
 
@@ -234,9 +265,9 @@ def _build_pdf(ticket) -> bytes:
             sender_style = styles["sender_staff"] if is_staff else styles["sender_student"]
 
             inner_content = [
-                [Paragraph(f"{_user_display_name(reply.user)} &nbsp;({sender_label})", sender_style)],
-                [Paragraph(reply.body, styles["message"])],
-                [Paragraph(_format_datetime(reply.created_at), styles["timestamp"])],
+                [Paragraph(f"{_pdf_safe_text(_user_display_name(reply.user))} &nbsp;({_pdf_safe_text(sender_label)})", sender_style)],
+                [Paragraph(_pdf_safe_text(reply.body), styles["message"])],
+                [Paragraph(_pdf_safe_text(_format_datetime(reply.created_at)), styles["timestamp"])],
             ]
             inner_table = Table(inner_content, colWidths=["100%"])
             bg = STAFF_BG if is_staff else STUDENT_BG

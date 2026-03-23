@@ -6,6 +6,7 @@ import RichTextEditor from "./RichTextEditor";
 
 let latestProps;
 let mockEditor;
+let mockExposeEditorRef = true;
 
 jest.mock("react-quill", () => {
   const React = require("react");
@@ -15,13 +16,15 @@ jest.mock("react-quill", () => {
     mockEditor = {
       getFormat: jest.fn(() => ({
         bold: true,
+        italic: true,
         list: "bullet",
+        indent: 1,
         color: "red",
         underline: true,
       })),
     };
 
-    React.useImperativeHandle(ref, () => ({ editor: mockEditor }));
+    React.useImperativeHandle(ref, () => (mockExposeEditorRef ? { editor: mockEditor } : {}));
 
     return (
       <div>
@@ -59,6 +62,7 @@ describe("RichTextEditor", () => {
   beforeEach(() => {
     latestProps = undefined;
     mockEditor = undefined;
+    mockExposeEditorRef = true;
   });
 
   test("sanitizes disallowed tags/attributes before calling onChange", () => {
@@ -119,10 +123,22 @@ describe("RichTextEditor", () => {
       const filtered = mockEditor.getFormat();
       expect(filtered).toEqual({
         bold: true,
+        italic: true,
         list: "bullet",
+        indent: 1,
       });
       expect(filtered.color).toBeUndefined();
       expect(filtered.underline).toBeUndefined();
     });
+  });
+
+  test("renders safely when quill ref has no editor instance", () => {
+    mockExposeEditorRef = false;
+    const onChange = jest.fn();
+
+    render(<RichTextEditor id="additional_details" value="" onChange={onChange} />);
+
+    fireEvent.click(screen.getByTestId("emit-rich-html"));
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });

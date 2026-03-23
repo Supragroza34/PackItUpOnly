@@ -26,6 +26,15 @@ SESSION_KEY_MESSAGES = "ai_chatbot_messages"
 SESSION_KEY_ERROR = "ai_chatbot_error"
 
 
+def _is_leaked_or_blocked_key_error(message: str) -> bool:
+    msg = (message or "").lower()
+    return (
+        "api key was reported as leaked" in msg
+        or "permissiondenied" in msg
+        or "403" in msg and "api key" in msg
+    )
+
+
 def _get_genai_client():
     """Import and configure Gemini so missing package doesn't crash Django startup."""
     try:
@@ -147,6 +156,11 @@ def chat_page(request):
                 err_msg = str(e).strip()
                 if "GEMINI_API_KEY" in err_msg or "api_key" in err_msg.lower():
                     error = "Gemini API key not configured. Set GEMINI_API_KEY in .env or Heroku config."
+                elif _is_leaked_or_blocked_key_error(err_msg):
+                    error = (
+                        "Gemini API key is blocked (reported leaked). "
+                        "Create a new key in Google AI Studio/Cloud, update GEMINI_API_KEY, then restart the server."
+                    )
                 else:
                     error = err_msg or "Chat request failed."
             request.session[SESSION_KEY_MESSAGES] = messages
@@ -191,6 +205,16 @@ def chat(request):
     except Exception as e:
         logger.exception("Gemini chat error")
         err_msg = str(e).strip()
+        if _is_leaked_or_blocked_key_error(err_msg):
+            return Response(
+                {
+                    "error": "Gemini API key is blocked (reported leaked).",
+                    "detail": (
+                        "Create a new Gemini key, update GEMINI_API_KEY, and restart the backend process."
+                    ),
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         return Response(
             {"error": "Chat request failed.", "detail": err_msg},
             status=status.HTTP_502_BAD_GATEWAY,

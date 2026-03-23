@@ -15,6 +15,7 @@ const STATUS_OPTIONS = [
     { value: 'awaiting_response', label: 'Awaiting Student Response' },
     { value: 'resolved', label: 'Resolved' },
     { value: 'closed', label: 'Closed' },
+    { value: 'reported', label: 'Reported' },
 ];
 
 
@@ -44,6 +45,9 @@ function TicketPage() {
         .then(res => res.ok ? res.json() : Promise.reject(res))
         .then((data) => {
             setTicket(data);
+            if (data['status']==='reported'){
+                navigate('/staff/dashboard');
+            }
         })
         .catch(err => console.error('Failed to update status:', err));
 }
@@ -184,8 +188,8 @@ function TicketPage() {
                 <span><strong>Type:</strong> {ticket.type_of_issue}</span>
                 <span>
                     <strong>Status:</strong>{' '}
-                                    <select 
-                                    value={ticket.status || 'pending'} 
+                    <select 
+                        value={ticket.status || 'pending'} 
                         onChange={(e) => changeStatus(e.target.value)}
                         className="status-dropdown"
                         disabled={ticket.status === 'closed'}
@@ -227,6 +231,13 @@ function TicketPage() {
                 <div className="ticket-card">
                     <button type="button" className="ticket-page-close-btn" onClick={handleCloseTicket}>
                         Close ticket
+                    </button>
+                    <button
+                        onClick={() => changeStatus('reported')}
+                        disabled={ticket.status === 'closed' || ticket.status === 'reported'}
+                        className="ticket-page-report-btn"
+                    >
+                        Report ticket
                     </button>
                 </div>
             )}

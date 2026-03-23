@@ -49,6 +49,8 @@ def _apply_ticket_filter(tickets, filter_options):
         return tickets.filter(status__in=(Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS, Ticket.Status.NEW, Ticket.Status.SEEN, Ticket.Status.AWAITING_RESPONSE))
     if filter_options == 'closed':
         return tickets.filter(status__in=(Ticket.Status.RESOLVED, Ticket.Status.CLOSED))
+    if filter_options == 'reported':
+        return tickets.filter(status__in=(Ticket.Status.REPORTED,))
     if filter_options == 'overdue':
         return tickets.filter(
             status__in=(Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS, Ticket.Status.NEW, Ticket.Status.SEEN, Ticket.Status.AWAITING_RESPONSE),

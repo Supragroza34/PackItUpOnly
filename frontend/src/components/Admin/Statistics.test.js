@@ -167,6 +167,25 @@ describe('Statistics', () => {
     });
   });
 
+  test('toggles to graph view and renders status, department and priority charts', async () => {
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Ticket Statistics & Analytics')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /graph view/i }));
+
+    expect(screen.getByText('Status Distribution')).toBeInTheDocument();
+    expect(screen.getByText('Tickets by Department')).toBeInTheDocument();
+    expect(screen.getByText('Priority Distribution')).toBeInTheDocument();
+    expect(screen.getAllByText('Urgent').length).toBeGreaterThan(0);
+  });
+
   test('export statistics success downloads file', async () => {
     const blob = new Blob(['csv-data'], { type: 'text/csv' });
     global.fetch.mockResolvedValue({

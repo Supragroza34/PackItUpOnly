@@ -1,6 +1,8 @@
 from types import SimpleNamespace
+from datetime import timedelta
 
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -96,6 +98,42 @@ class TicketConversationApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Reply.objects.filter(ticket=self.ticket, user=self.staff, body="Here is help").exists())
+
+    def test_staff_reply_sets_ticket_to_awaiting_response(self):
+        self.ticket.status = Ticket.Status.IN_PROGRESS
+        self.ticket.save(update_fields=["status"])
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.post(self._conversation_url(), {"body": "Please confirm this fix"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.AWAITING_RESPONSE)
+
+    def test_student_reply_sets_ticket_back_to_in_progress(self):
+        self.ticket.status = Ticket.Status.AWAITING_RESPONSE
+        self.ticket.save(update_fields=["status"])
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.post(self._conversation_url(), {"body": "I still need help"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.IN_PROGRESS)
+
+    def test_dashboard_fetch_auto_closes_stale_awaiting_response_ticket(self):
+        self.ticket.status = Ticket.Status.AWAITING_RESPONSE
+        self.ticket.save(update_fields=["status"])
+
+        old_reply = Reply.objects.create(user=self.staff, ticket=self.ticket, body="Waiting for your response")
+        Reply.objects.filter(id=old_reply.id).update(created_at=timezone.now() - timedelta(days=4))
+
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.get("/api/dashboard/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.CLOSED)
 
     def test_admin_can_access_ticket_conversation(self):
         self.client.force_authenticate(user=self.admin)

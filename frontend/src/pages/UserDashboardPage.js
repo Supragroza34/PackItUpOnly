@@ -23,11 +23,11 @@ function getProgressWidth(status) {
     case "pending":
         return "20%";
     case "seen":
-        return "40%"
+        return "40%";
     case "in_progress":
         return "60%";
     case "awaiting_response":
-        return "75%"
+        return "75%";
     case "resolved":
       return "90%";
     case "closed":
@@ -97,12 +97,29 @@ function UserDashboardPage() {
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [replyBody, setReplyBody] = useState("");
+  const [replyDraftsByTicketId, setReplyDraftsByTicketId] = useState({});
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
   const [showProgressInfo, setShowProgressInfo] = useState(false);
+
+  const selectedReplyBody =
+    selectedTicket ? replyDraftsByTicketId[selectedTicket.id] || "" : "";
+
+  function openTicket(ticket) {
+    setSelectedTicket(ticket);
+    setReplyError("");
+  }
+
+  function updateSelectedTicketReplyDraft(value) {
+    if (!selectedTicket) return;
+
+    setReplyDraftsByTicketId((prev) => ({
+      ...prev,
+      [selectedTicket.id]: value,
+    }));
+  }
 
   useEffect(() => {
     dispatch(checkAuth());
@@ -266,7 +283,7 @@ function UserDashboardPage() {
   async function handleSendReply() {
     if (!isTicketOpenForReply(selectedTicket)) return;
 
-    if (validateReplyBeforeSubmit(replyBody, setReplyError)) {
+    if (validateReplyBeforeSubmit(selectedReplyBody, setReplyError)) {
       return;
     }
 
@@ -288,7 +305,7 @@ function UserDashboardPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ body: replyBody.trim() }),
+          body: JSON.stringify({ body: selectedReplyBody.trim() }),
         }
       );
 
@@ -312,7 +329,10 @@ function UserDashboardPage() {
           : prev
       );
 
-      setReplyBody("");
+      setReplyDraftsByTicketId((prev) => ({
+        ...prev,
+        [selectedTicket.id]: "",
+      }));
     } catch (err) {
       setReplyError(`Could not send reply: ${err.message}`);
     } finally {
@@ -343,6 +363,10 @@ function UserDashboardPage() {
   }
 
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
+  const countInProgressMerged = () =>
+    tickets.filter((t) =>
+      ["seen", "in_progress", "awaiting_response"].includes(t.status)
+    ).length;
 
   return (
     <>
@@ -354,7 +378,7 @@ function UserDashboardPage() {
             <NotificationBell
               onNotificationClick={(notif) => {
                 const ticket = tickets.find((t) => t.id === notif.ticket_id);
-                if (ticket) setSelectedTicket(ticket);
+                if (ticket) openTicket(ticket);
               }}
             />
         </div>
@@ -370,16 +394,8 @@ function UserDashboardPage() {
             <div className="summary-label">Pending</div>
           </div>
           <div className="summary-card">
-            <div className="summary-count">{countByStatus("seen")}</div>
-            <div className="summary-label">Seen</div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-count">{countByStatus("in_progress")}</div>
+            <div className="summary-count">{countInProgressMerged()}</div>
             <div className="summary-label">In Progress</div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-count">{countByStatus("awaiting_response")}</div>
-            <div className="summary-label">Awaiting Response</div>
           </div>
           <div className="summary-card">
             <div className="summary-count">{countByStatus("resolved")}</div>
@@ -413,7 +429,7 @@ function UserDashboardPage() {
                 <div
                   key={ticket.id}
                   className="ticket-item"
-                  onClick={() => setSelectedTicket(ticket)}
+                  onClick={() => openTicket(ticket)}
                 >
                   <div className="ticket-item-info">
                     <h3>{ticket.type_of_issue}</h3>
@@ -624,9 +640,9 @@ function UserDashboardPage() {
                     <textarea
                       id="student-reply-box"
                       className="ticket-reply-textarea"
-                      value={replyBody}
+                      value={selectedReplyBody}
                       onChange={(e) => {
-                        setReplyBody(e.target.value);
+                        updateSelectedTicketReplyDraft(e.target.value);
                         if (replyError) setReplyError("");
                       }}
                       placeholder="Write your response to continue the conversation..."
@@ -638,7 +654,7 @@ function UserDashboardPage() {
                       type="button"
                       className="ticket-reply-send-btn"
                       onClick={handleSendReply}
-                      disabled={replySubmitting || !replyBody.trim()}
+                      disabled={replySubmitting || !selectedReplyBody.trim()}
                     >
                       {replySubmitting ? "Sending..." : "Send reply"}
                     </button>

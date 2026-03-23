@@ -10,12 +10,14 @@ from rest_framework import status
 
 from ..models import Ticket, Reply
 from ..serializers import ReplySerializer
-from ..utils import notify_on_ticket_update
+from ..utils import notify_on_ticket_update, auto_close_stale_awaiting_response
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_dashboard(request):
+    auto_close_stale_awaiting_response()
+
     user = request.user
     tickets = (
         Ticket.objects

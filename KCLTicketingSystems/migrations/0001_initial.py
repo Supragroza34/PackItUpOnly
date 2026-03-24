@@ -11,6 +11,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
+    """Apply schema changes for 0001 initial so the data model stays aligned with ticketing features."""
     initial = True
 
     dependencies = [

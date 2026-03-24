@@ -5,6 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
+    """Apply schema changes for 0004 alter ticket status so the data model stays aligned with ticketing features."""
     dependencies = [
         ('KCLTicketingSystems', '0003_alter_ticket_status'),
     ]

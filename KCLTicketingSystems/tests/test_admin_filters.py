@@ -7,9 +7,10 @@ from ..models.user import User
 
 
 class AdminTicketsAdvancedFilterTest(TestCase):
-    """Test cases for advanced filtering scenarios in admin tickets list"""
+    """Test cases for advanced filtering scenarios in admin tickets list. This keeps regressions visible early in the release cycle."""
 
     def _create_users(self):
+        """Support the admin filters tests by create users so assertions remain focused on outcomes."""
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True
@@ -32,6 +33,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         )
 
     def _create_tickets(self):
+        """Support the admin filters tests by create tickets so assertions remain focused on outcomes."""
         self.ticket1 = Ticket.objects.create(
             user=self.student1, department='Informatics', type_of_issue='Software Issue',
             additional_details='Need help with Python', status=Ticket.Status.PENDING,
@@ -59,6 +61,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         )
 
     def _create_unassigned_ticket(self):
+        """Support the admin filters tests by create unassigned ticket so assertions remain focused on outcomes."""
         self.ticket6 = Ticket.objects.create(
             user=self.student2, department='Informatics', type_of_issue='Email Issue',
             additional_details='Email not working', status=Ticket.Status.PENDING,
@@ -66,7 +69,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.url = '/api/admin/tickets/'
         self._create_users()
@@ -74,7 +77,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         self._create_unassigned_ticket()
 
     def test_filter_unassigned_tickets(self):
-        """Test filtering for unassigned tickets"""
+        """Test filtering for unassigned tickets. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'assigned_to': 'unassigned'})
         
@@ -87,7 +90,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
             self.assertIsNone(ticket['assigned_to'])
 
     def test_filter_by_specific_staff(self):
-        """Test filtering tickets assigned to a specific staff member"""
+        """Test filtering tickets assigned to a specific staff member. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'assigned_to': self.staff1.id})
         
@@ -100,7 +103,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
             self.assertEqual(ticket['assigned_to'], self.staff1.id)
 
     def test_combine_status_and_priority_filters(self):
-        """Test combining status and priority filters"""
+        """Test combining status and priority filters. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {
             'status': 'pending',
@@ -116,7 +119,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
             self.assertEqual(ticket['priority'], 'urgent')
 
     def test_combine_department_and_assigned_filters(self):
-        """Test combining department and assigned_to filters"""
+        """Test combining department and assigned_to filters. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {
             'department': 'Engineering',
@@ -133,7 +136,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
             self.assertEqual(ticket['assigned_to'], self.staff1.id)
 
     def test_combine_search_with_filters(self):
-        """Test combining search query with other filters"""
+        """Test combining search query with other filters. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {
             'search': 'Charlie',
@@ -148,7 +151,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
             self.assertEqual(ticket['status'], 'in_progress')
 
     def test_combine_all_filters(self):
-        """Test combining all available filters"""
+        """Test combining all available filters. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {
             'search': 'Student',
@@ -169,7 +172,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
             self.assertIsNone(ticket['assigned_to'])
 
     def test_filter_with_no_results(self):
-        """Test filters that return no results"""
+        """Test filters that return no results. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {
             'status': 'pending',
@@ -182,7 +185,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         self.assertEqual(response.data['total'], 0)
 
     def test_pagination_with_filters(self):
-        """Test that pagination works correctly with filters"""
+        """Test that pagination works correctly with filters. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {
             'status': 'pending',
@@ -198,7 +201,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         self.assertEqual(response.data['page_size'], 2)
 
     def test_search_by_k_number(self):
-        """Test searching tickets by user k-number"""
+        """Test searching tickets by user k-number. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'search': '11111111'})
         
@@ -211,7 +214,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
             self.assertEqual(ticket['user_k_number'], '11111111')
 
     def test_search_by_email(self):
-        """Test searching tickets by user email"""
+        """Test searching tickets by user email. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'search': 'student1@test.com'})
         
@@ -222,7 +225,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         self.assertGreater(len(tickets), 0)
 
     def test_search_by_issue_type(self):
-        """Test searching tickets by type of issue"""
+        """Test searching tickets by type of issue. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'search': 'Network'})
         
@@ -233,7 +236,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         self.assertGreater(len(tickets), 0)
 
     def test_case_insensitive_search(self):
-        """Test that search is case-insensitive"""
+        """Test that search is case-insensitive. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Search with lowercase
@@ -254,7 +257,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
         )
 
     def test_filter_different_priorities(self):
-        """Test filtering by each priority level"""
+        """Test filtering by each priority level. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         priorities = ['low', 'medium', 'high', 'urgent']
@@ -268,7 +271,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
                 self.assertEqual(ticket['priority'], priority)
 
     def test_filter_different_statuses(self):
-        """Test filtering by each status"""
+        """Test filtering by each status. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         statuses = ['pending', 'in_progress', 'resolved', 'closed']
@@ -282,7 +285,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
                 self.assertEqual(ticket['status'], status_value)
 
     def test_filter_by_department(self):
-        """Test filtering by different departments"""
+        """Test filtering by different departments. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         departments = ['Informatics', 'Engineering', 'Medicine']
         for department in departments:
@@ -295,7 +298,7 @@ class AdminTicketsAdvancedFilterTest(TestCase):
             )
 
     def test_multiple_unassigned_tickets(self):
-        """Test that multiple unassigned tickets are returned correctly"""
+        """Test that multiple unassigned tickets are returned correctly. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'assigned_to': 'unassigned'})
         
@@ -308,10 +311,10 @@ class AdminTicketsAdvancedFilterTest(TestCase):
 
 
 class AdminUsersAdvancedFilterTest(TestCase):
-    """Test cases for advanced filtering in admin users list"""
+    """Test cases for advanced filtering in admin users list. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.url = '/api/admin/users/'
         
@@ -339,7 +342,7 @@ class AdminUsersAdvancedFilterTest(TestCase):
             )
 
     def test_filter_users_by_role(self):
-        """Test filtering users by role"""
+        """Test filtering users by role. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {'role': 'student'})
@@ -350,7 +353,7 @@ class AdminUsersAdvancedFilterTest(TestCase):
             self.assertEqual(user['role'], 'student')
 
     def test_search_users_by_username(self):
-        """Test searching users by username"""
+        """Test searching users by username. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {'search': 'user1'})
@@ -360,7 +363,7 @@ class AdminUsersAdvancedFilterTest(TestCase):
         self.assertGreater(len(users), 0)
 
     def test_search_users_by_k_number(self):
-        """Test searching users by k-number"""
+        """Test searching users by k-number. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {'search': '10000000'})
@@ -370,7 +373,7 @@ class AdminUsersAdvancedFilterTest(TestCase):
         self.assertGreater(len(users), 0)
 
     def test_search_users_by_email(self):
-        """Test searching users by email"""
+        """Test searching users by email. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {'search': 'user2@test.com'})
@@ -380,7 +383,7 @@ class AdminUsersAdvancedFilterTest(TestCase):
         self.assertGreater(len(users), 0)
 
     def test_combine_search_and_role_filter(self):
-        """Test combining search with role filter"""
+        """Test combining search with role filter. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {
@@ -394,7 +397,7 @@ class AdminUsersAdvancedFilterTest(TestCase):
             self.assertEqual(user['role'], 'staff')
 
     def test_users_pagination_with_filters(self):
-        """Test that pagination works with user filters"""
+        """Test that pagination works with user filters. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {
@@ -409,7 +412,7 @@ class AdminUsersAdvancedFilterTest(TestCase):
         self.assertLessEqual(len(response.data['users']), 3)
 
     def test_case_insensitive_user_search(self):
-        """Test that user search is case-insensitive"""
+        """Test that user search is case-insensitive. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response1 = self.client.get(self.url, {'search': 'user'})
@@ -423,10 +426,10 @@ class AdminUsersAdvancedFilterTest(TestCase):
 
 
 class AdminTicketBoundaryTest(TestCase):
-    """Test boundary conditions and edge cases for admin ticket management"""
+    """Test boundary conditions and edge cases for admin ticket management. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         
         # Create admin user
@@ -449,7 +452,7 @@ class AdminTicketBoundaryTest(TestCase):
         )
 
     def test_pagination_first_page(self):
-        """Test first page of pagination"""
+        """Test first page of pagination. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Create some tickets
@@ -468,7 +471,7 @@ class AdminTicketBoundaryTest(TestCase):
         self.assertEqual(len(response.data['tickets']), 3)
 
     def test_pagination_last_page(self):
-        """Test last page of pagination with partial results"""
+        """Test last page of pagination with partial results. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Create 7 tickets
@@ -488,7 +491,7 @@ class AdminTicketBoundaryTest(TestCase):
         self.assertEqual(len(response.data['tickets']), 1)
 
     def test_pagination_beyond_last_page(self):
-        """Test requesting page beyond the last page"""
+        """Test requesting page beyond the last page. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Create 5 tickets
@@ -507,7 +510,7 @@ class AdminTicketBoundaryTest(TestCase):
         self.assertEqual(len(response.data['tickets']), 0)
 
     def test_empty_database(self):
-        """Test admin endpoints with no tickets"""
+        """Test admin endpoints with no tickets. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get('/api/admin/tickets/')
@@ -517,7 +520,7 @@ class AdminTicketBoundaryTest(TestCase):
         self.assertEqual(len(response.data['tickets']), 0)
 
     def test_large_page_size(self):
-        """Test with very large page size"""
+        """Test with very large page size. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Create 10 tickets

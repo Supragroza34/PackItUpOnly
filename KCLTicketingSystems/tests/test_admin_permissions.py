@@ -8,17 +8,19 @@ from ..models.user import User
 
 
 class TestView(APIView):
-    """Test view using IsAdmin permission"""
+    """Test view using IsAdmin permission. This keeps regressions visible early in the release cycle."""
     permission_classes = [IsAdmin]
     
     def get(self, request):
+        """Support the admin permissions tests by get so assertions remain focused on outcomes."""
         return Response({'message': 'Access granted'})
 
 
 class IsAdminPermissionTest(TestCase):
-    """Test cases for IsAdmin permission class"""
+    """Test cases for IsAdmin permission class. This keeps regressions visible early in the release cycle."""
 
     def _create_users(self):
+        """Support the admin permissions tests by create users so assertions remain focused on outcomes."""
         self.admin_user = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN
@@ -37,14 +39,14 @@ class IsAdminPermissionTest(TestCase):
         )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.factory = APIRequestFactory()
         self.permission = IsAdmin()
         self.view = TestView.as_view()
         self._create_users()
 
     def test_admin_role_has_permission(self):
-        """Test that user with admin role has permission"""
+        """Test that user with admin role has permission. This keeps regressions visible early in the release cycle."""
         request = self.factory.get('/test/')
         request.user = self.admin_user
         
@@ -52,7 +54,7 @@ class IsAdminPermissionTest(TestCase):
         self.assertTrue(permission)
 
     def test_staff_user_no_permission(self):
-        """Test that staff users do not have admin permission"""
+        """Test that staff users do not have admin permission. This keeps regressions visible early in the release cycle."""
         request = self.factory.get('/test/')
         request.user = self.staff_user
         
@@ -60,7 +62,7 @@ class IsAdminPermissionTest(TestCase):
         self.assertFalse(permission)
 
     def test_superuser_has_permission(self):
-        """Test that superuser has permission"""
+        """Test that superuser has permission. This keeps regressions visible early in the release cycle."""
         request = self.factory.get('/test/')
         request.user = self.superuser
         
@@ -68,7 +70,7 @@ class IsAdminPermissionTest(TestCase):
         self.assertTrue(permission)
 
     def test_student_no_permission(self):
-        """Test that regular student user does not have permission"""
+        """Test that regular student user does not have permission. This keeps regressions visible early in the release cycle."""
         request = self.factory.get('/test/')
         request.user = self.student_user
         
@@ -76,7 +78,7 @@ class IsAdminPermissionTest(TestCase):
         self.assertFalse(permission)
 
     def test_unauthenticated_user_no_permission(self):
-        """Test that unauthenticated user does not have permission"""
+        """Test that unauthenticated user does not have permission. This keeps regressions visible early in the release cycle."""
         from django.contrib.auth.models import AnonymousUser
         
         request = self.factory.get('/test/')
@@ -86,7 +88,7 @@ class IsAdminPermissionTest(TestCase):
         self.assertFalse(permission)
 
     def test_none_user_no_permission(self):
-        """Test that None user does not have permission"""
+        """Test that None user does not have permission. This keeps regressions visible early in the release cycle."""
         request = self.factory.get('/test/')
         request.user = None
         
@@ -94,7 +96,7 @@ class IsAdminPermissionTest(TestCase):
         self.assertFalse(permission)
 
     def test_staff_role_with_is_staff_flag(self):
-        """Test that staff role users do not have admin permission even with is_staff flag"""
+        """Test that staff role users do not have admin permission even with is_staff flag. This keeps regressions visible early in the release cycle."""
         staff_with_flag = User.objects.create_user(
             username='staff2',
             email='staff2@test.com',
@@ -111,7 +113,7 @@ class IsAdminPermissionTest(TestCase):
         self.assertFalse(permission)
 
     def test_multiple_admin_attributes(self):
-        """Test user with multiple admin attributes"""
+        """Test user with multiple admin attributes. This keeps regressions visible early in the release cycle."""
         multi_admin = User.objects.create_user(
             username='multiadmin',
             email='multiadmin@test.com',
@@ -129,11 +131,11 @@ class IsAdminPermissionTest(TestCase):
         self.assertTrue(permission)
 
     def test_permission_class_name(self):
-        """Test permission class name and docstring"""
+        """Test permission class name and docstring. This keeps regressions visible early in the release cycle."""
         self.assertEqual(self.permission.__class__.__name__, 'IsAdmin')
         self.assertIsNotNone(self.permission.__class__.__doc__)
 
     def test_has_permission_method_exists(self):
-        """Test that has_permission method exists"""
+        """Test that has_permission method exists. This keeps regressions visible early in the release cycle."""
         self.assertTrue(hasattr(self.permission, 'has_permission'))
         self.assertTrue(callable(self.permission.has_permission))

@@ -14,10 +14,10 @@ from ..models.ticket import Ticket
 
 
 class UserSerializerTest(TestCase):
-    """Test cases for UserSerializer"""
+    """Test cases for UserSerializer. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@test.com',
@@ -30,7 +30,7 @@ class UserSerializerTest(TestCase):
         )
 
     def test_user_serializer_fields(self):
-        """Test that UserSerializer returns correct fields"""
+        """Test that UserSerializer returns correct fields. This keeps regressions visible early in the release cycle."""
         serializer = UserSerializer(self.user)
         
         expected_fields = [
@@ -41,7 +41,7 @@ class UserSerializerTest(TestCase):
         self.assertEqual(set(serializer.data.keys()), set(expected_fields))
 
     def test_user_serializer_data(self):
-        """Test that UserSerializer returns correct data"""
+        """Test that UserSerializer returns correct data. This keeps regressions visible early in the release cycle."""
         serializer = UserSerializer(self.user)
         
         self.assertEqual(serializer.data['username'], 'testuser')
@@ -52,7 +52,7 @@ class UserSerializerTest(TestCase):
         self.assertFalse(serializer.data['is_superuser'])
 
     def test_user_serializer_admin_flags(self):
-        """Test UserSerializer with admin user"""
+        """Test UserSerializer with admin user. This keeps regressions visible early in the release cycle."""
         admin = User.objects.create_user(
             username='admin',
             email='admin@test.com',
@@ -70,7 +70,7 @@ class UserSerializerTest(TestCase):
         self.assertTrue(serializer.data['is_superuser'])
 
     def test_user_serializer_read_only_fields(self):
-        """Test that read-only fields cannot be updated"""
+        """Test that read-only fields cannot be updated. This keeps regressions visible early in the release cycle."""
         serializer = UserSerializer(self.user, data={
             'is_staff': True,
             'is_superuser': True
@@ -84,7 +84,7 @@ class UserSerializerTest(TestCase):
         self.assertIn('is_superuser', UserSerializer.Meta.read_only_fields)
 
     def test_user_serializer_multiple_users(self):
-        """Test serializing multiple users"""
+        """Test serializing multiple users. This keeps regressions visible early in the release cycle."""
         user2 = User.objects.create_user(
             username='user2',
             email='user2@test.com',
@@ -100,10 +100,10 @@ class UserSerializerTest(TestCase):
 
 
 class RegisterSerializerTest(TestCase):
-    """Test cases for RegisterSerializer"""
+    """Test cases for RegisterSerializer. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.valid_data = {
             'username': 'newuser',
             'email': 'newuser@test.com',
@@ -115,13 +115,13 @@ class RegisterSerializerTest(TestCase):
         }
 
     def test_register_serializer_valid_data(self):
-        """Test RegisterSerializer with valid data"""
+        """Test RegisterSerializer with valid data. This keeps regressions visible early in the release cycle."""
         serializer = RegisterSerializer(data=self.valid_data)
         
         self.assertTrue(serializer.is_valid())
 
     def test_register_serializer_create_user(self):
-        """Test that RegisterSerializer creates user correctly"""
+        """Test that RegisterSerializer creates user correctly. This keeps regressions visible early in the release cycle."""
         serializer = RegisterSerializer(data=self.valid_data)
         
         self.assertTrue(serializer.is_valid())
@@ -134,7 +134,7 @@ class RegisterSerializerTest(TestCase):
         self.assertEqual(user.role, User.Role.STUDENT)  # Default role
 
     def test_register_serializer_password_hashing(self):
-        """Test that password is properly hashed"""
+        """Test that password is properly hashed. This keeps regressions visible early in the release cycle."""
         serializer = RegisterSerializer(data=self.valid_data)
         
         self.assertTrue(serializer.is_valid())
@@ -145,7 +145,7 @@ class RegisterSerializerTest(TestCase):
         self.assertTrue(user.password.startswith('pbkdf2_sha256'))
 
     def test_register_serializer_password_write_only(self):
-        """Test that password is write-only"""
+        """Test that password is write-only. This keeps regressions visible early in the release cycle."""
         serializer = RegisterSerializer(data=self.valid_data)
         
         self.assertTrue(serializer.is_valid())
@@ -158,7 +158,7 @@ class RegisterSerializerTest(TestCase):
         self.assertNotIn('password', output_serializer.data)
 
     def test_register_serializer_short_password(self):
-        """Test that short password is rejected"""
+        """Test that short password is rejected. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['password'] = 'short'
         
@@ -168,7 +168,7 @@ class RegisterSerializerTest(TestCase):
         self.assertIn('password', serializer.errors)
 
     def test_register_serializer_missing_required_fields(self):
-        """Test that missing required fields are rejected"""
+        """Test that missing required fields are rejected. This keeps regressions visible early in the release cycle."""
         # k_number is not required as it has blank=True in the model
         required_fields = ['username', 'email', 'password']
         
@@ -181,7 +181,7 @@ class RegisterSerializerTest(TestCase):
             self.assertIn(field, serializer.errors)
 
     def test_register_serializer_duplicate_username(self):
-        """Test that duplicate username is rejected"""
+        """Test that duplicate username is rejected. This keeps regressions visible early in the release cycle."""
         # Create first user
         User.objects.create_user(
             username='newuser',
@@ -198,9 +198,10 @@ class RegisterSerializerTest(TestCase):
 
 
 class TicketSerializerTest(TestCase):
-    """Test cases for TicketSerializer"""
+    """Test cases for TicketSerializer. This keeps regressions visible early in the release cycle."""
 
     def _create_ticket_users(self):
+        """Support the admin serializers tests by create ticket users so assertions remain focused on outcomes."""
         self.ticket_user = User.objects.create_user(
             username='ticketuser', email='ticketuser@test.com', password='testpass123',
             k_number='12345678', first_name='John', last_name='Doe', role=User.Role.STUDENT
@@ -211,7 +212,7 @@ class TicketSerializerTest(TestCase):
         )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self._create_ticket_users()
         self.ticket = Ticket.objects.create(
             user=self.ticket_user,
@@ -224,7 +225,7 @@ class TicketSerializerTest(TestCase):
         )
 
     def test_ticket_serializer_fields(self):
-        """Test that TicketSerializer includes all fields"""
+        """Test that TicketSerializer includes all fields. This keeps regressions visible early in the release cycle."""
         serializer = TicketSerializer(self.ticket)
         
         # Should include all model fields plus user and assigned_to_details
@@ -234,7 +235,7 @@ class TicketSerializerTest(TestCase):
         self.assertIn('assigned_to_details', serializer.data)
 
     def test_ticket_serializer_assigned_to_details(self):
-        """Test that assigned_to_details is nested UserSerializer"""
+        """Test that assigned_to_details is nested UserSerializer. This keeps regressions visible early in the release cycle."""
         serializer = TicketSerializer(self.ticket)
         
         self.assertIsNotNone(serializer.data['assigned_to_details'])
@@ -242,7 +243,7 @@ class TicketSerializerTest(TestCase):
         self.assertEqual(serializer.data['assigned_to_details']['first_name'], 'Staff')
 
     def test_ticket_serializer_unassigned(self):
-        """Test TicketSerializer with unassigned ticket"""
+        """Test TicketSerializer with unassigned ticket. This keeps regressions visible early in the release cycle."""
         user = User.objects.create_user(
             username='user2',
             email='user2@test.com',
@@ -265,15 +266,16 @@ class TicketSerializerTest(TestCase):
         self.assertIsNone(serializer.data['assigned_to_details'])
 
     def test_ticket_serializer_read_only_fields(self):
-        """Test that created_at and updated_at are read-only"""
+        """Test that created_at and updated_at are read-only. This keeps regressions visible early in the release cycle."""
         self.assertIn('created_at', TicketSerializer.Meta.read_only_fields)
         self.assertIn('updated_at', TicketSerializer.Meta.read_only_fields)
 
 
 class TicketListSerializerTest(TestCase):
-    """Test cases for TicketListSerializer"""
+    """Test cases for TicketListSerializer. This keeps regressions visible early in the release cycle."""
 
     def _create_ticket_users(self):
+        """Support the admin serializers tests by create ticket users so assertions remain focused on outcomes."""
         self.ticket_user = User.objects.create_user(
             username='ticketuser', email='ticketuser@test.com', password='testpass123',
             k_number='12345678', first_name='John', last_name='Doe', role=User.Role.STUDENT
@@ -284,7 +286,7 @@ class TicketListSerializerTest(TestCase):
         )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self._create_ticket_users()
         self.ticket = Ticket.objects.create(
             user=self.ticket_user,
@@ -295,7 +297,7 @@ class TicketListSerializerTest(TestCase):
         )
 
     def test_ticket_list_serializer_fields(self):
-        """Test that TicketListSerializer includes correct fields"""
+        """Test that TicketListSerializer includes correct fields. This keeps regressions visible early in the release cycle."""
         serializer = TicketListSerializer(self.ticket)
         
         expected_fields = [
@@ -307,13 +309,13 @@ class TicketListSerializerTest(TestCase):
         self.assertEqual(set(serializer.data.keys()), set(expected_fields))
 
     def test_ticket_list_serializer_assigned_to_name(self):
-        """Test assigned_to_name method field"""
+        """Test assigned_to_name method field. This keeps regressions visible early in the release cycle."""
         serializer = TicketListSerializer(self.ticket)
         
         self.assertEqual(serializer.data['assigned_to_name'], 'Staff Member')
 
     def test_ticket_list_serializer_closed_by_role_when_closed(self):
-        """Test closed_by_role is set when ticket is closed by a user"""
+        """Test closed_by_role is set when ticket is closed by a user. This keeps regressions visible early in the release cycle."""
         self.ticket.status = Ticket.Status.CLOSED
         self.ticket.closed_by = self.staff
         self.ticket.save()
@@ -322,12 +324,12 @@ class TicketListSerializerTest(TestCase):
         self.assertEqual(serializer.data['closed_by_role'], 'staff')
 
     def test_ticket_list_serializer_closed_by_role_when_open(self):
-        """Test closed_by_role is None when ticket is not closed"""
+        """Test closed_by_role is None when ticket is not closed. This keeps regressions visible early in the release cycle."""
         serializer = TicketListSerializer(self.ticket)
         self.assertIsNone(serializer.data['closed_by_role'])
 
     def test_ticket_list_serializer_unassigned(self):
-        """Test assigned_to_name with unassigned ticket"""
+        """Test assigned_to_name with unassigned ticket. This keeps regressions visible early in the release cycle."""
         user = User.objects.create_user(
             username='user2',
             email='user2@test.com',
@@ -349,7 +351,7 @@ class TicketListSerializerTest(TestCase):
         self.assertIsNone(serializer.data['assigned_to_name'])
 
     def test_ticket_list_serializer_multiple_tickets(self):
-        """Test serializing multiple tickets"""
+        """Test serializing multiple tickets. This keeps regressions visible early in the release cycle."""
         user2 = User.objects.create_user(
             username='user2',
             email='user2@test.com',
@@ -373,10 +375,10 @@ class TicketListSerializerTest(TestCase):
 
 
 class TicketUpdateSerializerTest(TestCase):
-    """Test cases for TicketUpdateSerializer"""
+    """Test cases for TicketUpdateSerializer. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.staff = User.objects.create_user(
             username='staff',
             email='staff@test.com',
@@ -386,13 +388,13 @@ class TicketUpdateSerializerTest(TestCase):
         )
 
     def test_ticket_update_serializer_fields(self):
-        """Test that TicketUpdateSerializer includes only updatable fields"""
+        """Test that TicketUpdateSerializer includes only updatable fields. This keeps regressions visible early in the release cycle."""
         expected_fields = ['status', 'priority', 'assigned_to', 'admin_notes']
         
         self.assertEqual(set(TicketUpdateSerializer.Meta.fields), set(expected_fields))
 
     def test_ticket_update_serializer_valid_data(self):
-        """Test TicketUpdateSerializer with valid data"""
+        """Test TicketUpdateSerializer with valid data. This keeps regressions visible early in the release cycle."""
         data = {
             'status': 'in_progress',
             'priority': 'high',
@@ -406,9 +408,10 @@ class TicketUpdateSerializerTest(TestCase):
 
 
 class DashboardStatsSerializerTest(TestCase):
-    """Test cases for DashboardStatsSerializer"""
+    """Test cases for DashboardStatsSerializer. This keeps regressions visible early in the release cycle."""
 
     def _create_ticket_users(self):
+        """Support the admin serializers tests by create ticket users so assertions remain focused on outcomes."""
         self.user1 = User.objects.create_user(
             username='user1', email='user1@test.com', password='testpass123',
             k_number='12345678', first_name='John', last_name='Doe', role=User.Role.STUDENT
@@ -419,6 +422,7 @@ class DashboardStatsSerializerTest(TestCase):
         )
 
     def _create_tickets(self):
+        """Support the admin serializers tests by create tickets so assertions remain focused on outcomes."""
         self.ticket1 = Ticket.objects.create(
             user=self.user1, department='Informatics',
             type_of_issue='Software Installation Issues',
@@ -430,12 +434,12 @@ class DashboardStatsSerializerTest(TestCase):
         )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self._create_ticket_users()
         self._create_tickets()
 
     def test_dashboard_stats_serializer_fields(self):
-        """Test that DashboardStatsSerializer includes all stat fields"""
+        """Test that DashboardStatsSerializer includes all stat fields. This keeps regressions visible early in the release cycle."""
         data = {
             'total_tickets': 10,
             'pending_tickets': 3,
@@ -460,7 +464,7 @@ class DashboardStatsSerializerTest(TestCase):
         self.assertEqual(set(serializer.data.keys()), set(expected_fields))
 
     def test_dashboard_stats_serializer_with_recent_tickets(self):
-        """Test DashboardStatsSerializer with recent tickets"""
+        """Test DashboardStatsSerializer with recent tickets. This keeps regressions visible early in the release cycle."""
         tickets = Ticket.objects.all()
         
         data = {
@@ -482,7 +486,7 @@ class DashboardStatsSerializerTest(TestCase):
         self.assertIn('id', serializer.data['recent_tickets'][0])
 
     def test_dashboard_stats_serializer_integer_fields(self):
-        """Test that all count fields are integers"""
+        """Test that all count fields are integers. This keeps regressions visible early in the release cycle."""
         data = {
             'total_tickets': 10,
             'pending_tickets': 3,

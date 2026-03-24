@@ -11,9 +11,10 @@ from ..models.user import User
 
 
 class AdminExportStatisticsCSVTest(TestCase):
-    """Test cases for admin statistics CSV export endpoint"""
+    """Test cases for admin statistics CSV export endpoint. This keeps regressions visible early in the release cycle."""
 
     def _create_base_users(self):
+        """Support the admin exports tests by create base users so assertions remain focused on outcomes."""
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True
@@ -24,6 +25,7 @@ class AdminExportStatisticsCSVTest(TestCase):
         )
 
     def _create_department_tickets(self, now):
+        """Support the admin exports tests by create department tickets so assertions remain focused on outcomes."""
         for i in range(5):
             Ticket.objects.create(
                 user=self.student, department='Informatics', type_of_issue='Software Issue',
@@ -44,7 +46,7 @@ class AdminExportStatisticsCSVTest(TestCase):
             )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.url = '/api/admin/export/statistics-csv/'
         now = timezone.now()
@@ -52,18 +54,18 @@ class AdminExportStatisticsCSVTest(TestCase):
         self._create_department_tickets(now)
 
     def test_export_statistics_unauthenticated(self):
-        """Test that unauthenticated users cannot export statistics"""
+        """Test that unauthenticated users cannot export statistics. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_export_statistics_non_admin(self):
-        """Test that non-admin users cannot export statistics"""
+        """Test that non-admin users cannot export statistics. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_export_statistics_success(self):
-        """Test successful statistics CSV export"""
+        """Test successful statistics CSV export. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -73,7 +75,7 @@ class AdminExportStatisticsCSVTest(TestCase):
         self.assertIn('ticket_statistics', response['Content-Disposition'])
 
     def test_export_statistics_csv_headers(self):
-        """Test that CSV export includes correct headers"""
+        """Test that CSV export includes correct headers. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -100,7 +102,7 @@ class AdminExportStatisticsCSVTest(TestCase):
         self.assertEqual(headers, expected_headers)
 
     def test_export_statistics_csv_data(self):
-        """Test that CSV export includes correct data"""
+        """Test that CSV export includes correct data. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -122,7 +124,7 @@ class AdminExportStatisticsCSVTest(TestCase):
             self.assertEqual(len(row), 12)  # 12 columns as per headers
 
     def test_export_statistics_custom_days(self):
-        """Test statistics export with custom days parameter"""
+        """Test statistics export with custom days parameter. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'days': 7})
         
@@ -130,7 +132,7 @@ class AdminExportStatisticsCSVTest(TestCase):
         self.assertEqual(response['Content-Type'], 'text/csv')
 
     def test_export_statistics_date_range(self):
-        """Test statistics export with custom date range"""
+        """Test statistics export with custom date range. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         end_date = timezone.now()
@@ -149,7 +151,7 @@ class AdminExportStatisticsCSVTest(TestCase):
         self.assertIn(str(end_date.date()), filename)
 
     def test_export_statistics_invalid_days(self):
-        """Test statistics export with invalid days parameter"""
+        """Test statistics export with invalid days parameter. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {'days': -5})
@@ -159,7 +161,7 @@ class AdminExportStatisticsCSVTest(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_export_statistics_invalid_date_format(self):
-        """Test statistics export with invalid date format"""
+        """Test statistics export with invalid date format. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {
@@ -170,7 +172,7 @@ class AdminExportStatisticsCSVTest(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_export_statistics_department_names(self):
-        """Test that exported CSV contains correct department names"""
+        """Test that exported CSV contains correct department names. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -187,9 +189,10 @@ class AdminExportStatisticsCSVTest(TestCase):
 
 
 class AdminExportTicketsCSVTest(TestCase):
-    """Test cases for admin tickets CSV export endpoint"""
+    """Test cases for admin tickets CSV export endpoint. This keeps regressions visible early in the release cycle."""
 
     def _create_users(self):
+        """Support the admin exports tests by create users so assertions remain focused on outcomes."""
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True
@@ -208,6 +211,7 @@ class AdminExportTicketsCSVTest(TestCase):
         )
 
     def _create_tickets(self):
+        """Support the admin exports tests by create tickets so assertions remain focused on outcomes."""
         self.ticket1 = Ticket.objects.create(
             user=self.student1, department='Informatics', type_of_issue='Software Issue',
             additional_details='Test ticket 1', status=Ticket.Status.PENDING, priority=Ticket.Priority.MEDIUM
@@ -223,6 +227,7 @@ class AdminExportTicketsCSVTest(TestCase):
         )
 
     def _create_old_ticket(self):
+        """Support the admin exports tests by create old ticket so assertions remain focused on outcomes."""
         old_ticket = Ticket.objects.create(
             department='Law', type_of_issue='General Inquiry', additional_details='Old ticket',
             status='pending', priority='low', user=self.student1
@@ -231,25 +236,25 @@ class AdminExportTicketsCSVTest(TestCase):
         old_ticket.save()
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.url = '/api/admin/export/tickets-csv/'
         self._create_users()
         self._create_tickets()
 
     def test_export_tickets_unauthenticated(self):
-        """Test that unauthenticated users cannot export tickets"""
+        """Test that unauthenticated users cannot export tickets. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_export_tickets_non_admin(self):
-        """Test that non-admin users cannot export tickets"""
+        """Test that non-admin users cannot export tickets. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student1)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_export_tickets_success(self):
-        """Test successful tickets CSV export"""
+        """Test successful tickets CSV export. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -259,7 +264,7 @@ class AdminExportTicketsCSVTest(TestCase):
         self.assertIn('tickets', response['Content-Disposition'])
 
     def test_export_tickets_csv_headers(self):
-        """Test that CSV export includes correct headers"""
+        """Test that CSV export includes correct headers. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -278,7 +283,7 @@ class AdminExportTicketsCSVTest(TestCase):
         self.assertEqual(headers, expected_headers)
 
     def test_export_tickets_csv_data(self):
-        """Test that CSV export includes all tickets"""
+        """Test that CSV export includes all tickets. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -300,7 +305,7 @@ class AdminExportTicketsCSVTest(TestCase):
             self.assertEqual(len(row), 13)
 
     def test_export_tickets_date_range_filter(self):
-        """Test tickets export with date range filter"""
+        """Test tickets export with date range filter. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         self._create_old_ticket()
         # Export only last 30 days (should not include old ticket)
@@ -317,7 +322,7 @@ class AdminExportTicketsCSVTest(TestCase):
         self.assertEqual(len(rows), 3)
 
     def test_export_tickets_custom_days(self):
-        """Test tickets export with custom days parameter"""
+        """Test tickets export with custom days parameter. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'days': '7'})
         
@@ -325,7 +330,7 @@ class AdminExportTicketsCSVTest(TestCase):
         self.assertIn('attachment', response['Content-Disposition'])
 
     def test_export_tickets_invalid_days(self):
-        """Test tickets export with invalid days parameter"""
+        """Test tickets export with invalid days parameter. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Test with negative days
@@ -337,7 +342,7 @@ class AdminExportTicketsCSVTest(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_export_tickets_empty_result(self):
-        """Test tickets export with date range that returns no results"""
+        """Test tickets export with date range that returns no results. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Request tickets from 100 days ago to 60 days ago

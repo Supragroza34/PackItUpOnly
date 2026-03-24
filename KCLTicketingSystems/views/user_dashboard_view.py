@@ -37,8 +37,12 @@ def user_dashboard(request):
     for t in tickets:
         replies_data = ReplySerializer(t.replies.all(), many=True).data
         closed_by_role = None
-        if t.status == "closed" and t.closed_by_id:
-            closed_by_role = (t.closed_by.role or "student").lower() if hasattr(t.closed_by, "role") else "student"
+        if t.status == "closed" and t.closed_by:
+            closed_by_role = getattr(t.closed_by, "role", None)
+            if closed_by_role is None:
+                closed_by_role = "student"
+            else:
+                closed_by_role = closed_by_role.lower()
         tickets_data.append({
             "id": t.id,
             "type_of_issue": t.type_of_issue,

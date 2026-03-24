@@ -8,8 +8,10 @@ User = get_user_model()
 
 class UserDashboardViewTests(TestCase):
 
+    """Group user dashboard view checks so the user workflow is guarded against regressions."""
     def setUp(self):
         # Create users with unique emails
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.user = User.objects.create_user(
             username='testuser',
             email='testuser@example.com',
@@ -65,11 +67,13 @@ class UserDashboardViewTests(TestCase):
 
     def test_dashboard_requires_authentication(self):
         # Unauthenticated request should be blocked
+        """Guard dashboard requires authentication in the user dashboard view flow so regressions surface early."""
         response = self.client.get('/api/dashboard/')
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
 
     def test_authenticated_user_dashboard_returns_correct_data(self):
         # Authenticate the client
+        """Guard authenticated user dashboard returns correct data in the user dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.user)
         response = self.client.get('/api/dashboard/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -94,6 +98,7 @@ class UserDashboardViewTests(TestCase):
         self.assertIn('Reply 2', reply_bodies)
 
     def test_user_cannot_see_others_tickets(self):
+        """Guard user cannot see others tickets in the user dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.user)
         response = self.client.get('/api/dashboard/')
         data = response.json()
@@ -102,6 +107,7 @@ class UserDashboardViewTests(TestCase):
 
     def test_closed_ticket_has_closed_by_role(self):
         # Set closed_by for ticket2
+        """Guard closed ticket has closed by role in the user dashboard view flow so regressions surface early."""
         self.ticket2.closed_by = self.user
         self.ticket2.save()
 
@@ -114,6 +120,7 @@ class UserDashboardViewTests(TestCase):
         self.assertEqual(ticket2_data["closed_by_role"], "student")
 
     def test_ticket_with_no_replies(self):
+        """Guard ticket with no replies in the user dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.user)
         response = self.client.get('/api/dashboard/')
         data = response.json()

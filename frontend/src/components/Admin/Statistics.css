@@ -7,14 +7,21 @@
     padding: 40px 20px;
 }
 
-/* Main content */
+/* Main content — white card (set by higher-specificity rule in other admin CSS files) */
 .dashboard-content {
     max-width: 1200px;
     margin: 0 auto;
 }
 
+/* Statistics keeps its own card-per-section feel inside the dashboard-content white card */
+
 .page-header {
     margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .page-header h2 {
@@ -22,6 +29,28 @@
     font-size: 1.15rem;
     font-weight: 700;
     margin: 0;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.view-toggle-btn {
+    border: 1px solid #c5cae9;
+    background: #fff;
+    color: #3949ab;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.view-toggle-btn.active {
+    background: #1a237e;
+    color: #fff;
+    border-color: #1a237e;
 }
 
 /* Filters Section */
@@ -154,6 +183,73 @@
     margin-bottom: 30px;
     padding: 25px;
 }
+
+.graphs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+    margin-bottom: 30px;
+}
+
+.graph-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+}
+
+.graph-card h3 {
+    margin: 0 0 16px;
+    color: #1a237e;
+    font-size: 1.05rem;
+}
+
+.bar-graph {
+    display: grid;
+    gap: 12px;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 42px;
+    gap: 10px;
+    align-items: center;
+}
+
+.bar-label {
+    color: #455a64;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.bar-track {
+    background: #eceff1;
+    border-radius: 999px;
+    height: 12px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.bar-value {
+    text-align: right;
+    color: #37474f;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.bar-pending { background: #fb8c00; }
+.bar-in-progress { background: #1e88e5; }
+.bar-resolved { background: #43a047; }
+.bar-closed { background: #8e24aa; }
+.bar-department { background: #3949ab; }
+.bar-priority-low { background: #66bb6a; }
+.bar-priority-medium { background: #ffa726; }
+.bar-priority-high { background: #ef5350; }
+.bar-priority-urgent { background: #c62828; }
 
 .statistics-table-container h3 {
     margin: 0 0 20px 0;
@@ -299,5 +395,10 @@
     .statistics-table th,
     .statistics-table td {
         padding: 10px 8px;
+    }
+
+    .bar-row {
+        grid-template-columns: 95px 1fr 34px;
+        gap: 8px;
     }
 }

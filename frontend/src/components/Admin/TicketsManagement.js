@@ -306,7 +306,7 @@ const TicketsManagement = () => {
                                                 {ticket.status !== 'closed' && (
                                                     <button
                                                         onClick={() => handleCloseTicket(ticket.id)}
-                                                        className="btn-action btn-close"
+                                                        className="btn-action btn-close-ticket"
                                                     >
                                                         Close
                                                     </button>
@@ -350,6 +350,14 @@ const TicketsManagement = () => {
             {showModal && editedTicket && (
                 <div className="modal-overlay" onClick={closeModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            type="button"
+                            className="btn-action btn-delete modal-close-btn"
+                            onClick={closeModal}
+                            aria-label="Close modal"
+                        >
+                            Close
+                        </button>
                         <h2>Edit Ticket #{editedTicket.id}</h2>
                         
                         <form onSubmit={handleUpdateTicket}>

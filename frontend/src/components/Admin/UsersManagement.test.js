@@ -10,6 +10,9 @@ jest.mock('../../services/adminApi', () => ({
   __esModule: true,
   default: {
     getUsers: jest.fn(),
+    getUserDetail: jest.fn(),
+    updateUser: jest.fn(),
+    deleteUser: jest.fn(),
   },
 }));
 
@@ -49,12 +52,16 @@ describe('UsersManagement', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    window.confirm = jest.fn(() => true);
     // Mock successful API response by default
     adminApi.getUsers.mockResolvedValue({
       users: [],
       total: 0,
       total_pages: 1,
     });
+    adminApi.getUserDetail.mockResolvedValue(mockUsers[0]);
+    adminApi.updateUser.mockResolvedValue(mockUsers[0]);
+    adminApi.deleteUser.mockResolvedValue({});
   });
 
   test('renders loading state initially', () => {
@@ -200,5 +207,63 @@ describe('UsersManagement', () => {
 
     const viewButtons = screen.getAllByText('View/Edit');
     expect(viewButtons.length).toBeGreaterThan(0);
+  });
+
+  test('filters by role and refreshes users query', async () => {
+    renderWithProviders(<UsersManagement />, {
+      admin: {
+        users: mockUsers,
+        usersTotalPages: 1,
+        usersLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(adminApi.getUsers).toHaveBeenCalled();
+    });
+
+    const callsBefore = adminApi.getUsers.mock.calls.length;
+
+    fireEvent.change(screen.getByDisplayValue('All Roles'), {
+      target: { value: 'staff' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
+
+    await waitFor(() => {
+      expect(adminApi.getUsers.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+  });
+
+  test('disables deleting your own account and allows deleting another user', async () => {
+    adminApi.getUsers.mockResolvedValue({
+      users: mockUsers,
+      total: 2,
+      total_pages: 1,
+    });
+
+    renderWithProviders(<UsersManagement />, {
+      auth: {
+        user: { id: 1, username: 'admin', first_name: 'Admin', role: 'admin' },
+      },
+      admin: {
+        users: mockUsers,
+        usersTotalPages: 1,
+        usersLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('student1')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
+    expect(deleteButtons[0]).toBeDisabled();
+    expect(deleteButtons[1]).not.toBeDisabled();
+
+    fireEvent.click(deleteButtons[1]);
+
+    await waitFor(() => {
+      expect(adminApi.deleteUser).toHaveBeenCalledWith(2);
+    });
   });
 });

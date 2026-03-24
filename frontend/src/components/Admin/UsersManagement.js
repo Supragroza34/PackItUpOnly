@@ -216,6 +216,14 @@ const UsersManagement = () => {
             {showModal && editedUser && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            type="button"
+                            className="btn-action btn-delete modal-close-btn"
+                            onClick={() => setShowModal(false)}
+                            aria-label="Close modal"
+                        >
+                            Close
+                        </button>
                         <h2>Edit User #{editedUser.id}</h2>
                         
                         <form onSubmit={handleUpdateUser}>

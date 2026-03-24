@@ -8,6 +8,7 @@ from django.db.models import Q
 
 from ..models import Ticket
 from ..serializers import UserSerializer
+from ..utils import auto_close_stale_awaiting_response
 
 
 def _check_staff_access(user):
@@ -66,7 +67,9 @@ def _apply_ticket_filter(tickets, filter_options):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def staff_dashboard(request):
-    """List tickets assigned to the current staff user. Supports filtering by status. This keeps the HTTP boundary centralized for the ticketing workflow."""
+    """List tickets assigned to the current staff user. Supports filtering by status."""
+    auto_close_stale_awaiting_response()
+
     access_error = _check_staff_access(request.user)
     if access_error:
         return access_error

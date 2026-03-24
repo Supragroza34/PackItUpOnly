@@ -1,123 +1,231 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom';
-import { configureStore } from '@reduxjs/toolkit';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { renderWithProviders } from '../../utils/testUtils';
 import Statistics from './Statistics';
 import adminApi from '../../services/adminApi';
-import authReducer from '../../store/slices/authSlice';
-import adminReducer from '../../store/slices/adminSlice';
 
 jest.mock('../../services/adminApi', () => ({
   __esModule: true,
   default: {
     getStatistics: jest.fn(),
-    getCurrentUser: jest.fn().mockResolvedValue({ id: 1, username: 'admin' }),
   },
 }));
 
-
-function renderStatistics(preloadedAdmin = {}) {
-  const store = configureStore({
-    reducer: { auth: authReducer, admin: adminReducer },
-    preloadedState: {
-      auth: {
-        user: { id: 1, username: 'admin', first_name: 'Admin' },
-        loading: false,
-        error: null,
-        isAuthenticated: true,
-      },
-      admin: {
-        stats: null,
-        statsLoading: false,
-        statsError: null,
-        tickets: [],
-        ticketsTotal: 0,
-        ticketsTotalPages: 0,
-        ticketsLoading: false,
-        ticketsError: null,
-        users: [],
-        usersTotal: 0,
-        usersTotalPages: 0,
-        usersLoading: false,
-        usersError: null,
-        staffList: [],
-        staffListLoading: false,
-        staffListError: null,
-        statistics: null,
-        statisticsLoading: false,
-        statisticsError: null,
-        ...preloadedAdmin,
-      },
-    },
-  });
-  return render(
-    <Provider store={store}>
-      <BrowserRouter>
-        <Statistics />
-      </BrowserRouter>
-    </Provider>
-  );
-}
-
-const mockStats = {
-  total_tickets: 100,
-  department_statistics: [
-    {
-      department: 'IT',
-      total_tickets: 50,
-      status_breakdown: { pending: 10, in_progress: 15, resolved: 20, closed: 5 },
-      priority_breakdown: { low: 20, medium: 15, high: 10, urgent: 5 },
-      avg_resolution_time_hours: 24.5,
-      avg_response_time_hours: 2.3,
-    },
-    {
-      department: 'HR',
-      total_tickets: 50,
-      status_breakdown: { pending: 5, in_progress: 10, resolved: 25, closed: 10 },
-      priority_breakdown: { low: 30, medium: 10, high: 5, urgent: 5 },
-      avg_resolution_time_hours: 48,
-      avg_response_time_hours: 1.5,
-    },
-  ],
-};
+jest.mock('./AdminTopbar', () => {
+  return function MockAdminTopbar() {
+    return <div data-testid="admin-topbar">AdminTopbar</div>;
+  };
+});
 
 describe('Statistics', () => {
+  const mockStats = {
+    total_tickets: 12,
+    department_statistics: [
+      {
+        department: 'Computer Science',
+        total_tickets: 7,
+        status_breakdown: {
+          pending: 2,
+          in_progress: 1,
+          resolved: 2,
+          closed: 2,
+        },
+        priority_breakdown: {
+          low: 1,
+          medium: 2,
+          high: 3,
+          urgent: 1,
+        },
+        avg_resolution_time_hours: 30,
+        avg_response_time_hours: 2.5,
+      },
+      {
+        department: 'IT',
+        total_tickets: 5,
+        status_breakdown: {
+          pending: 1,
+          in_progress: 1,
+          resolved: 1,
+          closed: 2,
+        },
+        priority_breakdown: {
+          low: 2,
+          medium: 1,
+          high: 1,
+          urgent: 1,
+        },
+        avg_resolution_time_hours: null,
+        avg_response_time_hours: 26,
+      },
+    ],
+  };
+
+  const originalFetch = global.fetch;
+  const originalAlert = window.alert;
+  const originalCreateObjectURL = window.URL.createObjectURL;
+  const originalAnchorClick = HTMLAnchorElement.prototype.click;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.setItem('access', 'token');
     adminApi.getStatistics.mockResolvedValue(mockStats);
+    global.fetch = jest.fn();
+    window.alert = jest.fn();
+    window.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+    HTMLAnchorElement.prototype.click = jest.fn();
+    localStorage.setItem('access', 'token-123');
   });
 
-  afterEach(() => {
-    localStorage.clear();
+  afterAll(() => {
+    global.fetch = originalFetch;
+    window.alert = originalAlert;
+    window.URL.createObjectURL = originalCreateObjectURL;
+    HTMLAnchorElement.prototype.click = originalAnchorClick;
   });
 
-  test('renders loading state initially', () => {
-    renderStatistics({ statisticsLoading: true });
-    expect(screen.getByText(/Loading statistics/i)).toBeInTheDocument();
+  test('shows loading state', () => {
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: true,
+      },
+    });
+
+    expect(screen.getByText('Loading statistics...')).toBeInTheDocument();
   });
 
-  test('renders error state when fetch fails', async () => {
-    adminApi.getStatistics.mockRejectedValue(new Error('Failed to load'));
-    renderStatistics();
+  test('shows error state', async () => {
+    adminApi.getStatistics.mockRejectedValueOnce(new Error('Boom'));
+
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
     await waitFor(() => {
-      expect(screen.getByText(/Error: Failed to load/)).toBeInTheDocument();
+      expect(screen.getByText('Error: Boom')).toBeInTheDocument();
     });
   });
 
-  test('renders statistics when fetch succeeds', async () => {
-    renderStatistics();
-    const totalTickets = await screen.findAllByText('Total Tickets', {}, { timeout: 3000 });
-    expect(totalTickets.length).toBeGreaterThan(0);
-    expect(screen.getByText('100')).toBeInTheDocument();
-    expect(screen.getAllByText('IT').length).toBeGreaterThan(0);
+  test('renders no-data state when statistics are missing', async () => {
+    adminApi.getStatistics.mockResolvedValueOnce({});
+
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('No statistics available for the selected date range.')
+      ).toBeInTheDocument();
+    });
   });
 
-  test('renders no data message when fetch returns no department_statistics', async () => {
-    adminApi.getStatistics.mockResolvedValueOnce({ total_tickets: 0 });
-    renderStatistics();
-    expect(await screen.findByText(/No statistics available/, {}, { timeout: 3000 })).toBeInTheDocument();
+  test('renders tables and formatted durations from statistics data', async () => {
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Total Tickets').length).toBeGreaterThan(0);
+    });
+
+    expect(screen.getByText('Ticket Statistics & Analytics')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByText('Department Breakdown')).toBeInTheDocument();
+    expect(screen.getByText('Priority Distribution by Department')).toBeInTheDocument();
+    expect(screen.getAllByText('Computer Science').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('IT').length).toBeGreaterThan(0);
+
+    // formatHours branches: >=24, <24, and null
+    expect(screen.getByText('1d 6h')).toBeInTheDocument();
+    expect(screen.getByText('2.5 hours')).toBeInTheDocument();
+    expect(screen.getByText('N/A')).toBeInTheDocument();
+    expect(screen.getByText('1d 2h')).toBeInTheDocument();
+  });
+
+  test('quick filter buttons trigger statistics refetch', async () => {
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(adminApi.getStatistics).toHaveBeenCalled();
+    });
+
+    const callsBefore = adminApi.getStatistics.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: /last 7 days/i }));
+
+    await waitFor(() => {
+      expect(adminApi.getStatistics.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+  });
+
+  test('toggles to graph view and renders status, department and priority charts', async () => {
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Ticket Statistics & Analytics')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /graph view/i }));
+
+    expect(screen.getByText('Status Distribution')).toBeInTheDocument();
+    expect(screen.getByText('Tickets by Department')).toBeInTheDocument();
+    expect(screen.getByText('Priority Distribution')).toBeInTheDocument();
+    expect(screen.getAllByText('Urgent').length).toBeGreaterThan(0);
+  });
+
+  test('export statistics success downloads file', async () => {
+    const blob = new Blob(['csv-data'], { type: 'text/csv' });
+    global.fetch.mockResolvedValue({
+      ok: true,
+      blob: jest.fn().mockResolvedValue(blob),
+    });
+
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /export statistics csv/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+      expect(window.URL.createObjectURL).toHaveBeenCalled();
+    });
+  });
+
+  test('export all tickets failure shows alert', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error',
+    });
+
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /export all tickets csv/i }));
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith(
+        expect.stringMatching(/Failed to export tickets:/)
+      );
+    });
   });
 });

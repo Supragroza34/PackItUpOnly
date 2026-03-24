@@ -23,7 +23,7 @@ from ..serializers import (
 )
 from ..permissions import IsAdmin
 
-from ..utils import notify_on_ticket_update
+from ..utils import notify_on_ticket_update, auto_close_stale_awaiting_response
 
 
 # ================= DASHBOARD STATISTICS =================
@@ -103,6 +103,8 @@ def _compute_dept_response_times(tickets):
 def dashboard_stats(request):
     """Get dashboard statistics. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
+        auto_close_stale_awaiting_response()
+
         # Ticket statistics
         total_tickets = Ticket.objects.count()
         pending = Ticket.objects.filter(status=Ticket.Status.PENDING).count()
@@ -210,6 +212,8 @@ def _paginate_tickets(tickets, request):
 def admin_tickets_list(request):
     """Get all tickets with filtering, searching, and pagination. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
+        auto_close_stale_awaiting_response()
+
         tickets = Ticket.objects.select_related('user', 'closed_by').all().order_by('-created_at')
         search = request.GET.get('search', '')
         if search:

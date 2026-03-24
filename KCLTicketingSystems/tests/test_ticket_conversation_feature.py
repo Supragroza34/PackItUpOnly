@@ -1,6 +1,8 @@
 from types import SimpleNamespace
+from datetime import timedelta
 
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -104,6 +106,86 @@ class TicketConversationApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Reply.objects.filter(ticket=self.ticket, user=self.staff, body="Here is help").exists())
+
+    def test_owner_can_post_nested_reply(self):
+        parent = Reply.objects.create(user=self.staff, ticket=self.ticket, body="Can you confirm?")
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.post(
+            self._conversation_url(),
+            {"body": "Yes, still broken", "parent": parent.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        created = Reply.objects.get(ticket=self.ticket, body="Yes, still broken")
+        self.assertEqual(created.parent_id, parent.id)
+
+        get_response = self.client.get(self._conversation_url())
+        self.assertEqual(get_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_response.data[0]["id"], parent.id)
+        self.assertEqual(get_response.data[0]["children"][0]["parent"], parent.id)
+
+    def test_rejects_parent_from_another_ticket(self):
+        other_ticket = Ticket.objects.create(
+            user=self.owner,
+            department="IT",
+            type_of_issue="Network",
+            additional_details="VPN issue",
+            status=Ticket.Status.IN_PROGRESS,
+            assigned_to=self.staff,
+        )
+        other_parent = Reply.objects.create(
+            user=self.staff,
+            ticket=other_ticket,
+            body="Reply on other ticket",
+        )
+
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(
+            self._conversation_url(),
+            {"body": "invalid parent", "parent": other_parent.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("same ticket", str(response.data["parent"][0]).lower())
+
+    def test_staff_reply_sets_ticket_to_awaiting_response(self):
+        self.ticket.status = Ticket.Status.IN_PROGRESS
+        self.ticket.save(update_fields=["status"])
+        self.client.force_authenticate(user=self.staff)
+
+        response = self.client.post(self._conversation_url(), {"body": "Please confirm this fix"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.AWAITING_RESPONSE)
+
+    def test_student_reply_sets_ticket_back_to_in_progress(self):
+        self.ticket.status = Ticket.Status.AWAITING_RESPONSE
+        self.ticket.save(update_fields=["status"])
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.post(self._conversation_url(), {"body": "I still need help"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.IN_PROGRESS)
+
+    def test_dashboard_fetch_auto_closes_stale_awaiting_response_ticket(self):
+        self.ticket.status = Ticket.Status.AWAITING_RESPONSE
+        self.ticket.save(update_fields=["status"])
+
+        old_reply = Reply.objects.create(user=self.staff, ticket=self.ticket, body="Waiting for your response")
+        Reply.objects.filter(id=old_reply.id).update(created_at=timezone.now() - timedelta(days=4))
+
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.get("/api/dashboard/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.CLOSED)
 
     def test_admin_can_access_ticket_conversation(self):
         """Guard admin can access ticket conversation in the ticket conversation feature flow so regressions surface early."""

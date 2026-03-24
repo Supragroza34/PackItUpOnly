@@ -8,7 +8,12 @@ from django.shortcuts import get_object_or_404
 from ..models import Ticket, Reply
 from ..serializers import ReplyCreateSerializer, ReplySerializer
 
-from ..utils import notify_user_on_reply, notify_staff_on_student_reply
+from ..utils import (
+    notify_user_on_reply,
+    notify_staff_on_student_reply,
+    update_ticket_status_after_reply,
+    auto_close_stale_awaiting_response,
+)
 
 
 def _staff_can_access_ticket(user, ticket):
@@ -37,6 +42,8 @@ def reply_details(request, ticket_id):
     POST: Create a reply for the ticket (staff only, must have access to ticket).
     This keeps the HTTP boundary centralized for the ticketing workflow.
     """
+    auto_close_stale_awaiting_response()
+
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
     if request.user.role not in ("staff", "Staff", "admin") and not getattr(request.user, "is_superuser", False):
@@ -60,7 +67,9 @@ def reply_details(request, ticket_id):
     data = {**request.data, "ticket": ticket.id}
     serializer = ReplyCreateSerializer(data=data)
     if serializer.is_valid():
-        serializer.save(user=request.user)
+        reply = serializer.save(user=request.user)
+        update_ticket_status_after_reply(reply.ticket, reply.user)
+        notify_user_on_reply(reply.ticket, reply.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -72,13 +81,18 @@ class ReplyCreateView(generics.CreateAPIView):
 
     def create(self, request):
         """Handle create requests as the HTTP boundary for the ticketing workflow. This keeps the HTTP boundary centralized for the ticketing workflow."""
+        auto_close_stale_awaiting_response()
+
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             reply = serializer.save(user=self.request.user)
             ticket = reply.ticket
-          
-            # Notify student (ticket owner) if staff replied
-            notify_user_on_reply(ticket, reply.user)
+
+            update_ticket_status_after_reply(ticket, reply.user)
+            if _is_staff_or_admin(reply.user):
+                notify_user_on_reply(ticket, reply.user)
+            else:
+                notify_staff_on_student_reply(ticket, reply.user)
 
             return Response(serializer.data)
         else:
@@ -95,6 +109,8 @@ def ticket_replies(request, ticket_id):
     POST: create reply if caller can access the ticket and ticket is not closed.
     This keeps the HTTP boundary centralized for the ticketing workflow.
     """
+    auto_close_stale_awaiting_response()
+
     ticket = get_object_or_404(Ticket, pk=ticket_id)
 
     if not _can_access_ticket_conversation(request.user, ticket):
@@ -116,9 +132,12 @@ def ticket_replies(request, ticket_id):
     if serializer.is_valid():
         reply = serializer.save(user=request.user)
         ticket = reply.ticket
+        update_ticket_status_after_reply(ticket, reply.user)
 
-        # Notify staff if student replied
-        notify_staff_on_student_reply(ticket, reply.user)
+        if _is_staff_or_admin(reply.user):
+            notify_user_on_reply(ticket, reply.user)
+        else:
+            notify_staff_on_student_reply(ticket, reply.user)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

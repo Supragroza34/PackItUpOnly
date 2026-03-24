@@ -5,21 +5,21 @@ from ..models import Ticket
 
 
 class TicketFormViewTest(TestCase):
-    """Test cases for the Ticket Form HTML view"""
+    """Test cases for the Ticket Form HTML view. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client"""
+        """Set up test client. This keeps regressions visible early in the release cycle."""
         self.client = Client()
         self.url = reverse('ticket_form')
 
     def test_ticket_form_page_loads(self):
-        """Test that the ticket form page loads successfully"""
+        """Test that the ticket form page loads successfully. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'ticket_form.html')
 
     def test_ticket_form_contains_all_fields(self):
-        """Test that the form contains all required fields"""
+        """Test that the form contains all required fields. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -34,7 +34,7 @@ class TicketFormViewTest(TestCase):
         self.assertIn('Submit Ticket', content)
 
     def test_ticket_form_contains_departments(self):
-        """Test that the form contains all three departments"""
+        """Test that the form contains all three departments. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -43,7 +43,7 @@ class TicketFormViewTest(TestCase):
         self.assertIn('Medicine', content)
 
     def test_ticket_form_contains_bootstrap(self):
-        """Test that Bootstrap 5.3 is included"""
+        """Test that Bootstrap 5.3 is included. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -53,28 +53,28 @@ class TicketFormViewTest(TestCase):
         self.assertIn('bootstrap.bundle.min.js', content)
 
     def test_ticket_form_contains_csrf_token(self):
-        """Test that CSRF token is present in the form"""
+        """Test that CSRF token is present in the form. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('csrfmiddlewaretoken', content)
 
     def test_ticket_form_k_number_maxlength(self):
-        """Test that K number input has maxlength attribute"""
+        """Test that K number input has maxlength attribute. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('maxlength="8"', content)
 
     def test_ticket_form_email_readonly(self):
-        """Test that email field is readonly"""
+        """Test that email field is readonly. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('readonly', content)
 
     def test_ticket_form_contains_issue_types_script(self):
-        """Test that JavaScript contains issue types for all departments"""
+        """Test that JavaScript contains issue types for all departments. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -92,15 +92,15 @@ class TicketFormViewTest(TestCase):
 
 
 class TicketFormKNumberValidationTest(TestCase):
-    """Test cases for K Number validation in the form"""
+    """Test cases for K Number validation in the form. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client"""
+        """Set up test client. This keeps regressions visible early in the release cycle."""
         self.client = Client()
         self.url = reverse('ticket_form')
 
     def test_k_number_field_present(self):
-        """Test that K number field is present in the form"""
+        """Test that K number field is present in the form. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -108,14 +108,14 @@ class TicketFormKNumberValidationTest(TestCase):
         self.assertIn('name="k_number"', content)
 
     def test_k_number_placeholder(self):
-        """Test that K number field has appropriate placeholder"""
+        """Test that K number field has appropriate placeholder. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('Enter your K-Number', content)
 
     def test_email_auto_generation_script(self):
-        """Test that JavaScript includes email auto-generation logic"""
+        """Test that JavaScript includes email auto-generation logic. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -125,15 +125,15 @@ class TicketFormKNumberValidationTest(TestCase):
 
 
 class TicketFormEmailValidationTest(TestCase):
-    """Test cases for Email validation in the form"""
+    """Test cases for Email validation in the form. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client"""
+        """Set up test client. This keeps regressions visible early in the release cycle."""
         self.client = Client()
         self.url = reverse('ticket_form')
 
     def test_email_field_present(self):
-        """Test that email field is present in the form"""
+        """Test that email field is present in the form. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -141,14 +141,14 @@ class TicketFormEmailValidationTest(TestCase):
         self.assertIn('name="k_email"', content)
 
     def test_email_field_readonly(self):
-        """Test that email field is readonly"""
+        """Test that email field is readonly. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('readonly', content)
 
     def test_email_placeholder(self):
-        """Test that email field has appropriate placeholder"""
+        """Test that email field has appropriate placeholder. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -156,15 +156,15 @@ class TicketFormEmailValidationTest(TestCase):
 
 
 class TicketFormDepartmentTest(TestCase):
-    """Test cases for Department selection in the form"""
+    """Test cases for Department selection in the form. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client"""
+        """Set up test client. This keeps regressions visible early in the release cycle."""
         self.client = Client()
         self.url = reverse('ticket_form')
 
     def test_department_select_present(self):
-        """Test that department select is present"""
+        """Test that department select is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -172,7 +172,7 @@ class TicketFormDepartmentTest(TestCase):
         self.assertIn('name="department"', content)
 
     def test_all_departments_present(self):
-        """Test that all three departments are in the select"""
+        """Test that all three departments are in the select. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -181,14 +181,14 @@ class TicketFormDepartmentTest(TestCase):
         self.assertIn('<option value="Medicine">Medicine</option>', content)
 
     def test_type_of_issue_container_hidden_initially(self):
-        """Test that type of issue container is hidden initially"""
+        """Test that type of issue container is hidden initially. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('display: none', content)
 
     def test_type_of_issue_select_present(self):
-        """Test that type of issue select is present"""
+        """Test that type of issue select is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -197,16 +197,16 @@ class TicketFormDepartmentTest(TestCase):
 
 
 class TicketFormIntegrationTest(TestCase):
-    """Integration tests for the ticket form"""
+    """Integration tests for the ticket form. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client"""
+        """Set up test client. This keeps regressions visible early in the release cycle."""
         self.client = Client()
         self.form_url = reverse('ticket_form')
         self.submit_url = reverse('submit_ticket')
 
     def test_form_submission_flow(self):
-        """Test the complete form submission flow"""
+        """Test the complete form submission flow. This keeps regressions visible early in the release cycle."""
         # First, get the form page
         response = self.client.get(self.form_url)
         self.assertEqual(response.status_code, 200)
@@ -233,7 +233,7 @@ class TicketFormIntegrationTest(TestCase):
         self.assertEqual(response.json()['message'], 'Ticket submitted successfully')
 
     def test_form_validation_errors_displayed(self):
-        """Test that validation errors are properly handled"""
+        """Test that validation errors are properly handled. This keeps regressions visible early in the release cycle."""
         # Submit invalid data
         invalid_data = {
             'name': '',
@@ -256,15 +256,15 @@ class TicketFormIntegrationTest(TestCase):
 
 
 class TicketFormJavaScriptTest(TestCase):
-    """Test cases for JavaScript functionality in the form"""
+    """Test cases for JavaScript functionality in the form. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client"""
+        """Set up test client. This keeps regressions visible early in the release cycle."""
         self.client = Client()
         self.url = reverse('ticket_form')
 
     def test_javascript_k_number_filtering(self):
-        """Test that JavaScript includes K number filtering logic"""
+        """Test that JavaScript includes K number filtering logic. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -273,7 +273,7 @@ class TicketFormJavaScriptTest(TestCase):
         self.assertIn('.slice(0, 8)', content)
 
     def test_javascript_email_generation(self):
-        """Test that JavaScript includes email generation logic"""
+        """Test that JavaScript includes email generation logic. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -281,7 +281,7 @@ class TicketFormJavaScriptTest(TestCase):
         self.assertIn('K${value}@kcl.ac.uk', content)
 
     def test_javascript_department_change_handler(self):
-        """Test that JavaScript includes department change handler"""
+        """Test that JavaScript includes department change handler. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -289,7 +289,7 @@ class TicketFormJavaScriptTest(TestCase):
         self.assertIn('departmentSelect.addEventListener', content)
 
     def test_javascript_form_submission_handler(self):
-        """Test that JavaScript includes form submission handler"""
+        """Test that JavaScript includes form submission handler. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -298,7 +298,7 @@ class TicketFormJavaScriptTest(TestCase):
         self.assertIn('submit', content)
 
     def test_javascript_error_handling(self):
-        """Test that JavaScript includes error handling"""
+        """Test that JavaScript includes error handling. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -308,7 +308,7 @@ class TicketFormJavaScriptTest(TestCase):
         self.assertIn('showErrorMessage', content)
 
     def test_javascript_success_message(self):
-        """Test that JavaScript includes success message handling"""
+        """Test that JavaScript includes success message handling. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -317,7 +317,7 @@ class TicketFormJavaScriptTest(TestCase):
         self.assertIn('success-message', content)
 
     def test_javascript_client_side_validation(self):
-        """Test that JavaScript includes client-side validation"""
+        """Test that JavaScript includes client-side validation. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -327,29 +327,29 @@ class TicketFormJavaScriptTest(TestCase):
 
 
 class TicketFormBootstrapTest(TestCase):
-    """Test cases for Bootstrap 5.3 integration"""
+    """Test cases for Bootstrap 5.3 integration. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client"""
+        """Set up test client. This keeps regressions visible early in the release cycle."""
         self.client = Client()
         self.url = reverse('ticket_form')
 
     def test_bootstrap_css_included(self):
-        """Test that Bootstrap CSS is included"""
+        """Test that Bootstrap CSS is included. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('bootstrap@5.3.0/dist/css/bootstrap.min.css', content)
 
     def test_bootstrap_js_included(self):
-        """Test that Bootstrap JS is included"""
+        """Test that Bootstrap JS is included. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js', content)
 
     def test_bootstrap_classes_used(self):
-        """Test that Bootstrap classes are used in the form"""
+        """Test that Bootstrap classes are used in the form. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -362,7 +362,7 @@ class TicketFormBootstrapTest(TestCase):
         self.assertIn('form-label', content)
 
     def test_bootstrap_validation_classes(self):
-        """Test that Bootstrap validation classes are used"""
+        """Test that Bootstrap validation classes are used. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         

@@ -7,10 +7,10 @@ from datetime import datetime
 
 
 class TicketModelTest(TestCase):
-    """Test cases for the Ticket model"""
+    """Test cases for the Ticket model. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         # Create a user first
         self.user = User.objects.create_user(
             username='testuser',
@@ -30,7 +30,7 @@ class TicketModelTest(TestCase):
         }
 
     def test_ticket_creation(self):
-        """Test creating a ticket"""
+        """Test creating a ticket. This keeps regressions visible early in the release cycle."""
         ticket = Ticket.objects.create(**self.ticket_data)
         self.assertEqual(ticket.user, self.user)
         self.assertEqual(ticket.department, 'Informatics')
@@ -40,13 +40,13 @@ class TicketModelTest(TestCase):
         self.assertIsNotNone(ticket.updated_at)
 
     def test_ticket_str_method(self):
-        """Test the __str__ method of Ticket model"""
+        """Test the __str__ method of Ticket model. This keeps regressions visible early in the release cycle."""
         ticket = Ticket.objects.create(**self.ticket_data)
         expected_str = f"{self.user} - {ticket.type_of_issue}"
         self.assertEqual(str(ticket), expected_str)
 
     def test_ticket_user_relationship(self):
-        """Test that ticket has proper relationship with user"""
+        """Test that ticket has proper relationship with user. This keeps regressions visible early in the release cycle."""
         ticket = Ticket.objects.create(**self.ticket_data)
         self.assertEqual(ticket.user.username, 'testuser')
         self.assertEqual(ticket.user.k_number, '12345678')
@@ -57,7 +57,7 @@ class TicketModelTest(TestCase):
         self.assertEqual(user_tickets.first(), ticket)
 
     def test_ticket_auto_timestamps(self):
-        """Test that created_at and updated_at are automatically set"""
+        """Test that created_at and updated_at are automatically set. This keeps regressions visible early in the release cycle."""
         ticket = Ticket.objects.create(**self.ticket_data)
         self.assertIsNotNone(ticket.created_at)
         self.assertIsNotNone(ticket.updated_at)
@@ -66,12 +66,12 @@ class TicketModelTest(TestCase):
 
 
 class TicketAPITest(TestCase):
-    """Test cases for the Ticket API endpoint"""
+    """Test cases for the Ticket API endpoint. This keeps regressions visible early in the release cycle."""
     # These tests are for the old ticket creation API that uses name, surname, k_number, k_email
     # They will be updated once ticket_view.py is refactored to use the User model
 
     def setUp(self):
-        """Set up test client and valid data"""
+        """Set up test client and valid data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.url = '/api/submit-ticket/'
         self.valid_data = {
@@ -85,7 +85,7 @@ class TicketAPITest(TestCase):
         }
 
     def test_submit_ticket_success(self):
-        """Test successful ticket submission"""
+        """Test successful ticket submission. This keeps regressions visible early in the release cycle."""
         response = self.client.post(self.url, self.valid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('message', response.data)
@@ -100,7 +100,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(ticket.surname, 'Doe')
 
     def test_submit_ticket_missing_name(self):
-        """Test submission with missing name"""
+        """Test submission with missing name. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data.pop('name')
         response = self.client.post(self.url, data, format='json')
@@ -109,7 +109,7 @@ class TicketAPITest(TestCase):
         self.assertIn('name', response.data['errors'])
 
     def test_submit_ticket_missing_surname(self):
-        """Test submission with missing surname"""
+        """Test submission with missing surname. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data.pop('surname')
         response = self.client.post(self.url, data, format='json')
@@ -118,7 +118,7 @@ class TicketAPITest(TestCase):
         self.assertIn('surname', response.data['errors'])
 
     def test_submit_ticket_missing_k_number(self):
-        """Test submission with missing K-Number"""
+        """Test submission with missing K-Number. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data.pop('k_number')
         response = self.client.post(self.url, data, format='json')
@@ -127,7 +127,7 @@ class TicketAPITest(TestCase):
         self.assertIn('k_number', response.data['errors'])
 
     def test_submit_ticket_missing_email(self):
-        """Test submission with missing email"""
+        """Test submission with missing email. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data.pop('k_email')
         response = self.client.post(self.url, data, format='json')
@@ -136,7 +136,7 @@ class TicketAPITest(TestCase):
         self.assertIn('k_email', response.data['errors'])
 
     def test_submit_ticket_missing_department(self):
-        """Test submission with missing department"""
+        """Test submission with missing department. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data.pop('department')
         response = self.client.post(self.url, data, format='json')
@@ -145,7 +145,7 @@ class TicketAPITest(TestCase):
         self.assertIn('department', response.data['errors'])
 
     def test_submit_ticket_missing_type_of_issue(self):
-        """Test submission with missing type of issue"""
+        """Test submission with missing type of issue. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data.pop('type_of_issue')
         response = self.client.post(self.url, data, format='json')
@@ -154,7 +154,7 @@ class TicketAPITest(TestCase):
         self.assertIn('type_of_issue', response.data['errors'])
 
     def test_submit_ticket_missing_additional_details(self):
-        """Test submission with missing additional details"""
+        """Test submission with missing additional details. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data.pop('additional_details')
         response = self.client.post(self.url, data, format='json')
@@ -163,7 +163,7 @@ class TicketAPITest(TestCase):
         self.assertIn('additional_details', response.data['errors'])
 
     def test_submit_ticket_name_with_numbers(self):
-        """Test submission with name containing numbers"""
+        """Test submission with name containing numbers. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['name'] = 'John123'
         response = self.client.post(self.url, data, format='json')
@@ -173,7 +173,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.data['errors']['name'], 'Name cannot contain numbers')
 
     def test_submit_ticket_surname_with_numbers(self):
-        """Test submission with surname containing numbers"""
+        """Test submission with surname containing numbers. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['surname'] = 'Doe456'
         response = self.client.post(self.url, data, format='json')
@@ -183,7 +183,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.data['errors']['surname'], 'Surname cannot contain numbers')
 
     def test_submit_ticket_k_number_with_letters(self):
-        """Test submission with K-Number containing letters"""
+        """Test submission with K-Number containing letters. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '12345abc'
         data['k_email'] = '12345abc@kcl.ac.uk'
@@ -194,7 +194,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.data['errors']['k_number'], 'K-Number cannot contain letters')
 
     def test_submit_ticket_invalid_email_format(self):
-        """Test submission with invalid email format"""
+        """Test submission with invalid email format. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_email'] = 'wrong@email.com'
         response = self.client.post(self.url, data, format='json')
@@ -204,7 +204,7 @@ class TicketAPITest(TestCase):
         self.assertIn('KNumber@kcl.ac.uk', response.data['errors']['k_email'])
 
     def test_submit_ticket_email_not_matching_k_number(self):
-        """Test submission with email not matching K-Number"""
+        """Test submission with email not matching K-Number. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '12345678'
         data['k_email'] = 'K87654321@kcl.ac.uk'
@@ -214,7 +214,7 @@ class TicketAPITest(TestCase):
         self.assertIn('k_email', response.data['errors'])
     
     def test_submit_ticket_email_missing_k_prefix(self):
-        """Test submission with email missing K prefix"""
+        """Test submission with email missing K prefix. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '12345678'
         data['k_email'] = '12345678@kcl.ac.uk'  # Missing K prefix
@@ -225,7 +225,7 @@ class TicketAPITest(TestCase):
         self.assertIn('KNumber@kcl.ac.uk', response.data['errors']['k_email'])
 
     def test_submit_ticket_invalid_department(self):
-        """Test submission with invalid department"""
+        """Test submission with invalid department. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['department'] = 'InvalidDepartment'
         response = self.client.post(self.url, data, format='json')
@@ -235,7 +235,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.data['errors']['department'], 'Invalid department selected')
 
     def test_submit_ticket_valid_departments(self):
-        """Test submission with all valid departments"""
+        """Test submission with all valid departments. This keeps regressions visible early in the release cycle."""
         valid_departments = ['Informatics', 'Engineering', 'Medicine']
         for dept in valid_departments:
             data = self.valid_data.copy()
@@ -247,7 +247,7 @@ class TicketAPITest(TestCase):
                            f"Failed for department: {dept}")
 
     def test_submit_ticket_duplicate_k_number(self):
-        """Test submission with duplicate K-Number (multiple tickets per user allowed)"""
+        """Test submission with duplicate K-Number (multiple tickets per user allowed). This keeps regressions visible early in the release cycle."""
         # Create first ticket
         response1 = self.client.post(self.url, self.valid_data, format='json')
         self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
@@ -266,7 +266,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(tickets.count(), 2)
 
     def test_submit_ticket_empty_string_fields(self):
-        """Test submission with empty string fields"""
+        """Test submission with empty string fields. This keeps regressions visible early in the release cycle."""
         data = {
             'name': '',
             'surname': '',
@@ -289,7 +289,7 @@ class TicketAPITest(TestCase):
         self.assertIn('additional_details', response.data['errors'])
 
     def test_submit_ticket_whitespace_stripping(self):
-        """Test that whitespace is stripped from input fields"""
+        """Test that whitespace is stripped from input fields. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['name'] = '  John  '
         data['surname'] = '  Doe  '
@@ -305,7 +305,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(ticket.k_email, 'K12345678@kcl.ac.uk')
 
     def test_submit_ticket_multiple_validation_errors(self):
-        """Test submission with multiple validation errors"""
+        """Test submission with multiple validation errors. This keeps regressions visible early in the release cycle."""
         data = {
             'name': 'John123',  # Contains numbers
             'surname': 'Doe456',  # Contains numbers
@@ -322,7 +322,7 @@ class TicketAPITest(TestCase):
         self.assertGreater(len(response.data['errors']), 1)
 
     def test_submit_ticket_special_characters_in_name(self):
-        """Test submission with special characters in name (should be allowed)"""
+        """Test submission with special characters in name (should be allowed). This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['name'] = "O'Brien"
         data['k_number'] = '87654321'
@@ -331,7 +331,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
     
     def test_submit_ticket_exception_handling(self):
-        """Test exception handling in submit_ticket view"""
+        """Test exception handling in submit_ticket view. This keeps regressions visible early in the release cycle."""
         # Mock Ticket.objects.create to raise an exception
         from unittest.mock import patch
         with patch('KCLTicketingSystems.views.ticket_view.Ticket.objects.create') as mock_create:
@@ -342,7 +342,7 @@ class TicketAPITest(TestCase):
             self.assertIn('general', response.data['errors'])
     
     def test_submit_ticket_k_number_with_special_characters(self):
-        """Test submission with K-Number containing special characters"""
+        """Test submission with K-Number containing special characters. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '123-456@78'
         data['k_email'] = 'K123-456@78@kcl.ac.uk'
@@ -352,7 +352,7 @@ class TicketAPITest(TestCase):
         self.assertIn('errors', response.data)
     
     def test_submit_ticket_empty_k_number_after_stripping(self):
-        """Test submission with K-Number that becomes empty after stripping"""
+        """Test submission with K-Number that becomes empty after stripping. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '   '
         data['k_email'] = 'K@kcl.ac.uk'
@@ -362,7 +362,7 @@ class TicketAPITest(TestCase):
         self.assertIn('k_number', response.data['errors'])
 
     def test_submit_ticket_k_number_too_long(self):
-        """Test submission with K-Number longer than 8 digits"""
+        """Test submission with K-Number longer than 8 digits. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '123456789'
         data['k_email'] = 'K123456789@kcl.ac.uk'
@@ -373,7 +373,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.data['errors']['k_number'], 'K-Number cannot be more than 8 digits')
     
     def test_submit_ticket_k_number_exactly_8_digits(self):
-        """Test submission with K-Number exactly 8 digits (should pass)"""
+        """Test submission with K-Number exactly 8 digits (should pass). This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '12345678'
         data['k_email'] = 'K12345678@kcl.ac.uk'
@@ -381,7 +381,7 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
     
     def test_submit_ticket_k_number_less_than_8_digits(self):
-        """Test submission with K-Number less than 8 digits (should pass)"""
+        """Test submission with K-Number less than 8 digits (should pass). This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '12345'
         data['k_email'] = 'K12345@kcl.ac.uk'
@@ -389,12 +389,12 @@ class TicketAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_submit_ticket_get_method_not_allowed(self):
-        """Test that GET method is not allowed"""
+        """Test that GET method is not allowed. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
     
     def test_submit_ticket_k_number_edge_cases(self):
-        """Test K-Number edge cases"""
+        """Test K-Number edge cases. This keeps regressions visible early in the release cycle."""
         # Test with single digit
         data = self.valid_data.copy()
         data['k_number'] = '1'

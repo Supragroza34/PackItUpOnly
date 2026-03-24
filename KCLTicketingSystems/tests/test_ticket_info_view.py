@@ -7,7 +7,9 @@ from KCLTicketingSystems.models import Ticket, User
 
 
 class TicketInfoAndStaffListViewTests(APITestCase):
+    """Group ticket info view checks so the user workflow is guarded against regressions."""
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.student = User.objects.create_user(
             username="student_info",
             email="student_info@test.com",
@@ -89,15 +91,18 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         )
 
     def test_ticket_info_requires_authentication(self):
+        """Guard ticket info requires authentication in the ticket info view flow so regressions surface early."""
         response = self.client.get(f"/api/staff/dashboard/{self.ticket.id}/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_ticket_info_rejects_student_role(self):
+        """Guard ticket info rejects student role in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(f"/api/staff/dashboard/{self.ticket.id}/")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_ticket_info_returns_closed_by_role_for_staff_view(self):
+        """Guard ticket info returns closed by role for staff view in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(f"/api/staff/dashboard/{self.ticket.id}/")
 
@@ -108,10 +113,12 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertEqual(response.data["user"]["first_name"], "Stu")
 
     def test_department_staff_list_requires_authentication(self):
+        """Guard department staff list requires authentication in the ticket info view flow so regressions surface early."""
         response = self.client.get("/api/staff/list/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_department_staff_list_returns_same_department_staff_and_admin(self):
+        """Guard department staff list returns same department staff and admin in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
         response = self.client.get("/api/staff/list/")
 
@@ -125,6 +132,7 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertNotIn(self.student.id, staff_ids)
 
     def test_department_staff_list_includes_open_ticket_count_only(self):
+        """Guard department staff list includes open ticket count only in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
         response = self.client.get("/api/staff/list/")
 
@@ -139,6 +147,7 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertEqual(by_id[self.admin.id]["ticket_count"], 0)
 
     def test_department_staff_list_returns_500_on_unexpected_error(self):
+        """Guard department staff list returns 500 on unexpected error in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
         with patch("KCLTicketingSystems.views.ticket_info_view.User.objects.filter", side_effect=Exception("boom")):
             response = self.client.get("/api/staff/list/")
@@ -147,6 +156,7 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertEqual(response.data["error"], "boom")
 
     def test_unauthenticated_user_cannot_reassign_ticket(self):
+        """Guard unauthenticated user cannot reassign ticket in the ticket info view flow so regressions surface early."""
         response = self.client.patch(f"/api/staff/dashboard/{self.ticket.id}/reassign/", {
             "assigned_to": self.other_staff.id
         }, format='json')        
@@ -154,6 +164,7 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_student_cannot_reassign_ticket(self):
+        """Guard student cannot reassign ticket in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
 
         response = self.client.patch(f"/api/staff/dashboard/{self.ticket.id}/reassign/", {
@@ -163,6 +174,7 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_ticket_reassigns_correctly(self):
+        """Guard ticket reassigns correctly in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
 
         response = self.client.patch(f"/api/staff/dashboard/{self.ticket.id}/reassign/", {
@@ -174,6 +186,7 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertEqual(self.ticket.assigned_to, self.other_staff)
 
     def test_invalid_patch_returns_400_error(self):
+        """Guard invalid patch returns 400 error in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
 
         response = self.client.patch(f"/api/staff/dashboard/{self.ticket.id}/reassign/", {
@@ -183,6 +196,7 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_non_existent_ticket_cannot_be_reassigned(self):
+        """Guard non existent ticket cannot be reassigned in the ticket info view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
 
         response = self.client.patch(f"/api/staff/dashboard/9999999999999999/reassign/", {

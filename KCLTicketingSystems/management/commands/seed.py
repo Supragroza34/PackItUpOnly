@@ -36,6 +36,7 @@ class Command(BaseCommand):
         DEFAULT_PASSWORD (str): Default password assigned to all created users.
         help (str): Short description shown in ``manage.py help``.
         faker (Faker): Locale-specific Faker instance used for random data.
+    This keeps operational tasks repeatable and auditable.
     """
 
     TICKET_COUNT_PER_STUDENT = 5
@@ -45,7 +46,7 @@ class Command(BaseCommand):
     help = 'Seeds the database with sample data'
 
     def __init__(self, *args, **kwargs):
-        """Initialize the command with a locale-specific Faker instance."""
+        """Initialize the command with a locale-specific Faker instance. This keeps operational tasks repeatable and auditable."""
         super().__init__(*args, **kwargs)
         self.faker = Faker('en_GB')
 
@@ -55,6 +56,7 @@ class Command(BaseCommand):
 
         Runs the full seeding workflow and stores ``self.users`` for any
         post-processing or debugging (not required for operation).
+        This keeps operational tasks repeatable and auditable.
         """
         # Try to create superuser if it doesn't exist
         try:
@@ -84,6 +86,7 @@ class Command(BaseCommand):
 
     def get_random_department(self):
 
+        """Support get random department steps so the command remains safe to run across environments."""
         departments = [
             "Informatics",
             "Engineering",
@@ -102,6 +105,7 @@ class Command(BaseCommand):
     def create_student_tickets(self):
         """
         Create some tickets for all generated students.
+        This keeps operational tasks repeatable and auditable.
         """
         students = User.objects.filter(role="student")
         ticket_count = Ticket.objects.count()
@@ -118,20 +122,24 @@ class Command(BaseCommand):
 
         The process is idempotent in spirit: attempts that fail (e.g., due to
         uniqueness constraints on username/email) are ignored and generation continues.
+        This keeps operational tasks repeatable and auditable.
         """
         self.generate_user_fixtures()
         self.generate_random_students()
         self.generate_random_staff()
 
     def generate_n_tickets(self, number_of_tickets, student):
+        """Support generate n tickets steps so the command remains safe to run across environments."""
         for i in range(number_of_tickets):
             self.generate_one_ticket(student)
 
     def get_least_busy_staff(self, department):
+        """Support get least busy staff steps so the command remains safe to run across environments."""
         staff_member = staff_selection.get_staff_with_least_tickets_in_department(department)
         return staff_member
 
     def generate_one_ticket(self, student):
+        """Support generate one ticket steps so the command remains safe to run across environments."""
         department = self.get_random_department()
         issue = "Problem in the " + department + " department."
         staff_member_id = self.get_least_busy_staff(department)["id"]
@@ -147,7 +155,7 @@ class Command(BaseCommand):
         self.try_create_ticket(ticket_data)   
     
     def generate_user_fixtures(self):
-        """Attempt to create each predefined fixture user."""
+        """Attempt to create each predefined fixture user. This keeps operational tasks repeatable and auditable."""
         for data in user_fixtures:
             self.try_create_user(data)
         print("Fixture seeding complete.        ")    
@@ -157,6 +165,7 @@ class Command(BaseCommand):
         Generate random users until the database contains USER_COUNT users.
 
         Prints a simple progress indicator to stdout during generation.
+        This keeps operational tasks repeatable and auditable.
         """
         user_count = User.objects.count()
         while  user_count < self.STUDENT_COUNT:
@@ -170,6 +179,7 @@ class Command(BaseCommand):
         Generate random users until the database contains USER_COUNT users.
 
         Prints a simple progress indicator to stdout during generation.
+        This keeps operational tasks repeatable and auditable.
         """
         user_count = User.objects.count()-self.STUDENT_COUNT
         while  user_count < self.STAFF_COUNT:
@@ -183,6 +193,7 @@ class Command(BaseCommand):
         Generate a single random user and attempt to insert it.
 
         Uses Faker for first/last names, then derives a simple username/email.
+        This keeps operational tasks repeatable and auditable.
         """
         first_name = self.faker.first_name()
         last_name = self.faker.last_name()
@@ -195,6 +206,7 @@ class Command(BaseCommand):
 
     def generate_staff(self):
 
+        """Support generate staff steps so the command remains safe to run across environments."""
         first_name = self.faker.first_name()
         last_name = self.faker.last_name()
         staff_number = str(self.faker.random_number(digits=8, fix_len = True))
@@ -207,6 +219,7 @@ class Command(BaseCommand):
     def try_create_ticket(self, data):
         """
         Attempt to create a ticket
+        This keeps operational tasks repeatable and auditable.
         """
         try:
             self.create_ticket(data)
@@ -214,6 +227,7 @@ class Command(BaseCommand):
             print("did not create ticket")
 
     def create_ticket(self, data):
+        """Support create ticket steps so the command remains safe to run across environments."""
         ticket = Ticket.objects.create(
             user=data['user'],
             department=data['department'],
@@ -230,6 +244,7 @@ class Command(BaseCommand):
         Args:
             data (dict): Mapping with keys ``username``, ``email``,
                 ``first_name``, and ``last_name``.
+        This keeps operational tasks repeatable and auditable.
         """
         try:
             self.create_user(data)
@@ -243,6 +258,7 @@ class Command(BaseCommand):
         Args:
             data (dict): Mapping with keys ``username``, ``email``,
                 ``first_name``, and ``last_name``.
+        This keeps operational tasks repeatable and auditable.
         """
         user = User.objects.create(
             username=data['username'],
@@ -264,6 +280,7 @@ class Command(BaseCommand):
         Create default office hours blocks for all staff users.
         Existing office hours for each staff user are removed first to
         make the seeding idempotent.
+        This keeps operational tasks repeatable and auditable.
         """
         # single default template applied to all staff users (idempotent)
         default_template = [
@@ -298,6 +315,7 @@ def create_username(k_number):
 
     Returns:
         str: A username in the form ``@{firstname}{lastname}`` (lowercased).
+    This keeps operational tasks repeatable and auditable.
     """
     return '@' + k_number
 
@@ -310,6 +328,7 @@ def create_email(k_number):
 
     Returns:
         str: An email in the form ``k{k_number}@kcl.ac.uk``.
+    This keeps operational tasks repeatable and auditable.
     """
     return 'k' + k_number + '@kcl.ac.uk'
 
@@ -322,6 +341,7 @@ def create_staff_username(staff_number):
 
     Returns:
         str: A username in the form ``Staff{staff_number}``.
+    This keeps operational tasks repeatable and auditable.
     """
     return "Staff" + staff_number    
 
@@ -334,5 +354,6 @@ def create_staff_email(first_name, last_name):
 
     Returns:
         str: An email in the form ``Staff{staff_number}@kcl.ac.uk``.
+    This keeps operational tasks repeatable and auditable.
     """
     return first_name.lower() + "." + last_name.lower() + '@kcl.ac.uk'

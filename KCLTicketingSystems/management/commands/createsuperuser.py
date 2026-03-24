@@ -3,9 +3,11 @@ from django.core.management import CommandError
 
 
 class Command(createsuperuser.Command):
+    """Expose the createsuperuser command so operational tasks stay repeatable and auditable."""
     help = 'Create a superuser with admin role (no k_number required for admins)'
 
     def add_arguments(self, parser):
+        """Support add arguments steps so the command remains safe to run across environments."""
         super().add_arguments(parser)
         parser.add_argument(
             '--k_number',
@@ -15,7 +17,7 @@ class Command(createsuperuser.Command):
         )
 
     def _update_user_role(self, username):
-        """Update a specific user's role to admin."""
+        """Update a specific user's role to admin. This keeps operational tasks repeatable and auditable."""
         from KCLTicketingSystems.models.user import User
         try:
             user = User.objects.get(username=username)
@@ -29,7 +31,7 @@ class Command(createsuperuser.Command):
             pass
 
     def _update_all_superusers(self):
-        """Update all superusers without admin role."""
+        """Update all superusers without admin role. This keeps operational tasks repeatable and auditable."""
         from KCLTicketingSystems.models.user import User
         superusers = User.objects.filter(is_superuser=True).exclude(role=User.Role.ADMIN)
         if superusers.exists():
@@ -39,6 +41,7 @@ class Command(createsuperuser.Command):
             )
 
     def handle(self, *args, **options):
+        """Run the command's primary workflow so operational tasks stay repeatable and auditable."""
         super().handle(*args, **options)
         username = options.get('username') or options.get('database')
         from KCLTicketingSystems.models.user import User

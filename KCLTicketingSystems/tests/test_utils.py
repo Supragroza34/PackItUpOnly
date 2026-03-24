@@ -64,8 +64,6 @@ class NotificationUtilsTests(TestCase):
     def test_notify_admin_on_ticket_creates_notifications(self):
         """Guard notify admin on ticket creates notifications in the utils flow so regressions surface early."""
         notify_admin_on_ticket(self.ticket)
-        # Using .first() allows us to verify the side-effect without hardcoding 
-        # exact primary keys, making the test less brittle to schema changes.
         notif = Notification.objects.filter(user=self.admin).first()
         self.assertIsNotNone(notif)
         self.assertIn("submitted a new ticket", notif.message)
@@ -91,9 +89,7 @@ class NotificationUtilsTests(TestCase):
         # Student should be notified
         notif_student = Notification.objects.filter(user=self.student).first()
         self.assertIn("has been closed", notif_student.message)
-        # Updater should not be notified about their own action
-        # This is a critical check to ensure we don't spam staff members with 
-        # push notifications for actions they just triggered themselves.
+        
         notif_staff = Notification.objects.filter(user=self.staff).first()
         self.assertIsNone(notif_staff)
         # Admin should be notified

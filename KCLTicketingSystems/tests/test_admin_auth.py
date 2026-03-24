@@ -6,10 +6,10 @@ from ..models.user import User
 
 
 class JWTAuthenticationTest(TestCase):
-    """Test cases for JWT authentication"""
+    """Test cases for JWT authentication. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.token_url = '/api/auth/token/'
         self.refresh_url = '/api/auth/token/refresh/'
@@ -26,7 +26,7 @@ class JWTAuthenticationTest(TestCase):
         )
 
     def test_token_obtain_success(self):
-        """Test successful JWT token generation"""
+        """Test successful JWT token generation. This keeps regressions visible early in the release cycle."""
         data = {
             'username': 'testuser',
             'password': 'testpass123'
@@ -40,7 +40,7 @@ class JWTAuthenticationTest(TestCase):
         self.assertIsNotNone(response.data['refresh'])
 
     def test_token_obtain_invalid_credentials(self):
-        """Test token generation with invalid credentials"""
+        """Test token generation with invalid credentials. This keeps regressions visible early in the release cycle."""
         data = {
             'username': 'testuser',
             'password': 'wrongpassword'
@@ -50,7 +50,7 @@ class JWTAuthenticationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_token_obtain_missing_username(self):
-        """Test token generation with missing username"""
+        """Test token generation with missing username. This keeps regressions visible early in the release cycle."""
         data = {
             'password': 'testpass123'
         }
@@ -59,7 +59,7 @@ class JWTAuthenticationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_token_obtain_missing_password(self):
-        """Test token generation with missing password"""
+        """Test token generation with missing password. This keeps regressions visible early in the release cycle."""
         data = {
             'username': 'testuser'
         }
@@ -68,7 +68,7 @@ class JWTAuthenticationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_token_obtain_nonexistent_user(self):
-        """Test token generation for non-existent user"""
+        """Test token generation for non-existent user. This keeps regressions visible early in the release cycle."""
         data = {
             'username': 'nonexistent',
             'password': 'testpass123'
@@ -78,7 +78,7 @@ class JWTAuthenticationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_token_refresh_success(self):
-        """Test successful token refresh"""
+        """Test successful token refresh. This keeps regressions visible early in the release cycle."""
         # First get a token
         login_data = {
             'username': 'testuser',
@@ -98,7 +98,7 @@ class JWTAuthenticationTest(TestCase):
         self.assertIsNotNone(response.data['access'])
 
     def test_token_refresh_invalid_token(self):
-        """Test token refresh with invalid token"""
+        """Test token refresh with invalid token. This keeps regressions visible early in the release cycle."""
         refresh_data = {
             'refresh': 'invalid_token'
         }
@@ -107,17 +107,17 @@ class JWTAuthenticationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_token_refresh_missing_token(self):
-        """Test token refresh with missing token"""
+        """Test token refresh with missing token. This keeps regressions visible early in the release cycle."""
         response = self.client.post(self.refresh_url, {})
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class UserRegistrationTest(TestCase):
-    """Test cases for user registration"""
+    """Test cases for user registration. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.register_url = '/api/auth/register/'
         
@@ -132,7 +132,7 @@ class UserRegistrationTest(TestCase):
         }
 
     def test_registration_success(self):
-        """Test successful user registration"""
+        """Test successful user registration. This keeps regressions visible early in the release cycle."""
         response = self.client.post(self.register_url, self.valid_registration_data)
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -145,7 +145,7 @@ class UserRegistrationTest(TestCase):
         self.assertEqual(user.role, User.Role.STUDENT)  # Default role
 
     def test_registration_password_hashed(self):
-        """Test that password is properly hashed"""
+        """Test that password is properly hashed. This keeps regressions visible early in the release cycle."""
         response = self.client.post(self.register_url, self.valid_registration_data)
         
         user = User.objects.get(username='newuser')
@@ -153,7 +153,7 @@ class UserRegistrationTest(TestCase):
         self.assertTrue(user.check_password('newpass123'))  # But should verify correctly
 
     def test_registration_duplicate_username(self):
-        """Test registration with duplicate username"""
+        """Test registration with duplicate username. This keeps regressions visible early in the release cycle."""
         # Create first user
         self.client.post(self.register_url, self.valid_registration_data)
         
@@ -166,7 +166,7 @@ class UserRegistrationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_registration_duplicate_email(self):
-        """Test registration with duplicate email"""
+        """Test registration with duplicate email. This keeps regressions visible early in the release cycle."""
         # Create first user
         self.client.post(self.register_url, self.valid_registration_data)
         
@@ -179,7 +179,7 @@ class UserRegistrationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_registration_duplicate_k_number(self):
-        """Test registration with duplicate k_number"""
+        """Test registration with duplicate k_number. This keeps regressions visible early in the release cycle."""
         # Create first user
         self.client.post(self.register_url, self.valid_registration_data)
         
@@ -192,7 +192,7 @@ class UserRegistrationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def _test_missing_field(self, field_name):
-        """Test registration with a missing required field."""
+        """Test registration with a missing required field. This keeps regressions visible early in the release cycle."""
         data = self.valid_registration_data.copy()
         del data['username']
         response = self.client.post(self.register_url, data)
@@ -213,14 +213,14 @@ class UserRegistrationTest(TestCase):
         # k_number is optional (blank=True in model), so not tested here
 
     def test_registration_missing_required_fields(self):
-        """Test registration with missing required fields"""
+        """Test registration with missing required fields. This keeps regressions visible early in the release cycle."""
         self._test_missing_field('username')
         self._test_missing_field('email')
         self._test_missing_field('password')
         self._test_missing_field('k_number')
 
     def test_registration_short_password(self):
-        """Test registration with password shorter than 8 characters"""
+        """Test registration with password shorter than 8 characters. This keeps regressions visible early in the release cycle."""
         data = self.valid_registration_data.copy()
         data['password'] = 'short'
         
@@ -228,7 +228,7 @@ class UserRegistrationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_registration_invalid_email(self):
-        """Test registration with invalid email format"""
+        """Test registration with invalid email format. This keeps regressions visible early in the release cycle."""
         data = self.valid_registration_data.copy()
         data['email'] = 'invalid-email'
         
@@ -237,10 +237,10 @@ class UserRegistrationTest(TestCase):
 
 
 class UserMeViewTest(TestCase):
-    """Test cases for /users/me/ endpoint"""
+    """Test cases for /users/me/ endpoint. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.me_url = '/api/users/me/'
         
@@ -268,12 +268,12 @@ class UserMeViewTest(TestCase):
         )
 
     def test_me_view_unauthenticated(self):
-        """Test that unauthenticated users cannot access /users/me/"""
+        """Test that unauthenticated users cannot access /users/me/. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.me_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_me_view_authenticated_student(self):
-        """Test authenticated student user accessing /users/me/"""
+        """Test authenticated student user accessing /users/me/. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.me_url)
         
@@ -285,7 +285,7 @@ class UserMeViewTest(TestCase):
         self.assertFalse(response.data['is_superuser'])
 
     def test_me_view_authenticated_admin(self):
-        """Test authenticated admin user accessing /users/me/"""
+        """Test authenticated admin user accessing /users/me/. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.me_url)
         
@@ -297,7 +297,7 @@ class UserMeViewTest(TestCase):
         self.assertTrue(response.data['is_superuser'])
 
     def test_me_view_returns_correct_fields(self):
-        """Test that /users/me/ returns all expected fields"""
+        """Test that /users/me/ returns all expected fields. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.me_url)
         
@@ -310,7 +310,7 @@ class UserMeViewTest(TestCase):
             self.assertIn(field, response.data)
 
     def test_me_view_update_profile(self):
-        """Test updating own profile via /users/me/"""
+        """Test updating own profile via /users/me/. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         
         update_data = {
@@ -331,7 +331,7 @@ class UserMeViewTest(TestCase):
         self.assertEqual(self.student.first_name, 'Updated')
 
     def test_me_view_cannot_change_role(self):
-        """Test that users cannot change their own role via /users/me/"""
+        """Test that users cannot change their own role via /users/me/. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         
         # Try to change role to admin
@@ -342,7 +342,7 @@ class UserMeViewTest(TestCase):
         self.assertEqual(self.student.role, User.Role.STUDENT)  # Unchanged
 
     def test_me_view_with_jwt_token(self):
-        """Test /users/me/ with JWT token authentication"""
+        """Test /users/me/ with JWT token authentication. This keeps regressions visible early in the release cycle."""
         # Get JWT token
         token_response = self.client.post('/api/auth/token/', {
             'username': 'student',
@@ -359,10 +359,10 @@ class UserMeViewTest(TestCase):
 
 
 class IntegrationLoginFlowTest(TestCase):
-    """Integration test for complete login flow"""
+    """Integration test for complete login flow. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         
         # Create admin user
@@ -377,7 +377,7 @@ class IntegrationLoginFlowTest(TestCase):
         )
 
     def test_complete_admin_login_flow(self):
-        """Test complete flow: login → get token → access protected endpoint"""
+        """Test complete flow: login → get token → access protected endpoint. This keeps regressions visible early in the release cycle."""
         # Step 1: Login and get tokens
         login_response = self.client.post('/api/auth/token/', {
             'username': 'admin',
@@ -402,7 +402,7 @@ class IntegrationLoginFlowTest(TestCase):
         self.assertIn('total_users', dashboard_response.data)
 
     def test_complete_registration_login_flow(self):
-        """Test complete flow: register → login → access profile"""
+        """Test complete flow: register → login → access profile. This keeps regressions visible early in the release cycle."""
         # Step 1: Register new user
         register_response = self.client.post('/api/auth/register/', {
             'username': 'newuser',

@@ -8,9 +8,10 @@ from ..models.user import User
 
 
 class AdminErrorHandlingTest(TestCase):
-    """Test error handling in admin endpoints"""
+    """Test error handling in admin endpoints. This keeps regressions visible early in the release cycle."""
 
     def _create_users_and_ticket(self):
+        """Support the admin error handling tests by create users and ticket so assertions remain focused on outcomes."""
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True
@@ -25,12 +26,12 @@ class AdminErrorHandlingTest(TestCase):
         )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self._create_users_and_ticket()
 
     def test_ticket_update_invalid_status(self):
-        """Test updating ticket with invalid status"""
+        """Test updating ticket with invalid status. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/admin/tickets/{self.ticket.id}/update/'
         
@@ -40,7 +41,7 @@ class AdminErrorHandlingTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_ticket_update_invalid_priority(self):
-        """Test updating ticket with invalid priority"""
+        """Test updating ticket with invalid priority. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/admin/tickets/{self.ticket.id}/update/'
         
@@ -49,7 +50,7 @@ class AdminErrorHandlingTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_ticket_update_nonexistent_assigned_user(self):
-        """Test assigning ticket to nonexistent user"""
+        """Test assigning ticket to nonexistent user. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/admin/tickets/{self.ticket.id}/update/'
         
@@ -58,7 +59,7 @@ class AdminErrorHandlingTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_ticket_detail_invalid_id(self):
-        """Test getting ticket detail with invalid ID format"""
+        """Test getting ticket detail with invalid ID format. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = '/api/admin/tickets/invalid_id/'
 
@@ -68,7 +69,7 @@ class AdminErrorHandlingTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_ticket_update_with_empty_data(self):
-        """Test updating ticket with empty request data"""
+        """Test updating ticket with empty request data. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/admin/tickets/{self.ticket.id}/update/'
         
@@ -78,7 +79,7 @@ class AdminErrorHandlingTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_delete_nonexistent(self):
-        """Test deleting nonexistent user"""
+        """Test deleting nonexistent user. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = '/api/admin/users/99999/delete/'
         
@@ -88,7 +89,7 @@ class AdminErrorHandlingTest(TestCase):
         self.assertIn('error', response.data)
 
     def test_ticket_delete_nonexistent(self):
-        """Test deleting nonexistent ticket"""
+        """Test deleting nonexistent ticket. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = '/api/admin/tickets/99999/delete/'
         
@@ -98,7 +99,7 @@ class AdminErrorHandlingTest(TestCase):
         self.assertIn('error', response.data)
 
     def test_dashboard_stats_database_error(self):
-        """Test dashboard stats with simulated database error"""
+        """Test dashboard stats with simulated database error. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Mock a database error
@@ -111,7 +112,7 @@ class AdminErrorHandlingTest(TestCase):
             self.assertIn('error', response.data)
 
     def test_pagination_invalid_page_number(self):
-        """Test pagination with invalid page number"""
+        """Test pagination with invalid page number. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Test with negative page
@@ -125,7 +126,7 @@ class AdminErrorHandlingTest(TestCase):
         ])
 
     def test_pagination_invalid_page_size(self):
-        """Test pagination with invalid page size"""
+        """Test pagination with invalid page size. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Test with negative page size
@@ -138,7 +139,7 @@ class AdminErrorHandlingTest(TestCase):
         ])
 
     def test_staff_list_database_error(self):
-        """Test staff list with simulated database error"""
+        """Test staff list with simulated database error. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         with patch('KCLTicketingSystems.models.user.User.objects.filter') as mock_filter:
@@ -151,10 +152,10 @@ class AdminErrorHandlingTest(TestCase):
 
 
 class AdminConcurrencyTest(TestCase):
-    """Test concurrent operations and race conditions"""
+    """Test concurrent operations and race conditions. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         
         # Create admin user
@@ -185,7 +186,7 @@ class AdminConcurrencyTest(TestCase):
         )
 
     def test_delete_ticket_then_update(self):
-        """Test updating a ticket that was just deleted"""
+        """Test updating a ticket that was just deleted. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Delete ticket
@@ -199,7 +200,7 @@ class AdminConcurrencyTest(TestCase):
         self.assertEqual(update_response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_user_then_access(self):
-        """Test accessing a user that was just deleted"""
+        """Test accessing a user that was just deleted. This keeps regressions visible early in the release cycle."""
         # Create another user to delete
         test_user = User.objects.create_user(
             username='testuser',
@@ -222,7 +223,7 @@ class AdminConcurrencyTest(TestCase):
         self.assertEqual(detail_response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_multiple_updates_same_ticket(self):
-        """Test multiple sequential updates to the same ticket"""
+        """Test multiple sequential updates to the same ticket. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/admin/tickets/{self.ticket.id}/update/'
         
@@ -245,10 +246,10 @@ class AdminConcurrencyTest(TestCase):
 
 
 class AdminDataValidationTest(TestCase):
-    """Test data validation in admin endpoints"""
+    """Test data validation in admin endpoints. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         
         # Create admin user
@@ -279,7 +280,7 @@ class AdminDataValidationTest(TestCase):
         )
 
     def test_ticket_update_with_extra_fields(self):
-        """Test updating ticket with extra fields that should be ignored"""
+        """Test updating ticket with extra fields that should be ignored. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/admin/tickets/{self.ticket.id}/update/'
         
@@ -294,7 +295,7 @@ class AdminDataValidationTest(TestCase):
         self.assertEqual(response.data['status'], 'in_progress')
 
     def test_user_update_readonly_fields(self):
-        """Test that readonly fields cannot be updated"""
+        """Test that readonly fields cannot be updated. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/admin/users/{self.student.id}/update/'
         
@@ -315,7 +316,7 @@ class AdminDataValidationTest(TestCase):
         self.assertEqual(self.student.role, User.Role.STAFF)
 
     def test_ticket_assignment_null_value(self):
-        """Test assigning ticket to null (unassigning)"""
+        """Test assigning ticket to null (unassigning). This keeps regressions visible early in the release cycle."""
         # First assign to someone
         staff = User.objects.create_user(
             username='staff',
@@ -338,7 +339,7 @@ class AdminDataValidationTest(TestCase):
         self.assertIsNone(self.ticket.assigned_to)
 
     def test_empty_string_search(self):
-        """Test search with empty string"""
+        """Test search with empty string. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get('/api/admin/tickets/', {'search': ''})
@@ -347,7 +348,7 @@ class AdminDataValidationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_special_characters_search(self):
-        """Test search with special characters"""
+        """Test search with special characters. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Search with special characters
@@ -357,7 +358,7 @@ class AdminDataValidationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_very_long_search_query(self):
-        """Test search with very long query string"""
+        """Test search with very long query string. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Create a very long search query
@@ -369,9 +370,10 @@ class AdminDataValidationTest(TestCase):
 
 
 class AdminPermissionEdgeCasesTest(TestCase):
-    """Test edge cases for admin permissions"""
+    """Test edge cases for admin permissions. This keeps regressions visible early in the release cycle."""
 
     def _create_base_users(self):
+        """Support the admin error handling tests by create base users so assertions remain focused on outcomes."""
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True
@@ -386,12 +388,12 @@ class AdminPermissionEdgeCasesTest(TestCase):
         )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self._create_base_users()
 
     def test_superuser_has_admin_access(self):
-        """Test that superuser has admin access regardless of role"""
+        """Test that superuser has admin access regardless of role. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.superuser)
         
         response = self.client.get('/api/admin/dashboard/stats/')
@@ -400,7 +402,7 @@ class AdminPermissionEdgeCasesTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_staff_without_admin_role_no_access(self):
-        """Test that staff user without admin role cannot access admin endpoints"""
+        """Test that staff user without admin role cannot access admin endpoints. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.staff)
         
         response = self.client.get('/api/admin/dashboard/stats/')
@@ -409,7 +411,7 @@ class AdminPermissionEdgeCasesTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_admin_can_delete_other_users_not_self(self):
-        """Test that admin can delete other users but not themselves"""
+        """Test that admin can delete other users but not themselves. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Try to delete self
@@ -423,7 +425,7 @@ class AdminPermissionEdgeCasesTest(TestCase):
         self.assertTrue(User.objects.filter(id=self.admin.id).exists())
 
     def test_admin_can_delete_other_admin(self):
-        """Test that admin can delete other admin users"""
+        """Test that admin can delete other admin users. This keeps regressions visible early in the release cycle."""
         # Create another admin
         other_admin = User.objects.create_user(
             username='otheradmin',
@@ -444,7 +446,7 @@ class AdminPermissionEdgeCasesTest(TestCase):
         self.assertFalse(User.objects.filter(id=other_admin.id).exists())
 
     def test_token_expired_returns_401(self):
-        """Test that expired token returns 401"""
+        """Test that expired token returns 401. This keeps regressions visible early in the release cycle."""
         # This is more of an integration test with JWT
         # Without valid authentication, should return 401
         response = self.client.get('/api/admin/dashboard/stats/')

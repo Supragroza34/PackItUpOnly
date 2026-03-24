@@ -4,7 +4,9 @@ from KCLTicketingSystems.models import Ticket, User
 
 class StaffSelectionTests(TestCase):
 
+    """Group staff selection checks so the user workflow is guarded against regressions."""
     def _create_staff_users(self):
+        """Support the staff selection tests by create staff users so assertions remain focused on outcomes."""
         self.staff1 = User.objects.create_user(
             username='staff1', email='staff1@test.com', password='testpass123',
             k_number='22222221', department='Informatics', role=User.Role.STAFF
@@ -27,12 +29,14 @@ class StaffSelectionTests(TestCase):
         )
 
     def _create_ticket_owner(self):
+        """Support the staff selection tests by create ticket owner so assertions remain focused on outcomes."""
         self.ticket_user = User.objects.create_user(
             username='ticketuser', email='ticketuser@test.com', password='testpass123',
             first_name='Jame', last_name='Does', k_number='12345679', role=User.Role.STUDENT
         )
 
     def _create_existing_tickets(self):
+        """Support the staff selection tests by create existing tickets so assertions remain focused on outcomes."""
         ticket_payloads = [
             (self.staff1, 'Need help with software'),
             (self.staff1, 'Need help with software again'),
@@ -51,6 +55,7 @@ class StaffSelectionTests(TestCase):
             )
 
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self._create_staff_users()
         self._create_ticket_owner()
         self._create_existing_tickets()
@@ -63,6 +68,7 @@ class StaffSelectionTests(TestCase):
         }                        
 
     def test_correct_number_of_tickets_returned_for_staff(self):
+        """Guard correct number of tickets returned for staff in the staff selection flow so regressions surface early."""
         staff_1_tickets = staff_selection.get_number_of_tickets_assigned_to_staff(self.staff1.id)
         staff_2_tickets = staff_selection.get_number_of_tickets_assigned_to_staff(self.staff2.id)
         staff_3_tickets = staff_selection.get_number_of_tickets_assigned_to_staff(self.staff3.id)
@@ -71,6 +77,7 @@ class StaffSelectionTests(TestCase):
         self.assertEqual(staff_3_tickets, 0)
 
     def test_only_staff_in_department_returned(self):
+        """Guard only staff in department returned in the staff selection flow so regressions surface early."""
         department = self.ticket_data.get("department")
         staff_members = staff_selection.get_staff_from_department(department)
         staff_member_departments = []
@@ -82,11 +89,13 @@ class StaffSelectionTests(TestCase):
         self.assertEqual(engineering_present, False)      
 
     def test_correct_staff_member_returned(self):
+        """Guard correct staff member returned in the staff selection flow so regressions surface early."""
         department = self.ticket_data.get("department")
         staff_member = staff_selection.get_staff_with_least_tickets_in_department(department)
         self.assertEqual(staff_member["id"], self.staff3.id)
 
     def test_ticket_can_be_created(self):
+        """Guard ticket can be created in the staff selection flow so regressions surface early."""
         department = 'Informatics'
         assigned_to_id = staff_selection.get_staff_with_least_tickets_in_department(department)["id"]
         assigned_to = User.objects.get(id=assigned_to_id)

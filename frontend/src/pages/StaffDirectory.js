@@ -29,9 +29,21 @@ export default function StaffDirectory() {
         // Avoids a stale closure on `departments` and removes the need for
         // a separate /staff/departments/ endpoint that doesn't exist.
         if (!department) {
-          const derived = Array.from(
-            new Set((data || []).map((s) => (s.department || "").trim()).filter(Boolean))
-          ).sort();
+          const deptMap = new Map();
+          (data || []).forEach((s) => {
+            const raw = (s.department || "").trim();
+            if (!raw) return;
+
+            // Normalize by case so backend-equivalent values are not duplicated.
+            const key = raw.toLowerCase();
+            if (!deptMap.has(key)) {
+              deptMap.set(key, raw);
+            }
+          });
+
+          const derived = Array.from(deptMap.values()).sort((a, b) =>
+            a.localeCompare(b, undefined, { sensitivity: "base" })
+          );
           setDepartments(derived);
         }
       } catch (e) {

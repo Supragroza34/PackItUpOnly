@@ -63,7 +63,21 @@ describe("UserNavbar — rendering", () => {
     expect(faqLink).toHaveAttribute("href", "/faqs");
   });
 
-  test("renders the Profile toggle button", () => {
+  test("renders a Staff Directory link pointing to /staff", () => {
+    renderNavbar();
+    const staffLink = screen.getByRole("link", { name: /staff directory/i });
+    expect(staffLink).toBeInTheDocument();
+    expect(staffLink).toHaveAttribute("href", "/staff");
+  });
+
+  test("renders an AI Chatbot link pointing to /ai-chatbot", () => {
+    renderNavbar();
+    const chatbotLink = screen.getByRole("link", { name: /ai chatbot/i });
+    expect(chatbotLink).toBeInTheDocument();
+    expect(chatbotLink).toHaveAttribute("href", "/ai-chatbot");
+  });
+
+  test("renders the View Profile toggle button", () => {
     renderNavbar();
     expect(
       screen.getByRole("button", { name: /profile/i })

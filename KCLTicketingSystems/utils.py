@@ -1,7 +1,59 @@
 from .models import MeetingRequest, Notification, Ticket
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+from datetime import timedelta
 
 User = get_user_model()
+
+
+def _is_staff_or_admin(user):
+    if not user:
+        return False
+    return getattr(user, "is_superuser", False) or (getattr(user, "role", "") or "").lower() in ("staff", "admin")
+
+
+def update_ticket_status_after_reply(ticket, reply_user):
+    """Move ticket state based on who replied.
+
+    Staff/admin reply -> awaiting student response.
+    Student reply -> in progress.
+    """
+    if not ticket or ticket.status == Ticket.Status.CLOSED:
+        return False
+
+    target_status = Ticket.Status.AWAITING_RESPONSE if _is_staff_or_admin(reply_user) else Ticket.Status.IN_PROGRESS
+    if ticket.status == target_status:
+        return False
+
+    ticket.status = target_status
+    ticket.save(update_fields=["status"])
+    return True
+
+
+def auto_close_stale_awaiting_response(days=3):
+    """Close tickets waiting on student response for too long.
+
+    A ticket is auto-closed when it is currently awaiting_response and its
+    latest reply is from staff/admin and older than the configured cutoff.
+    """
+    cutoff = timezone.now() - timedelta(days=days)
+    stale_ticket_ids = []
+
+    awaiting_tickets = Ticket.objects.filter(status=Ticket.Status.AWAITING_RESPONSE)
+    for ticket in awaiting_tickets:
+        latest_reply = ticket.replies.select_related("user").order_by("-created_at").first()
+        if not latest_reply:
+            continue
+        if _is_staff_or_admin(latest_reply.user) and latest_reply.created_at <= cutoff:
+            stale_ticket_ids.append(ticket.id)
+
+    if not stale_ticket_ids:
+        return 0
+
+    return Ticket.objects.filter(
+        id__in=stale_ticket_ids,
+        status=Ticket.Status.AWAITING_RESPONSE,
+    ).update(status=Ticket.Status.CLOSED, closed_by=None)
 
 def notify_admin_on_ticket(ticket):
     """Notify all users with role='admin' that a new ticket was created."""
@@ -59,9 +111,8 @@ def notify_on_ticket_update(ticket, updated_by):
             )
 
     # Notify the assigned staff when the ticket is updated.
-    # For "closed" we notify regardless of who performed the update (tests expect
-    # the assigned staff to receive the close notification too).
-    if ticket.assigned_to:
+    # Don't notify staff about their own actions, but do notify if someone else (e.g., admin) closes it.
+    if ticket.assigned_to and ticket.assigned_to != updated_by:
         message = None
         if ticket.status == Ticket.Status.CLOSED:
             message = (

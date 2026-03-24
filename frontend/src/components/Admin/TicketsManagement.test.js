@@ -11,6 +11,9 @@ jest.mock('../../services/adminApi', () => ({
   default: {
     getTickets: jest.fn(),
     getStaffList: jest.fn(),
+    updateTicket: jest.fn(),
+    deleteTicket: jest.fn(),
+    getTicketDetail: jest.fn(),
   },
 }));
 
@@ -57,6 +60,7 @@ describe('TicketsManagement', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    window.confirm = jest.fn(() => true);
     // Mock successful API responses by default
     adminApi.getTickets.mockResolvedValue({
       tickets: [],
@@ -64,6 +68,9 @@ describe('TicketsManagement', () => {
       total_pages: 1,
     });
     adminApi.getStaffList.mockResolvedValue([]);
+    adminApi.updateTicket.mockResolvedValue({ id: 1, status: 'closed' });
+    adminApi.deleteTicket.mockResolvedValue({});
+    adminApi.getTicketDetail.mockResolvedValue({ id: 1 });
   });
 
   test('renders loading state initially', () => {
@@ -112,9 +119,7 @@ describe('TicketsManagement', () => {
       expect(screen.getByText('Ticket Management')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByPlaceholderText(/name, k-number, email, department/i)
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/search by name/i)).toBeInTheDocument();
   });
 
   test('renders error state when API fails', async () => {
@@ -160,5 +165,66 @@ describe('TicketsManagement', () => {
 
     expect(screen.getByText('Tickets')).toBeInTheDocument();
     expect(screen.getByText('Users')).toBeInTheDocument();
+  });
+
+  test('applies filters and refreshes ticket query', async () => {
+    renderWithProviders(<TicketsManagement />, {
+      admin: {
+        tickets: [],
+        ticketsLoading: false,
+        ticketsTotalPages: 1,
+      },
+    });
+
+    await waitFor(() => {
+      expect(adminApi.getTickets).toHaveBeenCalled();
+    });
+
+    const callsBefore = adminApi.getTickets.mock.calls.length;
+
+    fireEvent.change(screen.getByLabelText(/search by name/i), {
+      target: { value: 'john' },
+    });
+    fireEvent.change(screen.getByDisplayValue('All Statuses'), {
+      target: { value: 'pending' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
+
+    await waitFor(() => {
+      expect(adminApi.getTickets.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+  });
+
+  test('closes and deletes a ticket through row actions', async () => {
+    adminApi.getTickets.mockResolvedValue({
+      tickets: mockTickets,
+      total: 2,
+      total_pages: 1,
+    });
+
+    renderWithProviders(<TicketsManagement />, {
+      admin: {
+        tickets: mockTickets,
+        ticketsTotal: 2,
+        ticketsTotalPages: 1,
+        ticketsLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('K1234567')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]);
+
+    await waitFor(() => {
+      expect(adminApi.updateTicket).toHaveBeenCalledWith(1, { status: 'closed' });
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
+
+    await waitFor(() => {
+      expect(adminApi.deleteTicket).toHaveBeenCalledWith(1);
+    });
   });
 });

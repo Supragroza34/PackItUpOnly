@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import "@testing-library/jest-dom";
@@ -103,5 +103,73 @@ describe("TicketFormPage", () => {
       },
       { timeout: 4000 }
     );
+  });
+
+  test("shows server validation errors from backend payload", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ errors: { department: "Bad department" } }),
+    });
+
+    renderWithRouter(<TicketFormPage />);
+    await userEvent.selectOptions(screen.getByLabelText(/^Department$/i), "Informatics");
+    await userEvent.selectOptions(
+      screen.getByLabelText(/^Type of Issue$/i),
+      "Software Installation Issues"
+    );
+    await userEvent.type(screen.getByTestId("mock-rich-text-editor"), "Valid text");
+    await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
+
+    expect(await screen.findByText(/Bad department/i)).toBeInTheDocument();
+  });
+
+  test("shows generic error when backend responds without errors object", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ detail: "Nope" }),
+    });
+
+    renderWithRouter(<TicketFormPage />);
+    await userEvent.selectOptions(screen.getByLabelText(/^Department$/i), "Informatics");
+    await userEvent.selectOptions(
+      screen.getByLabelText(/^Type of Issue$/i),
+      "Software Installation Issues"
+    );
+    await userEvent.type(screen.getByTestId("mock-rich-text-editor"), "Valid text");
+    await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
+
+    expect(await screen.findByText(/something went wrong/i)).toBeInTheDocument();
+  });
+
+  test("shows connection error when submit throws", async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error("offline"));
+
+    renderWithRouter(<TicketFormPage />);
+    await userEvent.selectOptions(screen.getByLabelText(/^Department$/i), "Informatics");
+    await userEvent.selectOptions(
+      screen.getByLabelText(/^Type of Issue$/i),
+      "Software Installation Issues"
+    );
+    await userEvent.type(screen.getByTestId("mock-rich-text-editor"), "Valid text");
+    await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
+
+    expect(await screen.findByText(/could not reach the server/i)).toBeInTheDocument();
+  });
+
+  test("handles attachments: rejects oversized and allows remove", async () => {
+    renderWithRouter(<TicketFormPage />);
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const smallFile = new File(["ok"], "note.txt", { type: "text/plain" });
+    const bigContent = new Uint8Array(10 * 1024 * 1024 + 1);
+    const bigFile = new File([bigContent], "huge.txt", { type: "text/plain" });
+
+    await userEvent.upload(fileInput, [smallFile, bigFile]);
+
+    expect(await screen.findByText(/exceeds the 10 MB limit/i)).toBeInTheDocument();
+    expect(screen.getByText("note.txt")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /remove note.txt/i }));
+    expect(screen.queryByText("note.txt")).not.toBeInTheDocument();
   });
 });

@@ -20,16 +20,14 @@ describe("StaffDirectory", () => {
   });
 
   test("loads departments and staff, shows cards", async () => {
-    apiFetch
-      .mockResolvedValueOnce(["Informatics", "Engineering"])
-      .mockResolvedValueOnce([
-        {
-          id: 1,
-          first_name: "Jane",
-          last_name: "Doe",
-          department: "Informatics",
-        },
-      ]);
+    apiFetch.mockResolvedValueOnce([
+      {
+        id: 1,
+        first_name: "Jane",
+        last_name: "Doe",
+        department: "Informatics",
+      },
+    ]);
 
     render(
       <MemoryRouter>
@@ -48,12 +46,10 @@ describe("StaffDirectory", () => {
   });
 
   test("filters by search", async () => {
-    apiFetch
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { id: 1, first_name: "Alpha", last_name: "One", department: "IT" },
-        { id: 2, first_name: "Beta", last_name: "Two", department: "IT" },
-      ]);
+    apiFetch.mockResolvedValueOnce([
+      { id: 1, first_name: "Alpha", last_name: "One", department: "IT" },
+      { id: 2, first_name: "Beta", last_name: "Two", department: "IT" },
+    ]);
 
     render(
       <MemoryRouter>
@@ -69,7 +65,7 @@ describe("StaffDirectory", () => {
   });
 
   test("shows empty message when no staff", async () => {
-    apiFetch.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    apiFetch.mockResolvedValueOnce([]);
 
     render(
       <MemoryRouter>

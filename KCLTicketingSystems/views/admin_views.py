@@ -29,7 +29,7 @@ from ..utils import notify_on_ticket_update
 # ================= DASHBOARD STATISTICS =================
 
 def _get_ticket_stats():
-    """Get ticket statistics."""
+    """Get ticket statistics. This keeps the HTTP boundary centralized for the ticketing workflow."""
     return {
         'total_tickets': Ticket.objects.count(),
         'pending_tickets': Ticket.objects.filter(status=Ticket.Status.PENDING).count(),
@@ -40,7 +40,7 @@ def _get_ticket_stats():
 
 
 def _get_user_stats():
-    """Get user statistics."""
+    """Get user statistics. This keeps the HTTP boundary centralized for the ticketing workflow."""
     return {
         'total_users': User.objects.count(),
         'total_students': User.objects.filter(role=User.Role.STUDENT).count(),
@@ -50,7 +50,7 @@ def _get_user_stats():
 
 
 def _get_recent_tickets():
-    """Get recent tickets from last 7 days."""
+    """Get recent tickets from last 7 days. This keeps the HTTP boundary centralized for the ticketing workflow."""
     week_ago = timezone.now() - timedelta(days=7)
     return Ticket.objects.select_related('user', 'closed_by').filter(created_at__gte=week_ago).order_by('-created_at')[:10]
 
@@ -61,6 +61,7 @@ def _compute_dept_response_times(tickets):
     Response time is the gap between ticket creation and the first reply from a
     staff or admin user.  Only departments that have at least one such reply are
     included in the returned dict.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     staff_roles = [User.Role.STAFF, User.Role.ADMIN]
 
@@ -100,7 +101,7 @@ def _compute_dept_response_times(tickets):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def dashboard_stats(request):
-    """Get dashboard statistics"""
+    """Get dashboard statistics. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         # Ticket statistics
         total_tickets = Ticket.objects.count()
@@ -142,7 +143,7 @@ def dashboard_stats(request):
 # ================= TICKET MANAGEMENT =================
 
 def _apply_ticket_search(tickets, search):
-    """Apply search filter to tickets (user fields via user relation)."""
+    """Apply search filter to tickets (user fields via user relation). This keeps the HTTP boundary centralized for the ticketing workflow."""
     if not search:
         return tickets
     return tickets.filter(
@@ -156,7 +157,7 @@ def _apply_ticket_search(tickets, search):
 
 
 def _apply_status_priority_filters(tickets, request):
-    """Apply status and priority filters."""
+    """Apply status and priority filters. This keeps the HTTP boundary centralized for the ticketing workflow."""
     status_filter = request.GET.get('status')
     if status_filter:
         tickets = tickets.filter(status=status_filter)
@@ -167,7 +168,7 @@ def _apply_status_priority_filters(tickets, request):
 
 
 def _apply_department_assignment_filters(tickets, request):
-    """Apply department and assignment filters."""
+    """Apply department and assignment filters. This keeps the HTTP boundary centralized for the ticketing workflow."""
     department_filter = request.GET.get('department')
     if department_filter:
         tickets = tickets.filter(department=department_filter)
@@ -181,13 +182,13 @@ def _apply_department_assignment_filters(tickets, request):
 
 
 def _apply_ticket_filters(tickets, request):
-    """Apply status, priority, department, and assignment filters."""
+    """Apply status, priority, department, and assignment filters. This keeps the HTTP boundary centralized for the ticketing workflow."""
     tickets = _apply_status_priority_filters(tickets, request)
     return _apply_department_assignment_filters(tickets, request)
 
 
 def _paginate_tickets(tickets, request):
-    """Apply pagination and return paginated response data."""
+    """Apply pagination and return paginated response data. This keeps the HTTP boundary centralized for the ticketing workflow."""
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
     start = (page - 1) * page_size
@@ -207,7 +208,7 @@ def _paginate_tickets(tickets, request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_tickets_list(request):
-    """Get all tickets with filtering, searching, and pagination"""
+    """Get all tickets with filtering, searching, and pagination. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         tickets = Ticket.objects.select_related('user', 'closed_by').all().order_by('-created_at')
         search = request.GET.get('search', '')
@@ -266,7 +267,7 @@ def admin_tickets_list(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_ticket_detail(request, ticket_id):
-    """Get single ticket details"""
+    """Get single ticket details. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         ticket = Ticket.objects.select_related('user', 'assigned_to', 'closed_by').get(id=ticket_id)
         serializer = TicketSerializer(ticket)
@@ -280,7 +281,7 @@ def admin_ticket_detail(request, ticket_id):
 @api_view(['PATCH', 'PUT'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_ticket_update(request, ticket_id):
-    """Update ticket (status, priority, assignment, notes)"""
+    """Update ticket (status, priority, assignment, notes). This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         ticket = Ticket.objects.select_related('user', 'assigned_to', 'closed_by').get(id=ticket_id)
         
@@ -308,7 +309,7 @@ def admin_ticket_update(request, ticket_id):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_ticket_delete(request, ticket_id):
-    """Delete a ticket"""
+    """Delete a ticket. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         ticket = Ticket.objects.get(id=ticket_id)
         ticket.delete()
@@ -322,7 +323,7 @@ def admin_ticket_delete(request, ticket_id):
 # ================= USER MANAGEMENT =================
 
 def _apply_user_search(users, search):
-    """Apply search filter to users."""
+    """Apply search filter to users. This keeps the HTTP boundary centralized for the ticketing workflow."""
     if not search:
         return users
     return users.filter(
@@ -335,7 +336,7 @@ def _apply_user_search(users, search):
 
 
 def _paginate_users(users, request):
-    """Apply pagination and return paginated response data."""
+    """Apply pagination and return paginated response data. This keeps the HTTP boundary centralized for the ticketing workflow."""
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
     start = (page - 1) * page_size
@@ -355,7 +356,7 @@ def _paginate_users(users, request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_users_list(request):
-    """Get all users with filtering and pagination"""
+    """Get all users with filtering and pagination. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         users = User.objects.all().order_by('-date_joined')
         search = request.GET.get('search', '')
@@ -399,7 +400,7 @@ def admin_users_list(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_user_detail(request, user_id):
-    """Get single user details"""
+    """Get single user details. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         user = User.objects.get(id=user_id)
         serializer = UserSerializer(user)
@@ -411,7 +412,7 @@ def admin_user_detail(request, user_id):
 
 
 def _update_user_fields(user, data):
-    """Update user fields from request data."""
+    """Update user fields from request data. This keeps the HTTP boundary centralized for the ticketing workflow."""
     if 'role' in data:
         user.role = data['role']
     if 'department' in data:
@@ -429,7 +430,7 @@ def _update_user_fields(user, data):
 @api_view(['PATCH', 'PUT'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_user_update(request, user_id):
-    """Update user details (role, department, etc.)"""
+    """Update user details (role, department, etc.). This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         user = User.objects.get(id=user_id)
         _update_user_fields(user, request.data)
@@ -445,7 +446,7 @@ def admin_user_update(request, user_id):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_user_delete(request, user_id):
-    """Delete a user"""
+    """Delete a user. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         user = User.objects.get(id=user_id)
         
@@ -466,7 +467,7 @@ def admin_user_delete(request, user_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def admin_staff_list(request):
-    """Get list of staff and admin users for ticket assignment (dropdown: staff and admin only)."""
+    """Get list of staff and admin users for ticket assignment (dropdown: staff and admin only). This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         staff = User.objects.filter(role__in=[User.Role.STAFF, User.Role.ADMIN]).values(
             'id', 'username', 'first_name', 'last_name', 'email', 'role'
@@ -481,7 +482,7 @@ def admin_staff_list(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def get_ticket_statistics(request):
-    """Get detailed ticket statistics by department with date filtering."""
+    """Get detailed ticket statistics by department with date filtering. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         # Get date range from query params (default: last 30 days)
         start_date_str = request.GET.get('start_date')
@@ -584,7 +585,7 @@ def get_ticket_statistics(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def export_statistics_csv(request):
-    """Export statistics summary as CSV."""
+    """Export statistics summary as CSV. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         # Get date range from query params
         start_date_str = request.GET.get('start_date')
@@ -688,7 +689,7 @@ def export_statistics_csv(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
 def export_tickets_csv(request):
-    """Export all individual tickets as CSV."""
+    """Export all individual tickets as CSV. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         # Get date range from query params
         start_date_str = request.GET.get('start_date')

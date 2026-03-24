@@ -10,6 +10,7 @@ from ..models import Notification
 def notifications_list(request):
     """
     Retrieves a chronological list of notifications for the authenticated user.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     notifications = Notification.objects.filter(user=request.user).order_by("-created_at")
 
@@ -37,6 +38,7 @@ def notifications_list(request):
 def mark_notification_read(request, pk):
     """
     Flags a specific notification as read by the user.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     try:
         # Enforce user=request.user to prevent users from interacting with 

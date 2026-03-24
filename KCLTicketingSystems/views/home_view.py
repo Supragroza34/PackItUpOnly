@@ -15,7 +15,7 @@ def home(request):
 
 
 def spa_catchall(request, path):
-    """Serve the same index.html for all SPA routes (e.g. /login, /dashboard)."""
+    """Serve the same index.html for all SPA routes (e.g. /login, /dashboard). This keeps the HTTP boundary centralized for the ticketing workflow."""
     if FRONTEND_INDEX.exists():
         with open(FRONTEND_INDEX, encoding='utf-8') as f:
             return HttpResponse(f.read(), content_type='text/html')

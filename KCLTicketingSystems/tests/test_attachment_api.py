@@ -7,10 +7,10 @@ import io
 
 
 class AttachmentAPITest(TestCase):
-    """Test cases for file attachment functionality in the API"""
+    """Test cases for file attachment functionality in the API. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client and valid data"""
+        """Set up test client and valid data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.url = '/api/submit-ticket/'
         self.valid_data = {
@@ -24,7 +24,7 @@ class AttachmentAPITest(TestCase):
         }
 
     def test_submit_ticket_with_single_attachment(self):
-        """Test submitting a ticket with a single file attachment"""
+        """Test submitting a ticket with a single file attachment. This keeps regressions visible early in the release cycle."""
         pdf_file = SimpleUploadedFile(
             "test_file.pdf",
             b"file content",
@@ -49,7 +49,7 @@ class AttachmentAPITest(TestCase):
         self.assertEqual(attachment.original_filename, 'test_file.pdf')
 
     def test_submit_ticket_with_multiple_attachments(self):
-        """Test submitting a ticket with multiple file attachments"""
+        """Test submitting a ticket with multiple file attachments. This keeps regressions visible early in the release cycle."""
         file1 = SimpleUploadedFile("file1.pdf", b"content1", content_type="application/pdf")
         file2 = SimpleUploadedFile("file2.jpg", b"content2", content_type="image/jpeg")
         file3 = SimpleUploadedFile("file3.txt", b"content3", content_type="text/plain")
@@ -72,7 +72,7 @@ class AttachmentAPITest(TestCase):
         self.assertEqual(ticket.attachments.count(), 3)
 
     def test_submit_ticket_without_attachments(self):
-        """Test submitting a ticket without any attachments (should still work)"""
+        """Test submitting a ticket without any attachments (should still work). This keeps regressions visible early in the release cycle."""
         response = self.client.post(
             self.url,
             self.valid_data,
@@ -88,7 +88,7 @@ class AttachmentAPITest(TestCase):
         self.assertEqual(ticket.attachments.count(), 0)
 
     def test_submit_ticket_with_oversized_file(self):
-        """Test submitting a ticket with a file larger than 10MB"""
+        """Test submitting a ticket with a file larger than 10MB. This keeps regressions visible early in the release cycle."""
         # Create a file larger than 10MB
         large_content = b"x" * (11 * 1024 * 1024)  # 11MB
         large_file = SimpleUploadedFile(
@@ -110,7 +110,7 @@ class AttachmentAPITest(TestCase):
         self.assertIn('exceeds the maximum file size', response.data['errors']['attachments'])
 
     def test_submit_ticket_with_invalid_file_type(self):
-        """Test submitting a ticket with an invalid file type"""
+        """Test submitting a ticket with an invalid file type. This keeps regressions visible early in the release cycle."""
         invalid_file = SimpleUploadedFile(
             "test.exe",
             b"executable content",
@@ -133,7 +133,7 @@ class AttachmentAPITest(TestCase):
         self.assertIn('invalid file type', response.data['errors']['attachments'])
 
     def test_submit_ticket_with_valid_image_types(self):
-        """Test submitting tickets with valid image file types"""
+        """Test submitting tickets with valid image file types. This keeps regressions visible early in the release cycle."""
         valid_image_types = [
             ('test.jpg', 'image/jpeg'),
             ('test.jpeg', 'image/jpeg'),
@@ -162,7 +162,7 @@ class AttachmentAPITest(TestCase):
                            f"Failed for {filename}")
 
     def test_submit_ticket_with_valid_document_types(self):
-        """Test submitting tickets with valid document file types"""
+        """Test submitting tickets with valid document file types. This keeps regressions visible early in the release cycle."""
         valid_doc_types = [
             ('test.pdf', 'application/pdf'),
             ('test.doc', 'application/msword'),
@@ -191,7 +191,7 @@ class AttachmentAPITest(TestCase):
                            f"Failed for {filename}")
 
     def test_submit_ticket_file_size_exactly_10mb(self):
-        """Test submitting a file exactly at the 10MB limit (should pass)"""
+        """Test submitting a file exactly at the 10MB limit (should pass). This keeps regressions visible early in the release cycle."""
         # Create a file exactly 10MB
         exact_size_content = b"x" * (10 * 1024 * 1024)  # Exactly 10MB
         exact_file = SimpleUploadedFile(
@@ -213,7 +213,7 @@ class AttachmentAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_submit_ticket_multiple_files_one_invalid(self):
-        """Test submitting multiple files where one is invalid"""
+        """Test submitting multiple files where one is invalid. This keeps regressions visible early in the release cycle."""
         valid_file = SimpleUploadedFile("valid.pdf", b"content", content_type="application/pdf")
         invalid_file = SimpleUploadedFile("invalid.exe", b"content", content_type="application/x-msdownload")
         
@@ -232,7 +232,7 @@ class AttachmentAPITest(TestCase):
         self.assertIn('attachments', response.data['errors'])
 
     def test_submit_ticket_multiple_files_one_oversized(self):
-        """Test submitting multiple files where one is oversized"""
+        """Test submitting multiple files where one is oversized. This keeps regressions visible early in the release cycle."""
         valid_file = SimpleUploadedFile("valid.pdf", b"content", content_type="application/pdf")
         large_file = SimpleUploadedFile(
             "large.pdf",
@@ -255,7 +255,7 @@ class AttachmentAPITest(TestCase):
         self.assertIn('attachments', response.data['errors'])
 
     def test_submit_ticket_json_format_still_works(self):
-        """Test that JSON format submission still works (backward compatibility)"""
+        """Test that JSON format submission still works (backward compatibility). This keeps regressions visible early in the release cycle."""
         response = self.client.post(
             self.url,
             self.valid_data,
@@ -269,7 +269,7 @@ class AttachmentAPITest(TestCase):
         self.assertEqual(response.data['attachments_count'], 0)
 
     def test_attachment_file_stored_correctly(self):
-        """Test that attachment files are stored in the correct location"""
+        """Test that attachment files are stored in the correct location. This keeps regressions visible early in the release cycle."""
         pdf_file = SimpleUploadedFile("test.pdf", b"content", content_type="application/pdf")
         
         data = self.valid_data.copy()
@@ -290,7 +290,7 @@ class AttachmentAPITest(TestCase):
         self.assertTrue(attachment.file.name.endswith('.pdf'))
 
     def test_attachment_metadata_saved(self):
-        """Test that attachment metadata (filename, size) is saved correctly"""
+        """Test that attachment metadata (filename, size) is saved correctly. This keeps regressions visible early in the release cycle."""
         pdf_file = SimpleUploadedFile("original_name.pdf", b"file content here", content_type="application/pdf")
         
         data = self.valid_data.copy()
@@ -313,7 +313,7 @@ class AttachmentAPITest(TestCase):
         self.assertIsNotNone(attachment.uploaded_at)
 
     def test_submit_ticket_with_empty_file_list(self):
-        """Test submitting with empty attachments list"""
+        """Test submitting with empty attachments list. This keeps regressions visible early in the release cycle."""
         data = self.valid_data.copy()
         data['k_number'] = '88888888'
         data['k_email'] = 'K88888888@kcl.ac.uk'

@@ -10,9 +10,10 @@ from ..models.reply import Reply
 
 
 class AdminTicketStatisticsTest(TestCase):
-    """Test cases for admin ticket statistics endpoint"""
+    """Test cases for admin ticket statistics endpoint. This keeps regressions visible early in the release cycle."""
 
     def _create_users(self):
+        """Support the admin statistics tests by create users so assertions remain focused on outcomes."""
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True
@@ -27,6 +28,7 @@ class AdminTicketStatisticsTest(TestCase):
         )
 
     def _seed_department_tickets(self, now):
+        """Support the admin statistics tests by seed department tickets so assertions remain focused on outcomes."""
         for i in range(5):
             created_at = now - timedelta(days=i * 10)
             Ticket.objects.create(
@@ -55,7 +57,7 @@ class AdminTicketStatisticsTest(TestCase):
             )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self.url = '/api/admin/statistics/'
         now = timezone.now()
@@ -63,24 +65,24 @@ class AdminTicketStatisticsTest(TestCase):
         self._seed_department_tickets(now)
 
     def test_statistics_unauthenticated(self):
-        """Test that unauthenticated users cannot access statistics"""
+        """Test that unauthenticated users cannot access statistics. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_statistics_non_admin(self):
-        """Test that non-admin users cannot access statistics"""
+        """Test that non-admin users cannot access statistics. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_statistics_staff_no_access(self):
-        """Test that staff users cannot access statistics"""
+        """Test that staff users cannot access statistics. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_statistics_success(self):
-        """Test successful statistics retrieval with default parameters"""
+        """Test successful statistics retrieval with default parameters. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -90,7 +92,7 @@ class AdminTicketStatisticsTest(TestCase):
         self.assertIn('date_range', response.data)
 
     def test_statistics_default_30_days(self):
-        """Test that default statistics returns last 30 days"""
+        """Test that default statistics returns last 30 days. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -99,7 +101,7 @@ class AdminTicketStatisticsTest(TestCase):
         self.assertGreaterEqual(response.data['total_tickets'], 5)
 
     def test_statistics_custom_days_parameter(self):
-        """Test statistics with custom days parameter"""
+        """Test statistics with custom days parameter. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url, {'days': 7})
         
@@ -108,7 +110,7 @@ class AdminTicketStatisticsTest(TestCase):
         self.assertLessEqual(response.data['total_tickets'], 10)
 
     def test_statistics_date_range_filter(self):
-        """Test statistics with custom date range"""
+        """Test statistics with custom date range. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Get tickets from last 20 days
@@ -125,7 +127,7 @@ class AdminTicketStatisticsTest(TestCase):
         self.assertEqual(response.data['date_range']['end_date'], end_date.isoformat())
 
     def test_statistics_department_breakdown(self):
-        """Test that statistics include department breakdown"""
+        """Test that statistics include department breakdown. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -143,7 +145,7 @@ class AdminTicketStatisticsTest(TestCase):
             self.assertIn('priority_breakdown', dept)
 
     def test_statistics_status_breakdown(self):
-        """Test that statistics include status breakdown"""
+        """Test that statistics include status breakdown. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -158,7 +160,7 @@ class AdminTicketStatisticsTest(TestCase):
             self.assertIn('closed', status_breakdown)
 
     def test_statistics_priority_breakdown(self):
-        """Test that statistics include priority breakdown"""
+        """Test that statistics include priority breakdown. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -173,7 +175,7 @@ class AdminTicketStatisticsTest(TestCase):
             self.assertIn('urgent', priority_breakdown)
 
     def test_statistics_avg_resolution_time(self):
-        """Test that statistics include average resolution time"""
+        """Test that statistics include average resolution time. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -185,7 +187,7 @@ class AdminTicketStatisticsTest(TestCase):
             self.assertIn('avg_resolution_time_hours', dept)
 
     def test_statistics_invalid_days_parameter(self):
-        """Test statistics with invalid days parameter"""
+        """Test statistics with invalid days parameter. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Test with negative days
@@ -202,7 +204,7 @@ class AdminTicketStatisticsTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_statistics_invalid_date_format(self):
-        """Test statistics with invalid date format"""
+        """Test statistics with invalid date format. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         response = self.client.get(self.url, {
@@ -214,7 +216,7 @@ class AdminTicketStatisticsTest(TestCase):
         self.assertIn('error', response.data)
 
     def test_statistics_ordered_by_total_tickets(self):
-        """Test that departments are ordered by total ticket count"""
+        """Test that departments are ordered by total ticket count. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -230,7 +232,7 @@ class AdminTicketStatisticsTest(TestCase):
                 )
 
     def test_statistics_empty_date_range(self):
-        """Test statistics with date range that has no tickets"""
+        """Test statistics with date range that has no tickets. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Use a future date range
@@ -247,7 +249,7 @@ class AdminTicketStatisticsTest(TestCase):
         self.assertEqual(len(response.data['department_statistics']), 0)
 
     def test_statistics_single_department(self):
-        """Test statistics calculation for a single department"""
+        """Test statistics calculation for a single department. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         
         # Get statistics for a short period that might have tickets from only one department
@@ -259,9 +261,10 @@ class AdminTicketStatisticsTest(TestCase):
 
 
 class AdminAvgResponseTimeTest(TestCase):
-    """Test cases for average staff response time in statistics"""
+    """Test cases for average staff response time in statistics. This keeps regressions visible early in the release cycle."""
 
     def _create_users(self):
+        """Support the admin statistics tests by create users so assertions remain focused on outcomes."""
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True,
@@ -276,6 +279,7 @@ class AdminAvgResponseTimeTest(TestCase):
         )
 
     def _create_informatics_ticket_with_response(self, now, issue, details, status, created_hours_ago, reply_hours):
+        """Support the admin statistics tests by create informatics ticket with response so assertions remain focused on outcomes."""
         ticket = Ticket.objects.create(
             user=self.student, department='Informatics',
             type_of_issue=issue, additional_details=details, status=status,
@@ -287,6 +291,7 @@ class AdminAvgResponseTimeTest(TestCase):
         return ticket
 
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
         self.url = '/api/admin/statistics/'
         self._create_users()
@@ -307,7 +312,7 @@ class AdminAvgResponseTimeTest(TestCase):
         )
 
     def test_avg_response_time_field_present(self):
-        """Statistics include avg_response_time_hours field"""
+        """Statistics include avg_response_time_hours field. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -315,7 +320,7 @@ class AdminAvgResponseTimeTest(TestCase):
             self.assertIn('avg_response_time_hours', dept)
 
     def test_avg_response_time_calculated_correctly(self):
-        """Average response time is the mean of first-staff-reply deltas"""
+        """Average response time is the mean of first-staff-reply deltas. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -329,7 +334,7 @@ class AdminAvgResponseTimeTest(TestCase):
         self.assertAlmostEqual(info['avg_response_time_hours'], 3.0, delta=0.1)
 
     def test_avg_response_time_null_when_no_staff_replies(self):
-        """Departments with no staff replies have null avg_response_time_hours"""
+        """Departments with no staff replies have null avg_response_time_hours. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -340,7 +345,7 @@ class AdminAvgResponseTimeTest(TestCase):
         self.assertIsNone(eng['avg_response_time_hours'])
 
     def test_avg_response_time_ignores_student_replies(self):
-        """Only staff/admin replies count for response time, not student replies"""
+        """Only staff/admin replies count for response time, not student replies. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -352,9 +357,10 @@ class AdminAvgResponseTimeTest(TestCase):
 
 
 class AdminUserDetailTest(TestCase):
-    """Test cases for admin user detail endpoint"""
+    """Test cases for admin user detail endpoint. This keeps regressions visible early in the release cycle."""
 
     def _create_admin_and_user(self):
+        """Support the admin statistics tests by create admin and user so assertions remain focused on outcomes."""
         self.admin = User.objects.create_user(
             username='admin', email='admin@test.com', password='testpass123',
             k_number='99999999', role=User.Role.ADMIN, is_superuser=True
@@ -366,24 +372,24 @@ class AdminUserDetailTest(TestCase):
         )
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.client = APIClient()
         self._create_admin_and_user()
         self.url = f'/api/admin/users/{self.test_user.id}/'
 
     def test_user_detail_unauthenticated(self):
-        """Test that unauthenticated users cannot access user detail"""
+        """Test that unauthenticated users cannot access user detail. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_detail_non_admin(self):
-        """Test that non-admin users cannot access user detail"""
+        """Test that non-admin users cannot access user detail. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.test_user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_user_detail_success(self):
-        """Test successful user detail retrieval"""
+        """Test successful user detail retrieval. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -398,7 +404,7 @@ class AdminUserDetailTest(TestCase):
         self.assertEqual(response.data['role'], 'student')
 
     def test_user_detail_not_found(self):
-        """Test user detail with non-existent user ID"""
+        """Test user detail with non-existent user ID. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get('/api/admin/users/99999/')
         
@@ -406,7 +412,7 @@ class AdminUserDetailTest(TestCase):
         self.assertIn('error', response.data)
 
     def test_user_detail_includes_role_flags(self):
-        """Test that user detail includes role flags"""
+        """Test that user detail includes role flags. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(self.url)
         
@@ -417,7 +423,7 @@ class AdminUserDetailTest(TestCase):
         self.assertFalse(response.data['is_superuser'])
 
     def test_user_detail_admin_user(self):
-        """Test user detail for an admin user"""
+        """Test user detail for an admin user. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/admin/users/{self.admin.id}/'
         response = self.client.get(url)

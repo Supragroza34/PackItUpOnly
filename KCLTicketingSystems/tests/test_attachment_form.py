@@ -3,15 +3,15 @@ from django.urls import reverse
 
 
 class AttachmentFormTest(TestCase):
-    """Test cases for file attachment functionality in the ticket form"""
+    """Test cases for file attachment functionality in the ticket form. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test client"""
+        """Set up test client. This keeps regressions visible early in the release cycle."""
         self.client = Client()
         self.url = reverse('ticket_form')
 
     def test_file_input_field_present(self):
-        """Test that file input field is present in the form"""
+        """Test that file input field is present in the form. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -21,7 +21,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('multiple', content)
 
     def test_file_input_accept_attribute(self):
-        """Test that file input has accept attribute for file types"""
+        """Test that file input has accept attribute for file types. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -34,14 +34,14 @@ class AttachmentFormTest(TestCase):
         self.assertIn('.txt', content)
 
     def test_file_input_label_present(self):
-        """Test that file input has a label"""
+        """Test that file input has a label. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('Attachments (Optional)', content)
 
     def test_file_input_help_text_present(self):
-        """Test that file input has help text"""
+        """Test that file input has help text. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -49,14 +49,14 @@ class AttachmentFormTest(TestCase):
         self.assertIn('Maximum file size: 10MB per file', content)
 
     def test_file_list_container_present(self):
-        """Test that file list display container is present"""
+        """Test that file list display container is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
         self.assertIn('id="file-list"', content)
 
     def test_file_handling_javascript_present(self):
-        """Test that JavaScript for file handling is present"""
+        """Test that JavaScript for file handling is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -67,7 +67,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('formatFileSize', content)
 
     def test_file_validation_javascript_present(self):
-        """Test that JavaScript for file validation is present"""
+        """Test that JavaScript for file validation is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -77,7 +77,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('oversizedFiles', content)
 
     def test_file_removal_javascript_present(self):
-        """Test that JavaScript for file removal is present"""
+        """Test that JavaScript for file removal is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -86,7 +86,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('splice', content)
 
     def test_formdata_submission_javascript(self):
-        """Test that JavaScript uses FormData for file submission"""
+        """Test that JavaScript uses FormData for file submission. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -96,7 +96,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('append', content)
 
     def test_file_css_styles_present(self):
-        """Test that CSS styles for file items are present"""
+        """Test that CSS styles for file items are present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -107,7 +107,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('.remove-file', content)
 
     def test_file_input_position_in_form(self):
-        """Test that file input is positioned correctly in the form"""
+        """Test that file input is positioned correctly in the form. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -120,7 +120,7 @@ class AttachmentFormTest(TestCase):
         self.assertLess(attachments_index, submit_button_index)
 
     def test_file_input_optional_indicator(self):
-        """Test that file input is marked as optional"""
+        """Test that file input is marked as optional. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -128,7 +128,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('(Optional)', content)
 
     def test_file_size_formatting_function(self):
-        """Test that file size formatting function is present"""
+        """Test that file size formatting function is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -139,7 +139,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('MB', content)
 
     def test_file_list_update_function(self):
-        """Test that file list update function is present"""
+        """Test that file list update function is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -148,7 +148,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('fileItem', content)
 
     def test_file_input_update_function(self):
-        """Test that file input update function is present"""
+        """Test that file input update function is present. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -157,7 +157,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('DataTransfer', content)
 
     def test_file_validation_before_submission(self):
-        """Test that file validation occurs before form submission"""
+        """Test that file validation occurs before form submission. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         
@@ -166,7 +166,7 @@ class AttachmentFormTest(TestCase):
         self.assertIn('selectedFiles.length', content)
 
     def test_file_reset_on_success(self):
-        """Test that files are reset after successful submission"""
+        """Test that files are reset after successful submission. This keeps regressions visible early in the release cycle."""
         response = self.client.get(self.url)
         content = response.content.decode('utf-8')
         

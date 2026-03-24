@@ -139,4 +139,26 @@ describe("StaffMeetingPage", () => {
 
     expect(await screen.findByText(/submit failed/i)).toBeInTheDocument();
   });
+
+  test("shows slot-required validation when submitting without selecting a slot", async () => {
+    apiFetch
+      .mockResolvedValueOnce(staff)
+      .mockResolvedValueOnce({ slots: ["2026-03-25T09:00:00Z"] });
+
+    render(<StaffMeetingPage />);
+    expect(await screen.findByText("Alice Johnson")).toBeInTheDocument();
+
+    const dateInput = document.querySelector('input[type="date"]');
+    fireEvent.change(dateInput, { target: { value: "2026-03-25" } });
+    expect(await screen.findByRole("button", { name: /09:00/i })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/describe what you want to meet about/i), {
+      target: { value: "Need advice" },
+    });
+
+    const form = document.querySelector("form");
+    fireEvent.submit(form);
+
+    expect(await screen.findByText(/please select a time slot/i)).toBeInTheDocument();
+  });
 });

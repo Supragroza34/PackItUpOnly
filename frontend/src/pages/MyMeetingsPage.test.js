@@ -59,4 +59,30 @@ describe("MyMeetingsPage", () => {
       expect(screen.getByText(/no meetings scheduled/i)).toBeInTheDocument();
     });
   });
+
+  test("falls back to raw meeting datetime when date formatting throws", async () => {
+    const originalToLocaleString = Date.prototype.toLocaleString;
+    Date.prototype.toLocaleString = jest.fn(() => {
+      throw new Error("format fail");
+    });
+
+    apiFetch.mockResolvedValue([
+      {
+        id: 2,
+        staff_name: "Grace Hopper",
+        staff_department: "Engineering",
+        meeting_datetime: "RAW_DATE_VALUE",
+        status: "accepted",
+        description: "Office hour",
+      },
+    ]);
+
+    render(<MyMeetingsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/RAW_DATE_VALUE/i)).toBeInTheDocument();
+    });
+
+    Date.prototype.toLocaleString = originalToLocaleString;
+  });
 });

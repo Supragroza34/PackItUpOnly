@@ -171,6 +171,13 @@ describe("UsersManagement", () => {
         expect.objectContaining({ page: 2, role: "staff", search: "john" })
       );
     });
+
+    fireEvent.click(screen.getByRole("button", { name: /previous/i }));
+    await waitFor(() => {
+      expect(adminApi.getUsers).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, role: "staff", search: "john" })
+      );
+    });
   });
 
   test("disables deleting your own account", async () => {
@@ -218,10 +225,17 @@ describe("UsersManagement", () => {
     expect(await screen.findByText(/edit user #2/i)).toBeInTheDocument();
 
     const modal = document.querySelector(".modal-content");
-    const firstName = modal.querySelector('input[type="text"]');
+    const inputs = modal.querySelectorAll("input");
+    const firstName = inputs[0];
+    const lastName = inputs[1];
+    const email = inputs[2];
+    const department = inputs[3];
     const roleSelect = modal.querySelector("select");
 
     fireEvent.change(firstName, { target: { value: "Janet" } });
+    fireEvent.change(lastName, { target: { value: "UpdatedSmith" } });
+    fireEvent.change(email, { target: { value: "updated@example.com" } });
+    fireEvent.change(department, { target: { value: "Registry" } });
     fireEvent.change(roleSelect, { target: { value: "admin" } });
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
@@ -231,10 +245,35 @@ describe("UsersManagement", () => {
         2,
         expect.objectContaining({
           first_name: "Janet",
+          last_name: "UpdatedSmith",
+          email: "updated@example.com",
+          department: "Registry",
           role: "admin",
         })
       );
       expect(window.alert).toHaveBeenCalledWith("User updated successfully!");
+    });
+  });
+
+  test("modal close button and overlay click close modal", async () => {
+    renderUsers({ users, usersTotalPages: 1, selectedUser: detailedUser });
+
+    expect(await screen.findByText("student1")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /view\/edit/i })[1]);
+    expect(await screen.findByText(/edit user #2/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /close modal/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/edit user #2/i)).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: /view\/edit/i })[1]);
+    expect(await screen.findByText(/edit user #2/i)).toBeInTheDocument();
+
+    const overlay = document.querySelector(".modal-overlay");
+    fireEvent.click(overlay);
+    await waitFor(() => {
+      expect(screen.queryByText(/edit user #2/i)).not.toBeInTheDocument();
     });
   });
 

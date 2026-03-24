@@ -193,6 +193,15 @@ describe("TicketsManagement", () => {
         expect.objectContaining({ page: 2 })
       );
     });
+
+    const prevBtn = screen.getByRole("button", { name: /previous/i });
+    fireEvent.click(prevBtn);
+
+    await waitFor(() => {
+      expect(adminApi.getTickets).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1 })
+      );
+    });
   });
 
   test("assigns ticket with numeric value", async () => {
@@ -201,6 +210,8 @@ describe("TicketsManagement", () => {
     expect(await screen.findByText("K123")).toBeInTheDocument();
 
     const assigns = screen.getAllByTitle(/assign to staff/i);
+    fireEvent.click(assigns[0]);
+
     fireEvent.change(assigns[0], { target: { value: "2" } });
 
     await waitFor(() => {
@@ -274,6 +285,19 @@ describe("TicketsManagement", () => {
     });
   });
 
+  test("delete success branch shows success alert", async () => {
+    renderTickets({ tickets, ticketsTotalPages: 1 });
+
+    expect(await screen.findByText("K123")).toBeInTheDocument();
+    window.confirm.mockReturnValueOnce(true);
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]);
+
+    await waitFor(() => {
+      expect(adminApi.deleteTicket).toHaveBeenCalledWith(1);
+      expect(window.alert).toHaveBeenCalledWith("Ticket deleted successfully!");
+    });
+  });
+
   test("view ticket modal, update success/failure, and close controls", async () => {
     renderTickets({ tickets, ticketsTotalPages: 1, selectedTicket: detailedTicket });
 
@@ -287,10 +311,12 @@ describe("TicketsManagement", () => {
     const selects = modal.querySelectorAll("select");
     const statusSelect = selects[0];
     const prioritySelect = selects[1];
+    const assignSelect = selects[2];
     const adminNotes = modal.querySelectorAll("textarea")[1];
 
     fireEvent.change(statusSelect, { target: { value: "resolved" } });
     fireEvent.change(prioritySelect, { target: { value: "urgent" } });
+    fireEvent.change(assignSelect, { target: { value: "3" } });
     fireEvent.change(adminNotes, { target: { value: "Updated notes" } });
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
@@ -300,6 +326,7 @@ describe("TicketsManagement", () => {
         expect.objectContaining({
           status: "resolved",
           priority: "urgent",
+          assigned_to: 3,
           admin_notes: "Updated notes",
         })
       );

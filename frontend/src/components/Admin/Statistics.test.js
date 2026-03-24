@@ -13,8 +13,13 @@ jest.mock('../../services/adminApi', () => ({
 }));
 
 jest.mock('./AdminTopbar', () => {
-  return function MockAdminTopbar() {
-    return <div data-testid="admin-topbar">AdminTopbar</div>;
+  return function MockAdminTopbar({ handleLogout }) {
+    return (
+      <div>
+        <div data-testid="admin-topbar">AdminTopbar</div>
+        <button onClick={handleLogout}>Topbar Logout</button>
+      </div>
+    );
   };
 });
 
@@ -167,6 +172,61 @@ describe('Statistics', () => {
     });
   });
 
+  test('quick filter 30 and 90 days paths refetch statistics', async () => {
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(adminApi.getStatistics).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /last 30 days/i }));
+    fireEvent.click(screen.getByRole('button', { name: /last 90 days/i }));
+
+    await waitFor(() => {
+      expect(adminApi.getStatistics.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(adminApi.getStatistics).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          start_date: expect.any(String),
+          end_date: expect.any(String),
+        })
+      );
+    });
+  });
+
+  test('custom date range updates trigger fetch and can toggle back to table view', async () => {
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /graph view/i })).toBeInTheDocument();
+    });
+
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: '2026-01-01' } });
+    fireEvent.change(dateInputs[1], { target: { value: '2026-01-10' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /graph view/i }));
+    fireEvent.click(screen.getByRole('button', { name: /table view/i }));
+
+    await waitFor(() => {
+      expect(adminApi.getStatistics).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start_date: expect.stringContaining('2026-01-01'),
+          end_date: expect.stringContaining('2026-01-10'),
+        })
+      );
+    });
+
+    expect(screen.getByText('Department Breakdown')).toBeInTheDocument();
+  });
+
   test('toggles to graph view and renders status, department and priority charts', async () => {
     renderWithProviders(<Statistics />, {
       admin: {
@@ -227,5 +287,60 @@ describe('Statistics', () => {
         expect.stringMatching(/Failed to export tickets:/)
       );
     });
+  });
+
+  test('export statistics failure shows alert', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: 'Unavailable',
+    });
+
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /export statistics csv/i }));
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith(
+        expect.stringMatching(/Failed to export statistics:/)
+      );
+    });
+  });
+
+  test('export all tickets success downloads file', async () => {
+    const blob = new Blob(['csv-data'], { type: 'text/csv' });
+    global.fetch.mockResolvedValue({
+      ok: true,
+      blob: jest.fn().mockResolvedValue(blob),
+    });
+
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /export all tickets csv/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+      expect(window.URL.createObjectURL).toHaveBeenCalled();
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    });
+  });
+
+  test('topbar logout handler dispatches logout path', async () => {
+    renderWithProviders(<Statistics />, {
+      admin: {
+        statisticsLoading: false,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /topbar logout/i }));
+    expect(screen.getByTestId('admin-topbar')).toBeInTheDocument();
   });
 });

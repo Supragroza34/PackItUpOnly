@@ -48,5 +48,54 @@ describe('Chatbot component (AI helper)', () => {
       expect(screen.getByText('Hello student!')).toBeInTheDocument();
     });
   });
+
+  test('shows error and removes message on non-OK fetch', async () => {
+    const mockResponse = { error: 'Something went wrong!' };
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve(mockResponse),
+      })
+    );
+    render(<Chatbot />);
+    const input = screen.getByPlaceholderText(/type your question/i);
+    fireEvent.change(input, { target: { value: 'Trigger error' } });
+    fireEvent.submit(input.closest('form'));
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong!');
+    });
+    // The user message should be removed after error
+    expect(screen.queryByText('Trigger error')).not.toBeInTheDocument();
+  });
+
+  test('shows error and removes message on fetch exception', async () => {
+    global.fetch = jest.fn(() => Promise.reject(new Error('Network down')));
+    render(<Chatbot />);
+    const input = screen.getByPlaceholderText(/type your question/i);
+    fireEvent.change(input, { target: { value: 'Network fail' } });
+    fireEvent.submit(input.closest('form'));
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Network down');
+    });
+    // The user message should be removed after error
+    expect(screen.queryByText('Network fail')).not.toBeInTheDocument();
+  });
+
+  test('uses correct API url for local and production', () => {
+    // This test is optional and only covers the API_CHAT logic (line 19)
+    const originalHostname = window.location.hostname;
+    const originalOrigin = window.location.origin;
+    Object.defineProperty(window.location, 'hostname', { value: 'localhost', configurable: true });
+    Object.defineProperty(window.location, 'protocol', { value: 'http:', configurable: true });
+    expect(require('./Chatbot').API_CHAT).toMatch(/:8000/);
+    Object.defineProperty(window.location, 'hostname', { value: 'prod.com', configurable: true });
+    Object.defineProperty(window.location, 'origin', { value: 'https://prod.com', configurable: true });
+    jest.resetModules();
+    expect(require('./Chatbot').API_CHAT).toMatch(/\/api\/ai-chatbot\/chat\//);
+    // Restore
+    Object.defineProperty(window.location, 'hostname', { value: originalHostname, configurable: true });
+    Object.defineProperty(window.location, 'origin', { value: originalOrigin, configurable: true });
+  });
 });
 

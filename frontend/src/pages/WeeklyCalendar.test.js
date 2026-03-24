@@ -57,6 +57,29 @@ describe("WeeklyCalendar", () => {
     expect(screen.queryByText(/john@kcl.ac.uk/i)).not.toBeInTheDocument();
   });
 
+  test("flips tooltip to the left when right overflow would occur", () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 210,
+    });
+
+    render(<WeeklyCalendar officeHours={officeHours} acceptedMeetings={meetings} />);
+
+    const meetingBlock = screen.getByText("John");
+    meetingBlock.getBoundingClientRect = () => ({ right: 190, left: 150, top: 40 });
+
+    fireEvent.mouseEnter(meetingBlock);
+    const tooltip = screen.getByText(/john@kcl.ac.uk/i).closest(".wc-tooltip");
+    expect(tooltip).toBeInTheDocument();
+    expect(tooltip.style.left).toBe("-100px");
+
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: originalInnerWidth,
+    });
+  });
+
   test("renders safely with empty props and default hours", () => {
     render(<WeeklyCalendar officeHours={[]} acceptedMeetings={[]} />);
     expect(screen.getByText(/08:00/i)).toBeInTheDocument();

@@ -172,4 +172,33 @@ describe("TicketFormPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /remove note.txt/i }));
     expect(screen.queryByText("note.txt")).not.toBeInTheDocument();
   });
+
+  test("does not add duplicate attachments", async () => {
+    renderWithRouter(<TicketFormPage />);
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = new File(["same"], "dup.txt", { type: "text/plain" });
+
+    await userEvent.upload(fileInput, [file]);
+    await userEvent.upload(fileInput, [file]);
+
+    expect(screen.getByText("dup.txt")).toBeInTheDocument();
+    expect(screen.getAllByText("dup.txt")).toHaveLength(1);
+  });
+
+  test("clears previous attachment error when subsequent upload is valid", async () => {
+    renderWithRouter(<TicketFormPage />);
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const bigContent = new Uint8Array(10 * 1024 * 1024 + 1);
+    const bigFile = new File([bigContent], "huge.txt", { type: "text/plain" });
+    const okFile = new File(["ok"], "fine.txt", { type: "text/plain" });
+
+    await userEvent.upload(fileInput, [bigFile]);
+    expect(await screen.findByText(/exceeds the 10 MB limit/i)).toBeInTheDocument();
+
+    await userEvent.upload(fileInput, [okFile]);
+    expect(screen.queryByText(/exceeds the 10 MB limit/i)).not.toBeInTheDocument();
+    expect(screen.getByText("fine.txt")).toBeInTheDocument();
+  });
 });

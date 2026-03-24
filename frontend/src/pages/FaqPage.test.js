@@ -31,4 +31,13 @@ describe("FaqPage", () => {
 
     expect(onNavigate).toHaveBeenCalled();
   });
+
+  test("create ticket CTA works without onNavigate callback", async () => {
+    render(<FaqPage userRole="student" />);
+
+    const link = screen.getByRole("link", { name: /Create a new ticket/i });
+    await userEvent.click(link);
+
+    expect(link).toHaveAttribute("href", "/create-ticket");
+  });
 });

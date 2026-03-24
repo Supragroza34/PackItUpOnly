@@ -208,4 +208,92 @@ describe("StaffMeetingRequestsPage", () => {
     fireEvent.click(screen.getAllByTitle(/delete block/i)[0]);
     expect(await screen.findByText(/delete failed/i)).toBeInTheDocument();
   });
+
+  test("accept failure rolls back and shows error", async () => {
+    apiFetch
+      .mockResolvedValueOnce([
+        {
+          id: 7,
+          student_name: "Eve Doe",
+          student_k_number: "K777",
+          student_email: "eve@kcl.ac.uk",
+          meeting_datetime: "2026-04-01T10:00:00Z",
+          description: "Need help",
+          status: "pending",
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockRejectedValueOnce(new Error("accept failed"));
+
+    render(<StaffMeetingRequestsPage />);
+    expect(await screen.findByText(/eve doe/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /accept/i }));
+
+    expect(await screen.findByText(/accept failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/eve doe/i)).toBeInTheDocument();
+  });
+
+  test("switches tabs and shows empty accepted/declined states", async () => {
+    apiFetch
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          student_name: "John Doe",
+          student_k_number: "K123",
+          student_email: "john@kcl.ac.uk",
+          meeting_datetime: "2026-03-25T10:00:00Z",
+          description: "Need support",
+          status: "pending",
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    render(<StaffMeetingRequestsPage />);
+    expect(await screen.findByText(/john doe/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /accepted/i }));
+    expect(await screen.findByText(/no accepted requests/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /declined/i }));
+    expect(await screen.findByText(/no declined requests/i)).toBeInTheDocument();
+  });
+
+  test("updates day/start/end inputs before adding office hours", async () => {
+    apiFetch
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({
+        id: 12,
+        day_of_week: "Friday",
+        start_time: "11:30:00",
+        end_time: "13:30:00",
+      });
+
+    render(<StaffMeetingRequestsPage />);
+    expect(await screen.findByRole("button", { name: /add block/i })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByDisplayValue("Monday"), { target: { value: "Friday" } });
+
+    const timeInputs = document.querySelectorAll('input[type="time"]');
+    fireEvent.change(timeInputs[0], { target: { value: "11:30" } });
+    fireEvent.change(timeInputs[1], { target: { value: "13:30" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /add block/i }));
+
+    await waitFor(() => {
+      expect(apiFetch).toHaveBeenCalledWith(
+        "/staff/office-hours/",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            day_of_week: "Friday",
+            start_time: "11:30",
+            end_time: "13:30",
+          }),
+        }),
+        { auth: true }
+      );
+    });
+  });
 });

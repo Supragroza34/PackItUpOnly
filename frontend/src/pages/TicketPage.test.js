@@ -66,6 +66,10 @@ describe("TicketPage", () => {
       unwrap: () => Promise.resolve({}),
       then: (cb) => cb && cb(),
     });
+    mockState = {
+      auth: { user: { id: 1, role: "staff" } },
+      staff: { staffList: [{ id: 2, first_name: "Alex", last_name: "Kim", ticket_count: 3 }] },
+    };
   });
 
   test("renders loading state before ticket loads", () => {
@@ -86,6 +90,9 @@ describe("TicketPage", () => {
     global.fetch.mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({}) });
     render(<TicketPage />);
     expect(await screen.findByText(/ticket not found/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/staff/dashboard");
   });
 
   test("renders ticket details and reply fallback", async () => {
@@ -108,6 +115,25 @@ describe("TicketPage", () => {
     fireEvent.change(screen.getByDisplayValue("Pending"), { target: { value: "reported" } });
 
     await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/staff/dashboard");
+    });
+  });
+
+  test("report button triggers reported status update path", async () => {
+    global.fetch
+      .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve(ticketPayload()) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(ticketPayload({ status: "reported" })) });
+
+    render(<TicketPage />);
+    expect(await screen.findByText(/ticket #9/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /report ticket/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/staff/dashboard/9/update/",
+        expect.objectContaining({ method: "PATCH" })
+      );
       expect(mockNavigate).toHaveBeenCalledWith("/staff/dashboard");
     });
   });
@@ -155,6 +181,91 @@ describe("TicketPage", () => {
     expect(await screen.findByText(/ok/i)).toBeInTheDocument();
   });
 
+  test("logs reply failure when reply submit request rejects", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    global.fetch
+      .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve(ticketPayload()) })
+      .mockRejectedValueOnce(new Error("reply fail"));
+
+    render(<TicketPage />);
+    expect(await screen.findByText(/ticket #9/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/write a reply/i), { target: { value: "Hello" } });
+    fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith("Reply failed:", expect.any(Error));
+    });
+    errorSpy.mockRestore();
+  });
+
+  test("logs fetchTicket refresh failure after successful reply", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    global.fetch
+      .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve(ticketPayload()) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) })
+      .mockRejectedValueOnce(new Error("refresh fail"));
+
+    render(<TicketPage />);
+    expect(await screen.findByText(/ticket #9/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/write a reply/i), { target: { value: "Hello" } });
+    fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith("Error:", expect.any(Error));
+    });
+    errorSpy.mockRestore();
+  });
+
+  test("fetchTicket refresh 401 clears token and redirects", async () => {
+    global.fetch
+      .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve(ticketPayload()) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) })
+      .mockResolvedValueOnce({ status: 401, json: () => Promise.resolve({}) });
+
+    render(<TicketPage />);
+    expect(await screen.findByText(/ticket #9/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/write a reply/i), { target: { value: "Hello" } });
+    fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+    await waitFor(() => {
+      expect(localStorage.getItem("access")).toBeNull();
+      expect(mockNavigate).toHaveBeenCalledWith("/login");
+    });
+  });
+
+  test("logs close ticket failure on PATCH rejection", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    global.fetch
+      .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve(ticketPayload()) })
+      .mockRejectedValueOnce(new Error("close fail"));
+
+    render(<TicketPage />);
+    expect(await screen.findByText(/ticket #9/i)).toBeInTheDocument();
+
+    window.confirm.mockReturnValueOnce(true).mockReturnValueOnce(true);
+    fireEvent.click(screen.getByRole("button", { name: /close ticket/i }));
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith("Failed to close ticket:", expect.any(Error));
+    });
+    errorSpy.mockRestore();
+  });
+
+  test("logs initial fetch error when first ticket load rejects", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    global.fetch.mockRejectedValueOnce(new Error("initial fail"));
+
+    render(<TicketPage />);
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith("Error:", expect.any(Error));
+    });
+    errorSpy.mockRestore();
+  });
+
   test("supports nested reply target cancel", async () => {
     global.fetch.mockResolvedValueOnce({
       status: 200,
@@ -191,6 +302,8 @@ describe("TicketPage", () => {
     const assignSelect = container.querySelector(".assign-select");
     expect(assignSelect).toBeInTheDocument();
 
+    fireEvent.click(assignSelect);
+
     fireEvent.change(assignSelect, { target: { value: "2" } });
     await waitFor(() => {
       expect(reassignTicket).toHaveBeenCalledWith({ ticketId: 9, updates: { assigned_to: 2 } });
@@ -200,5 +313,27 @@ describe("TicketPage", () => {
     await waitFor(() => {
       expect(window.alert).toHaveBeenCalledWith(expect.stringContaining("Failed to redirect ticket"));
     });
+  });
+
+  test("header back button navigates to staff dashboard", async () => {
+    global.fetch.mockResolvedValueOnce({ status: 200, json: () => Promise.resolve(ticketPayload()) });
+
+    render(<TicketPage />);
+    expect(await screen.findByText(/ticket #9/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/staff/dashboard");
+  });
+
+  test("shows no staff in list hint", async () => {
+    mockState = {
+      auth: { user: { id: 1, role: "staff" } },
+      staff: { staffList: [] },
+    };
+    global.fetch.mockResolvedValueOnce({ status: 200, json: () => Promise.resolve(ticketPayload()) });
+
+    render(<TicketPage />);
+    expect(await screen.findByText(/ticket #9/i)).toBeInTheDocument();
+    expect(screen.getByText(/no staff in list/i)).toBeInTheDocument();
   });
 });

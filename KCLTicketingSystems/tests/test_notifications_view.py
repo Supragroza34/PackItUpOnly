@@ -11,8 +11,10 @@ from KCLTicketingSystems.models import Notification, Ticket
 User = get_user_model()
 
 class NotificationViewTests(TestCase):
+    """Group notifications view checks so the user workflow is guarded against regressions."""
     def setUp(self):
         # Create test users
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.student = User.objects.create_user(
             username="student1",
             email="student1@example.com",
@@ -51,6 +53,7 @@ class NotificationViewTests(TestCase):
         self.client = APIClient()
 
     def test_list_notifications_authenticated_user(self):
+        """Guard list notifications authenticated user in the notifications view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         url = reverse("notifications_list")
         response = self.client.get(url)
@@ -58,11 +61,13 @@ class NotificationViewTests(TestCase):
         self.assertEqual(len(response.data), 2)  # 2 notifications
 
     def test_list_notifications_unauthenticated_user(self):
+        """Guard list notifications unauthenticated user in the notifications view flow so regressions surface early."""
         url = reverse("notifications_list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_mark_notification_read(self):
+        """Guard mark notification read in the notifications view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         url = reverse("mark_notification_read", kwargs={"pk": self.notification1.id})
         response = self.client.post(url)
@@ -71,12 +76,14 @@ class NotificationViewTests(TestCase):
         self.assertTrue(self.notification1.is_read)
 
     def test_mark_notification_read_nonexistent(self):
+        """Guard mark notification read nonexistent in the notifications view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         url = reverse("mark_notification_read", kwargs={"pk": 9999})  # Non-existent
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_mark_notification_read_wrong_user(self):
+        """Guard mark notification read wrong user in the notifications view flow so regressions surface early."""
         self.client.force_authenticate(user=self.other_user)
         url = reverse("mark_notification_read", kwargs={"pk": self.notification1.id})
         response = self.client.post(url)

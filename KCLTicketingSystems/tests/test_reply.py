@@ -3,10 +3,10 @@ from datetime import datetime
 from KCLTicketingSystems.models import Ticket, Reply, User
 
 class ReplyModelTest(TestCase):
-    """Test cases for the Reply model"""
+    """Test cases for the Reply model. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         # Create a student first
         self.student = User.objects.create_user(
             username='teststudent',
@@ -48,7 +48,7 @@ class ReplyModelTest(TestCase):
         }
 
     def test_reply_creation(self):
-        """Test creating a reply"""
+        """Test creating a reply. This keeps regressions visible early in the release cycle."""
         reply = Reply.objects.create(**self.reply_data)
         self.assertEqual(reply.user.role, 'staff')
         self.assertEqual(reply.body, 'Try switching off and then on again.')
@@ -63,13 +63,13 @@ class ReplyModelTest(TestCase):
         self.assertIsNotNone(reply.ticket.updated_at)
 
     def test_reply_str_method(self):
-        """Test the __str__ method of Reply model"""
+        """Test the __str__ method of Reply model. This keeps regressions visible early in the release cycle."""
         reply = Reply.objects.create(**self.reply_data)
         expected_str = reply.body + " (posted at " + str(reply.created_at) + ")"
         self.assertEqual(str(reply), expected_str)
 
     def test_reply_auto_timestamps(self):
-        """Test that created_at is automatically set"""
+        """Test that created_at is automatically set. This keeps regressions visible early in the release cycle."""
         reply = Reply.objects.create(**self.reply_data)
         self.assertIsNotNone(reply.created_at)
         self.assertIsInstance(reply.created_at, datetime)

@@ -6,8 +6,10 @@ from KCLTicketingSystems.models import Ticket, Reply, User
 
 class ReplyCreateViewTests(APITestCase):
 
+    """Group reply view checks so the user workflow is guarded against regressions."""
     def setUp(self):
         # Create users
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.staff = User.objects.create_user(
             username='staff',
             email='staff@test.com',
@@ -39,6 +41,7 @@ class ReplyCreateViewTests(APITestCase):
         self.url = f'/api/replies/create/'
 
     def test_authenticated_user_can_post_reply(self):
+        """Guard authenticated user can post reply in the reply view flow so regressions surface early."""
         refresh = RefreshToken.for_user(self.staff)
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
@@ -58,6 +61,7 @@ class ReplyCreateViewTests(APITestCase):
         self.assertEqual(created_reply.body, "This is a test reply")
 
     def test_unauthenticated_user_cannot_post_reply(self):
+        """Guard unauthenticated user cannot post reply in the reply view flow so regressions surface early."""
         data = {
             "user": self.ticket_user.id,
             "ticket": self.ticket.id,
@@ -72,6 +76,7 @@ class ReplyCreateViewTests(APITestCase):
 
     def test_reply_is_linked_to_logged_in_staff(self):
 
+        """Guard reply is linked to logged in staff in the reply view flow so regressions surface early."""
         refresh = RefreshToken.for_user(self.staff)
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
@@ -88,6 +93,7 @@ class ReplyCreateViewTests(APITestCase):
         self.assertEqual(reply.user, self.staff)
 
     def test_invalid_reply_post_no_body(self):
+        """Guard invalid reply post no body in the reply view flow so regressions surface early."""
         refresh = RefreshToken.for_user(self.staff)
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
@@ -105,6 +111,7 @@ class ReplyCreateViewTests(APITestCase):
         self.assertEqual(count_before, count_after)
 
     def test_invalid_reply_post_no_ticket(self):
+        """Guard invalid reply post no ticket in the reply view flow so regressions surface early."""
         refresh = RefreshToken.for_user(self.staff)
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
@@ -123,7 +130,9 @@ class ReplyCreateViewTests(APITestCase):
 
 
 class ReplyDetailsViewTests(APITestCase):
+    """Group reply view checks so the user workflow is guarded against regressions."""
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.student = User.objects.create_user(
             username="student_reply",
             email="student_reply@test.com",
@@ -165,21 +174,25 @@ class ReplyDetailsViewTests(APITestCase):
         self.url = f"/api/staff/dashboard/reply/{self.ticket.id}/"
 
     def test_unauthenticated_user_gets_401(self):
+        """Guard unauthenticated user gets 401 in the reply view flow so regressions surface early."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_student_user_gets_403(self):
+        """Guard student user gets 403 in the reply view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_unassigned_staff_gets_access_denied(self):
+        """Guard unassigned staff gets access denied in the reply view flow so regressions surface early."""
         self.client.force_authenticate(user=self.other_staff)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data.get("error"), "Access denied")
 
     def test_assigned_staff_get_lists_replies(self):
+        """Guard assigned staff get lists replies in the reply view flow so regressions surface early."""
         Reply.objects.create(user=self.staff, ticket=self.ticket, body="First")
         Reply.objects.create(user=self.staff, ticket=self.ticket, body="Second")
 
@@ -192,6 +205,7 @@ class ReplyDetailsViewTests(APITestCase):
         self.assertEqual(response.data[1]["body"], "Second")
 
     def test_assigned_staff_post_creates_reply(self):
+        """Guard assigned staff post creates reply in the reply view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
 
         response = self.client.post(self.url, {"body": "Staff reply"}, format="json")
@@ -203,6 +217,7 @@ class ReplyDetailsViewTests(APITestCase):
         self.assertEqual(created.body, "Staff reply")
 
     def test_assigned_staff_post_invalid_payload_returns_400(self):
+        """Guard assigned staff post invalid payload returns 400 in the reply view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff)
 
         response = self.client.post(self.url, {"body": ""}, format="json")
@@ -210,6 +225,7 @@ class ReplyDetailsViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_admin_can_access_unassigned_ticket(self):
+        """Guard admin can access unassigned ticket in the reply view flow so regressions surface early."""
         ticket = Ticket.objects.create(
             user=self.student,
             assigned_to=None,
@@ -225,6 +241,7 @@ class ReplyDetailsViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_superuser_with_non_admin_role_can_access(self):
+        """Guard superuser with non admin role can access in the reply view flow so regressions surface early."""
         super_staff = User.objects.create_user(
             username="super_staff_reply",
             email="super_staff_reply@test.com",
@@ -248,6 +265,7 @@ class ReplyDetailsViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_ticket_not_found_returns_404(self):
+        """Guard ticket not found returns 404 in the reply view flow so regressions surface early."""
         self.client.force_authenticate(user=self.admin)
         response = self.client.get("/api/staff/dashboard/reply/999999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

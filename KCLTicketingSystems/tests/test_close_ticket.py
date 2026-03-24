@@ -13,9 +13,10 @@ from ..models.user import User
 
 
 class StudentCloseTicketTest(TestCase):
-    """Test cases for student close ticket endpoint (POST /api/dashboard/tickets/<id>/close/)"""
+    """Test cases for student close ticket endpoint (POST /api/dashboard/tickets/<id>/close/). This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
         self.student = User.objects.create_user(
             username='student',
@@ -47,7 +48,7 @@ class StudentCloseTicketTest(TestCase):
         )
 
     def test_student_close_own_ticket_success(self):
-        """Student can close their own ticket"""
+        """Student can close their own ticket. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         url = f'/api/dashboard/tickets/{self.ticket.id}/close/'
         response = self.client.post(url)
@@ -62,7 +63,7 @@ class StudentCloseTicketTest(TestCase):
         self.assertEqual(self.ticket.closed_by_id, self.student.id)
 
     def test_student_cannot_close_other_students_ticket(self):
-        """Student cannot close another student's ticket"""
+        """Student cannot close another student's ticket. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         url = f'/api/dashboard/tickets/{self.other_ticket.id}/close/'
         response = self.client.post(url)
@@ -73,13 +74,13 @@ class StudentCloseTicketTest(TestCase):
         self.assertIsNone(self.other_ticket.closed_by_id)
 
     def test_student_close_unauthenticated(self):
-        """Unauthenticated request returns 401"""
+        """Unauthenticated request returns 401. This keeps regressions visible early in the release cycle."""
         url = f'/api/dashboard/tickets/{self.ticket.id}/close/'
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_student_close_already_closed(self):
-        """Closing an already closed ticket returns 400"""
+        """Closing an already closed ticket returns 400. This keeps regressions visible early in the release cycle."""
         self.ticket.status = Ticket.Status.CLOSED
         self.ticket.closed_by = self.student
         self.ticket.save()
@@ -91,16 +92,17 @@ class StudentCloseTicketTest(TestCase):
         self.assertIn('error', response.data)
 
     def test_student_close_nonexistent_ticket(self):
-        """Closing non-existent ticket returns 404"""
+        """Closing non-existent ticket returns 404. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         response = self.client.post('/api/dashboard/tickets/99999/close/')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class StaffCloseTicketTest(TestCase):
-    """Test cases for staff close ticket (PATCH /api/staff/dashboard/<id>/update/)"""
+    """Test cases for staff close ticket (PATCH /api/staff/dashboard/<id>/update/). This keeps regressions visible early in the release cycle."""
 
     def _create_users(self):
+        """Support the close ticket tests by create users so assertions remain focused on outcomes."""
         self.staff = User.objects.create_user(
             username='staff', email='staff@test.com', password='testpass123',
             k_number='33333333', role=User.Role.STAFF
@@ -119,6 +121,7 @@ class StaffCloseTicketTest(TestCase):
         )
 
     def _create_tickets(self):
+        """Support the close ticket tests by create tickets so assertions remain focused on outcomes."""
         self.ticket_assigned_to_staff = Ticket.objects.create(
             user=self.student, department='Informatics', type_of_issue='Software Issue',
             additional_details='Need help', status=Ticket.Status.PENDING, assigned_to=self.staff
@@ -133,12 +136,13 @@ class StaffCloseTicketTest(TestCase):
         )
 
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
         self._create_users()
         self._create_tickets()
 
     def test_staff_close_assigned_ticket_success(self):
-        """Staff can close ticket assigned to them"""
+        """Staff can close ticket assigned to them. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.staff)
         url = f'/api/staff/dashboard/{self.ticket_assigned_to_staff.id}/update/'
         response = self.client.patch(url, {'status': 'closed'}, format='json')
@@ -152,7 +156,7 @@ class StaffCloseTicketTest(TestCase):
         self.assertEqual(self.ticket_assigned_to_staff.closed_by_id, self.staff.id)
 
     def test_staff_cannot_close_ticket_assigned_to_other(self):
-        """Staff cannot close ticket assigned to another staff member"""
+        """Staff cannot close ticket assigned to another staff member. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.staff)
         url = f'/api/staff/dashboard/{self.ticket_assigned_to_other.id}/update/'
         response = self.client.patch(url, {'status': 'closed'}, format='json')
@@ -164,7 +168,7 @@ class StaffCloseTicketTest(TestCase):
         self.assertIsNone(self.ticket_assigned_to_other.closed_by_id)
 
     def test_staff_cannot_close_unassigned_ticket(self):
-        """Staff cannot close unassigned ticket (not assigned to them)"""
+        """Staff cannot close unassigned ticket (not assigned to them). This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.staff)
         url = f'/api/staff/dashboard/{self.unassigned_ticket.id}/update/'
         response = self.client.patch(url, {'status': 'closed'}, format='json')
@@ -172,7 +176,7 @@ class StaffCloseTicketTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_admin_can_close_any_ticket(self):
-        """Admin can close any ticket regardless of assignment"""
+        """Admin can close any ticket regardless of assignment. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.admin)
         url = f'/api/staff/dashboard/{self.ticket_assigned_to_staff.id}/update/'
         response = self.client.patch(url, {'status': 'closed'}, format='json')
@@ -185,13 +189,13 @@ class StaffCloseTicketTest(TestCase):
         self.assertEqual(self.ticket_assigned_to_staff.closed_by_id, self.admin.id)
 
     def test_staff_close_unauthenticated(self):
-        """Unauthenticated request returns 401"""
+        """Unauthenticated request returns 401. This keeps regressions visible early in the release cycle."""
         url = f'/api/staff/dashboard/{self.ticket_assigned_to_staff.id}/update/'
         response = self.client.patch(url, {'status': 'closed'}, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_student_cannot_use_staff_close_endpoint(self):
-        """Student cannot use staff ticket update endpoint"""
+        """Student cannot use staff ticket update endpoint. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         url = f'/api/staff/dashboard/{self.ticket_assigned_to_staff.id}/update/'
         response = self.client.patch(url, {'status': 'closed'}, format='json')
@@ -199,9 +203,10 @@ class StaffCloseTicketTest(TestCase):
 
 
 class UserDashboardClosedByRoleTest(TestCase):
-    """Test that user dashboard includes closed_by_role for closed tickets"""
+    """Test that user dashboard includes closed_by_role for closed tickets. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
         self.student = User.objects.create_user(
             username='student',
@@ -220,7 +225,7 @@ class UserDashboardClosedByRoleTest(TestCase):
         )
 
     def test_user_dashboard_includes_closed_by_role(self):
-        """User dashboard returns closed_by_role for closed tickets"""
+        """User dashboard returns closed_by_role for closed tickets. This keeps regressions visible early in the release cycle."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get('/api/dashboard/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -11,7 +11,9 @@ from KCLTicketingSystems.models import MeetingRequest, OfficeHours, Reply, Ticke
 
 
 class ReplyFormTests(TestCase):
+    """Group forms and staff meeting requests checks so the user workflow is guarded against regressions."""
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.student = User.objects.create_user(
             username="student_form",
             email="student_form@example.com",
@@ -32,19 +34,23 @@ class ReplyFormTests(TestCase):
         )
 
     def test_reply_form_meta_and_valid_payload(self):
+        """Guard reply form meta and valid payload in the forms and staff meeting requests flow so regressions surface early."""
         self.assertEqual(ReplyForm.Meta.model, Reply)
         self.assertEqual(ReplyForm.Meta.fields, ["body"])
         form = ReplyForm(data={"body": "Test reply"})
         self.assertTrue(form.is_valid())
 
     def test_reply_form_requires_body(self):
+        """Guard reply form requires body in the forms and staff meeting requests flow so regressions surface early."""
         form = ReplyForm(data={"body": ""})
         self.assertFalse(form.is_valid())
         self.assertIn("body", form.errors)
 
 
 class StaffMeetingRequestsViewTests(TestCase):
+    """Group forms and staff meeting requests checks so the user workflow is guarded against regressions."""
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
 
         self.student = User.objects.create_user(
@@ -99,10 +105,12 @@ class StaffMeetingRequestsViewTests(TestCase):
         )
 
     def _auth(self, user):
+        """Support the forms and staff meeting requests tests by auth so assertions remain focused on outcomes."""
         token = RefreshToken.for_user(user).access_token
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     def test_meeting_request_list_staff_only_and_success(self):
+        """Guard meeting request list staff only and success in the forms and staff meeting requests flow so regressions surface early."""
         self._auth(self.student)
         denied = self.client.get("/api/staff/dashboard/meeting-requests/")
         self.assertEqual(denied.status_code, status.HTTP_403_FORBIDDEN)
@@ -113,6 +121,7 @@ class StaffMeetingRequestsViewTests(TestCase):
         self.assertEqual(len(ok.data), 1)
 
     def test_accept_and_deny_request_paths(self):
+        """Guard accept and deny request paths in the forms and staff meeting requests flow so regressions surface early."""
         self._auth(self.staff)
         accepted = self.client.post(
             f"/api/staff/dashboard/meeting-requests/{self.pending_request.id}/accept/"
@@ -141,6 +150,7 @@ class StaffMeetingRequestsViewTests(TestCase):
         self.assertEqual(deny_again.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_office_hours_manage_and_delete(self):
+        """Guard office hours manage and delete in the forms and staff meeting requests flow so regressions surface early."""
         self._auth(self.student)
         forbidden = self.client.get("/api/staff/office-hours/")
         self.assertEqual(forbidden.status_code, status.HTTP_403_FORBIDDEN)
@@ -171,6 +181,7 @@ class StaffMeetingRequestsViewTests(TestCase):
         self.assertEqual(deleted.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_meeting_request_create_get_and_post(self):
+        """Guard meeting request create get and post in the forms and staff meeting requests flow so regressions surface early."""
         self._auth(self.student)
         listed = self.client.get("/api/meeting-requests/")
         self.assertEqual(listed.status_code, status.HTTP_200_OK)

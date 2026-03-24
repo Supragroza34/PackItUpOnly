@@ -10,7 +10,7 @@ User = get_user_model()
 
 
 class HomeAndSpaViewTests(TestCase):
-    """home() and spa_catchall() serve React build or fallback template."""
+    """home() and spa_catchall() serve React build or fallback template. This keeps regressions visible early in the release cycle."""
 
     @patch("KCLTicketingSystems.views.home_view.FRONTEND_INDEX")
     def test_home_uses_fallback_template_when_no_build(self, mock_index):
@@ -23,6 +23,7 @@ class HomeAndSpaViewTests(TestCase):
 
     @patch("KCLTicketingSystems.views.home_view.FRONTEND_INDEX")
     def test_spa_catchall_uses_fallback_when_no_build(self, mock_index):
+        """Guard SPA catchall uses fallback when no build in the home staff directory flow so regressions surface early."""
         mock_index.exists.return_value = False
         client = Client()
         response = client.get("/login/sub")
@@ -32,6 +33,7 @@ class HomeAndSpaViewTests(TestCase):
     @patch("builtins.open", new_callable=mock_open, read_data="<!DOCTYPE html><title>ReactBuild</title>")
     @patch("KCLTicketingSystems.views.home_view.FRONTEND_INDEX")
     def test_home_serves_built_index_when_present(self, mock_index, _mock_file):
+        """Guard home serves built index when present in the home staff directory flow so regressions surface early."""
         mock_index.exists.return_value = True
 
         client = Client()
@@ -42,6 +44,7 @@ class HomeAndSpaViewTests(TestCase):
     @patch("builtins.open", new_callable=mock_open, read_data="<html>SPA</html>")
     @patch("KCLTicketingSystems.views.home_view.FRONTEND_INDEX")
     def test_spa_catchall_serves_same_build(self, mock_index, _mock_file):
+        """Guard SPA catchall serves same build in the home staff directory flow so regressions surface early."""
         mock_index.exists.return_value = True
 
         client = Client()
@@ -51,9 +54,10 @@ class HomeAndSpaViewTests(TestCase):
 
 
 class StaffDirectoryAPITests(TestCase):
-    """GET /api/staff/ — staff directory for authenticated users."""
+    """GET /api/staff/ — staff directory for authenticated users. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
         self.student = User.objects.create_user(
             username="student_sd",
@@ -82,10 +86,12 @@ class StaffDirectoryAPITests(TestCase):
         )
 
     def test_staff_directory_requires_auth(self):
+        """Guard staff directory requires auth in the home staff directory flow so regressions surface early."""
         r = self.client.get("/api/staff/")
         self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_staff_directory_lists_staff_ordered(self):
+        """Guard staff directory lists staff ordered in the home staff directory flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         r = self.client.get("/api/staff/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -96,6 +102,7 @@ class StaffDirectoryAPITests(TestCase):
         self.assertIn("staff_hr@example.com", emails)
 
     def test_staff_directory_filter_by_department(self):
+        """Guard staff directory filter by department in the home staff directory flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         r = self.client.get("/api/staff/", {"department": "it"})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -104,9 +111,10 @@ class StaffDirectoryAPITests(TestCase):
 
 
 class StaffMeetingDetailTests(TestCase):
-    """GET /api/staff/<id>/ — staff profile + office hours."""
+    """GET /api/staff/<id>/ — staff profile + office hours. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
         self.student = User.objects.create_user(
             username="stu_sm",
@@ -123,10 +131,12 @@ class StaffMeetingDetailTests(TestCase):
         )
 
     def test_staff_meeting_requires_auth(self):
+        """Guard staff meeting requires auth in the home staff directory flow so regressions surface early."""
         r = self.client.get(f"/api/staff/{self.staff_user.id}/")
         self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_staff_meeting_returns_staff_serializer(self):
+        """Guard staff meeting returns staff serializer in the home staff directory flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         r = self.client.get(f"/api/staff/{self.staff_user.id}/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -134,15 +144,17 @@ class StaffMeetingDetailTests(TestCase):
         self.assertEqual(r.json()["email"], "staff_sm@example.com")
 
     def test_staff_meeting_404_for_non_staff_user_id(self):
+        """Guard staff meeting 404 for non staff user ID in the home staff directory flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         r = self.client.get(f"/api/staff/{self.student.id}/")
         self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class DepartmentStaffListTests(TestCase):
-    """GET /api/staff/list/ — colleagues in same department for reassignment."""
+    """GET /api/staff/list/ — colleagues in same department for reassignment. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
         self.staff_it = User.objects.create_user(
             username="ds_staff1",
@@ -167,10 +179,12 @@ class DepartmentStaffListTests(TestCase):
         )
 
     def test_department_staff_list_requires_auth(self):
+        """Guard department staff list requires auth in the home staff directory flow so regressions surface early."""
         r = self.client.get("/api/staff/list/")
         self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_department_staff_list_returns_same_department_staff_and_admin(self):
+        """Guard department staff list returns same department staff and admin in the home staff directory flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff_it)
         r = self.client.get("/api/staff/list/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)

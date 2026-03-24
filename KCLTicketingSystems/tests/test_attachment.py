@@ -8,10 +8,10 @@ import time
 
 
 class AttachmentModelTest(TestCase):
-    """Test cases for the Attachment model"""
+    """Test cases for the Attachment model. This keeps regressions visible early in the release cycle."""
 
     def setUp(self):
-        """Set up test data"""
+        """Set up test data. This keeps regressions visible early in the release cycle."""
         self.ticket = Ticket.objects.create(
             name='John',
             surname='Doe',
@@ -28,7 +28,7 @@ class AttachmentModelTest(TestCase):
         )
 
     def test_attachment_creation(self):
-        """Test creating an attachment"""
+        """Test creating an attachment. This keeps regressions visible early in the release cycle."""
         attachment = Attachment.objects.create(
             ticket=self.ticket,
             file=self.test_file,
@@ -40,7 +40,7 @@ class AttachmentModelTest(TestCase):
         self.assertIsNotNone(attachment.file_size)
 
     def test_attachment_str_method(self):
-        """Test the __str__ method of Attachment model"""
+        """Test the __str__ method of Attachment model. This keeps regressions visible early in the release cycle."""
         attachment = Attachment.objects.create(
             ticket=self.ticket,
             file=self.test_file,
@@ -50,7 +50,7 @@ class AttachmentModelTest(TestCase):
         self.assertEqual(str(attachment), expected_str)
 
     def test_attachment_foreign_key_relationship(self):
-        """Test that attachment is linked to ticket via foreign key"""
+        """Test that attachment is linked to ticket via foreign key. This keeps regressions visible early in the release cycle."""
         attachment = Attachment.objects.create(
             ticket=self.ticket,
             file=self.test_file,
@@ -62,7 +62,7 @@ class AttachmentModelTest(TestCase):
         self.assertIn(attachment, self.ticket.attachments.all())
 
     def test_attachment_cascade_delete(self):
-        """Test that attachments are deleted when ticket is deleted"""
+        """Test that attachments are deleted when ticket is deleted. This keeps regressions visible early in the release cycle."""
         attachment = Attachment.objects.create(
             ticket=self.ticket,
             file=self.test_file,
@@ -75,7 +75,7 @@ class AttachmentModelTest(TestCase):
         self.assertFalse(Attachment.objects.filter(id=attachment_id).exists())
 
     def test_attachment_original_filename_auto_set(self):
-        """Test that original_filename is automatically set from file name"""
+        """Test that original_filename is automatically set from file name. This keeps regressions visible early in the release cycle."""
         attachment = Attachment.objects.create(
             ticket=self.ticket,
             file=self.test_file
@@ -83,7 +83,7 @@ class AttachmentModelTest(TestCase):
         self.assertEqual(attachment.original_filename, 'test_file.pdf')
 
     def test_attachment_file_size_auto_set(self):
-        """Test that file_size is automatically set"""
+        """Test that file_size is automatically set. This keeps regressions visible early in the release cycle."""
         attachment = Attachment.objects.create(
             ticket=self.ticket,
             file=self.test_file,
@@ -92,7 +92,7 @@ class AttachmentModelTest(TestCase):
         self.assertEqual(attachment.file_size, len(b"file content"))
 
     def test_attachment_upload_path(self):
-        """Test that file is uploaded to correct path"""
+        """Test that file is uploaded to correct path. This keeps regressions visible early in the release cycle."""
         attachment = Attachment.objects.create(
             ticket=self.ticket,
             file=self.test_file,
@@ -105,7 +105,7 @@ class AttachmentModelTest(TestCase):
         self.assertTrue(attachment.file.name.endswith('.pdf'))
 
     def test_attachment_ordering(self):
-        """Test that attachments are ordered by uploaded_at descending"""
+        """Test that attachments are ordered by uploaded_at descending. This keeps regressions visible early in the release cycle."""
         file1 = SimpleUploadedFile("file1.pdf", b"content1", content_type="application/pdf")
         file2 = SimpleUploadedFile("file2.pdf", b"content2", content_type="application/pdf")
         
@@ -130,7 +130,7 @@ class AttachmentModelTest(TestCase):
         self.assertGreaterEqual(attachments[0].uploaded_at, attachments[1].uploaded_at)
 
     def test_multiple_attachments_per_ticket(self):
-        """Test that a ticket can have multiple attachments"""
+        """Test that a ticket can have multiple attachments. This keeps regressions visible early in the release cycle."""
         file1 = SimpleUploadedFile("file1.pdf", b"content1", content_type="application/pdf")
         file2 = SimpleUploadedFile("file2.pdf", b"content2", content_type="application/pdf")
         
@@ -150,13 +150,13 @@ class AttachmentModelTest(TestCase):
         self.assertIn(attachment2, self.ticket.attachments.all())
 
     def test_attachment_meta_options(self):
-        """Test Attachment model Meta options"""
+        """Test Attachment model Meta options. This keeps regressions visible early in the release cycle."""
         self.assertEqual(Attachment._meta.verbose_name, 'Attachment')
         self.assertEqual(Attachment._meta.verbose_name_plural, 'Attachments')
         self.assertEqual(Attachment._meta.ordering, ['-uploaded_at'])
 
     def test_attachment_with_different_file_types(self):
-        """Test creating attachments with different file types"""
+        """Test creating attachments with different file types. This keeps regressions visible early in the release cycle."""
         # Test PDF
         pdf_file = SimpleUploadedFile("test.pdf", b"pdf content", content_type="application/pdf")
         pdf_attachment = Attachment.objects.create(
@@ -185,7 +185,7 @@ class AttachmentModelTest(TestCase):
         self.assertEqual(doc_attachment.original_filename, 'test.docx')
 
     def test_attachment_original_filename_preserved(self):
-        """Test that original filename is preserved even if file name changes"""
+        """Test that original filename is preserved even if file name changes. This keeps regressions visible early in the release cycle."""
         attachment = Attachment.objects.create(
             ticket=self.ticket,
             file=self.test_file,

@@ -11,6 +11,7 @@ import re
 def ticket_form(request):
     """
     Display the ticket form page
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     return render(request, 'ticket_form.html')
 
@@ -18,6 +19,7 @@ def _get_data_and_files(request):
     """
     Isolate data extraction to handle the architectural differences 
     between standard JSON API requests and multipart form data containing files.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     if request.content_type and "multipart/form-data" in request.content_type:
         return request.POST, request.FILES.getlist("attachments")
@@ -25,7 +27,7 @@ def _get_data_and_files(request):
 
 
 def _extract_fields(data):
-    """Safely extract string fields from the payload, stripping whitespace."""
+    """Safely extract string fields from the payload, stripping whitespace. This keeps the HTTP boundary centralized for the ticketing workflow."""
     return {
         "name": data.get("name", "").strip(),
         "surname": data.get("surname", "").strip(),
@@ -38,7 +40,7 @@ def _extract_fields(data):
 
 
 def _validate_core_fields(fields):
-    """Run all field-level validation rules and aggregate errors."""
+    """Run all field-level validation rules and aggregate errors. This keeps the HTTP boundary centralized for the ticketing workflow."""
     errors = {}
     _validate_name(fields["name"], errors)
     _validate_surname(fields["surname"], errors)
@@ -54,7 +56,7 @@ def _validate_core_fields(fields):
 
 
 def _validate_name(name, errors):
-    """Enforce name formatting rules."""
+    """Enforce name formatting rules. This keeps the HTTP boundary centralized for the ticketing workflow."""
     if not name:
         errors["name"] = "Name is required"
     elif re.search(r"\d", name):
@@ -62,7 +64,7 @@ def _validate_name(name, errors):
 
 
 def _validate_surname(surname, errors):
-    """Enforce surname formatting rules."""
+    """Enforce surname formatting rules. This keeps the HTTP boundary centralized for the ticketing workflow."""
     if not surname:
         errors["surname"] = "Surname is required"
     elif re.search(r"\d", surname):
@@ -70,7 +72,7 @@ def _validate_surname(surname, errors):
 
 
 def _validate_k_number(k_number, errors):
-    """Ensure K-number adheres to institutional formatting standard (digits only, max 8)."""
+    """Ensure K-number adheres to institutional formatting standard (digits only, max 8). This keeps the HTTP boundary centralized for the ticketing workflow."""
     if not k_number:
         errors["k_number"] = "K-Number is required"
     elif re.search(r"[a-zA-Z]", k_number):
@@ -84,6 +86,7 @@ def _validate_k_email(k_email, k_number, errors):
     Strictly enforce the KCL domain structure for emails.
     Regex is required here to dynamically match the provided K-number 
     against the local-part of the email address.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     if not k_email:
         errors["k_email"] = "Email is required"
@@ -94,7 +97,7 @@ def _validate_k_email(k_email, k_number, errors):
 
 
 def _validate_department(department, errors):
-    """Ensure department maps to an existing institutional group."""
+    """Ensure department maps to an existing institutional group. This keeps the HTTP boundary centralized for the ticketing workflow."""
     valid_departments = ["Informatics", "Engineering", "Medicine"]
     if not department:
         errors["department"] = "Department is required"
@@ -103,6 +106,7 @@ def _validate_department(department, errors):
 
 
 def _validate_issue_and_details(type_of_issue, additional_details, errors):
+    """Centralize validation policy for issue and details so request handling stays consistent."""
     if not type_of_issue:
         errors["type_of_issue"] = "Type of issue is required"
     if not additional_details:
@@ -110,7 +114,7 @@ def _validate_issue_and_details(type_of_issue, additional_details, errors):
 
 
 def _validate_attachments(files):
-    """Enforce platform-wide file size and extension security limits."""
+    """Enforce platform-wide file size and extension security limits. This keeps the HTTP boundary centralized for the ticketing workflow."""
     errors = {}
     max_size = 10 * 1024 * 1024
     allowed_ext = [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".txt"]
@@ -123,6 +127,7 @@ def _validate_attachments(files):
 
 
 def _single_file_error(file, max_size, allowed_ext):
+    """Encapsulate single file error so view handlers remain thin and policy decisions stay consistent."""
     if file.size > max_size:
         return f"{file.name} exceeds the maximum file size of 10MB"
     file_ext = os.path.splitext(file.name)[1].lower()
@@ -135,7 +140,7 @@ def _single_file_error(file, max_size, allowed_ext):
 
 
 def _create_ticket_and_attachments(fields, files):
-    """Handle database persistence. Executed as a group to ensure logical association."""
+    """Handle database persistence. Executed as a group to ensure logical association. This keeps the HTTP boundary centralized for the ticketing workflow."""
     ticket = Ticket.objects.create(**fields)
     count = 0
     for file in files:
@@ -146,7 +151,7 @@ def _create_ticket_and_attachments(fields, files):
 
 @api_view(["POST"])
 def submit_ticket(request):
-    """Submit a ticket with validation and file attachments."""
+    """Submit a ticket with validation and file attachments. This keeps the HTTP boundary centralized for the ticketing workflow."""
     data, files = _get_data_and_files(request)
     fields = _extract_fields(data)
     errors = _collect_errors(fields, files)
@@ -160,6 +165,7 @@ def submit_ticket(request):
 
 
 def _collect_errors(fields, files):
+    """Encapsulate collect errors so view handlers remain thin and policy decisions stay consistent."""
     errors = _validate_core_fields(fields)
     if files:
         attachment_errors = _validate_attachments(files)
@@ -168,6 +174,7 @@ def _collect_errors(fields, files):
 
 
 def _success_response(ticket, count):
+    """Encapsulate success response so view handlers remain thin and policy decisions stay consistent."""
     return Response(
         {
             "message": "Ticket submitted successfully",
@@ -179,6 +186,7 @@ def _success_response(ticket, count):
 
 
 def _server_error_response(exc):
+    """Encapsulate server error response so view handlers remain thin and policy decisions stay consistent."""
     return Response(
         {"errors": {"general": f"An error occurred: {str(exc)}"}},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,

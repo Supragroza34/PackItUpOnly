@@ -10,6 +10,7 @@ from ..serializers import StaffListSerializer
 def staff_directory(request):
     """
     Retrieves a list of staff members, optionally filtered by department.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     qs = User.objects.filter(role=User.Role.STAFF)
 

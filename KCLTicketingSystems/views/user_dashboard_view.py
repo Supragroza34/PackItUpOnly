@@ -16,6 +16,7 @@ from ..utils import notify_on_ticket_update
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_dashboard(request):
+    """Handle user dashboard requests as the HTTP boundary for the ticketing workflow. This keeps the HTTP boundary centralized for the ticketing workflow."""
     user = request.user
     tickets = (
         Ticket.objects
@@ -64,7 +65,7 @@ def user_dashboard(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def student_close_ticket(request, ticket_id):
-    """Allow a student to close their own ticket."""
+    """Allow a student to close their own ticket. This keeps the HTTP boundary centralized for the ticketing workflow."""
     try:
         ticket = Ticket.objects.get(id=ticket_id, user=request.user)
     except Ticket.DoesNotExist:

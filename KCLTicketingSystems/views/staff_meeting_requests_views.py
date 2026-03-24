@@ -21,6 +21,7 @@ from ..utils import notify_staff_on_meeting_request, notify_student_on_meeting_r
 def meeting_request_list(request):
     """
     Get all meeting requests for the logged-in staff member.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     # Ensure user is staff
     if request.user.role != 'staff':
@@ -39,6 +40,7 @@ def meeting_request_list(request):
 def meeting_request_accept(request, request_id):
     """
     Accept a meeting request.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     meeting_request = get_object_or_404(MeetingRequest, id=request_id, staff=request.user)
     
@@ -62,6 +64,7 @@ def meeting_request_accept(request, request_id):
 def meeting_request_deny(request, request_id):
     """
     Deny a meeting request.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     meeting_request = get_object_or_404(MeetingRequest, id=request_id, staff=request.user)
     
@@ -86,6 +89,7 @@ def office_hours_manage(request):
     """
     GET: Retrieve office hours for the logged-in staff member.
     POST: Create a new office hours block.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     # Ensure user is staff
     if request.user.role != 'staff':
@@ -115,6 +119,7 @@ def office_hours_manage(request):
 def office_hours_delete(request, hours_id):
     """
     Delete an office hours block.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     office_hours = get_object_or_404(OfficeHours, id=hours_id, staff=request.user)
     office_hours.delete()
@@ -128,6 +133,7 @@ def staff_available_slots(request, staff_id):
     Returns available 15-minute meeting slots for a staff member on a given date.
     Slots occupied by PENDING or ACCEPTED meeting requests are excluded.
     Query param: date=YYYY-MM-DD
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     from django.utils import timezone as dj_timezone
 
@@ -186,6 +192,7 @@ def meeting_request_create(request):
     """
     GET: List meeting requests for the current user (student).
     POST: Create a new meeting request (for students).
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     if request.method == 'GET':
         meeting_requests = MeetingRequest.objects.filter(student=request.user)

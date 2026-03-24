@@ -12,17 +12,19 @@ from ..utils import notify_user_on_reply, notify_staff_on_student_reply
 
 
 def _staff_can_access_ticket(user, ticket):
-    """Staff can access tickets assigned to them; admins can access any."""
+    """Staff can access tickets assigned to them; admins can access any. This keeps the HTTP boundary centralized for the ticketing workflow."""
     if getattr(user, "is_superuser", False) or (user.role or "").lower() == "admin":
         return True
     return ticket.assigned_to_id == user.id
 
 
 def _is_staff_or_admin(user):
+    """Encapsulate is staff or admin so view handlers remain thin and policy decisions stay consistent."""
     return getattr(user, "is_superuser", False) or (user.role or "").lower() in ("staff", "admin")
 
 
 def _can_access_ticket_conversation(user, ticket):
+    """Encapsulate can access ticket conversation so view handlers remain thin and policy decisions stay consistent."""
     if _is_staff_or_admin(user):
         return _staff_can_access_ticket(user, ticket)
     return ticket.user_id == user.id
@@ -33,6 +35,7 @@ def reply_details(request, ticket_id):
     """
     GET: List replies for a ticket (staff dashboard).
     POST: Create a reply for the ticket (staff only, must have access to ticket).
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -63,10 +66,12 @@ def reply_details(request, ticket_id):
 
 
 class ReplyCreateView(generics.CreateAPIView):
+    """Provide reply create view endpoint behavior so authorization and response shaping stay consistent."""
     serializer_class = ReplyCreateSerializer
     permission_classes = [IsAuthenticated]
 
     def create(self, request):
+        """Handle create requests as the HTTP boundary for the ticketing workflow. This keeps the HTTP boundary centralized for the ticketing workflow."""
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             reply = serializer.save(user=self.request.user)
@@ -88,6 +93,7 @@ def ticket_replies(request, ticket_id):
 
     GET: list replies in chronological order.
     POST: create reply if caller can access the ticket and ticket is not closed.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     ticket = get_object_or_404(Ticket, pk=ticket_id)
 

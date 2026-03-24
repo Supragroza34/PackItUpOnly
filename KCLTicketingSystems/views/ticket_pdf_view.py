@@ -39,7 +39,7 @@ LABEL_GREY = colors.HexColor("#555555")
 
 
 def _build_styles():
-    """Return a dict of named ParagraphStyles used in the PDF."""
+    """Return a dict of named ParagraphStyles used in the PDF. This keeps the HTTP boundary centralized for the ticketing workflow."""
     base = getSampleStyleSheet()
 
     title_style = ParagraphStyle(
@@ -128,7 +128,7 @@ def _build_styles():
 
 
 def _format_datetime(dt):
-    """Return a human-readable datetime string, handling both aware and naive."""
+    """Return a human-readable datetime string, handling both aware and naive. This keeps the HTTP boundary centralized for the ticketing workflow."""
     if dt is None:
         return "Unknown"
     if dt.tzinfo is not None:
@@ -137,7 +137,7 @@ def _format_datetime(dt):
 
 
 def _user_display_name(user):
-    """Return a display name for a User instance, or 'Unknown' if None."""
+    """Return a display name for a User instance, or 'Unknown' if None. This keeps the HTTP boundary centralized for the ticketing workflow."""
     if user is None:
         return "Unknown"
     full = f"{user.first_name} {user.last_name}".strip()
@@ -145,7 +145,7 @@ def _user_display_name(user):
 
 
 def _pdf_safe_text(value):
-    """Convert user-provided text/HTML into ReportLab-safe paragraph content."""
+    """Convert user-provided text/HTML into ReportLab-safe paragraph content. This keeps the HTTP boundary centralized for the ticketing workflow."""
     if value is None:
         return ""
 
@@ -172,7 +172,7 @@ def _pdf_safe_text(value):
 
 
 def _build_pdf(ticket) -> bytes:
-    """Construct the PDF in memory and return the raw bytes."""
+    """Construct the PDF in memory and return the raw bytes. This keeps the HTTP boundary centralized for the ticketing workflow."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -313,6 +313,7 @@ def ticket_pdf(request, ticket_id):
     Only the student who owns the ticket may download it.
     Staff/admin access is deliberately restricted here — they have their
     own dashboard views.
+    This keeps the HTTP boundary centralized for the ticketing workflow.
     """
     ticket = get_object_or_404(Ticket, pk=ticket_id)
 

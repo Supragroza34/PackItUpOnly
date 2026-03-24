@@ -9,5 +9,6 @@ from ..serializers import StaffWithOfficeHoursSerializer
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def staff_meeting(request, staff_id: int):
+    """Handle staff meeting requests as the HTTP boundary for the ticketing workflow. This keeps the HTTP boundary centralized for the ticketing workflow."""
     staff = get_object_or_404(User, id=staff_id, role=User.Role.STAFF)
     return Response(StaffWithOfficeHoursSerializer(staff).data)

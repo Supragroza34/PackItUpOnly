@@ -5,7 +5,9 @@ from KCLTicketingSystems.models import User
 
 
 class StaffDirectoryViewTests(APITestCase):
+    """Group staff directory view checks so the user workflow is guarded against regressions."""
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.url = "/api/staff/"
 
         self.student = User.objects.create_user(
@@ -51,10 +53,12 @@ class StaffDirectoryViewTests(APITestCase):
         )
 
     def test_requires_authentication(self):
+        """Guard requires authentication in the staff directory view flow so regressions surface early."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_returns_only_staff_users(self):
+        """Guard returns only staff users in the staff directory view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.url)
 
@@ -66,6 +70,7 @@ class StaffDirectoryViewTests(APITestCase):
         self.assertIn(self.staff_c.id, returned_ids)
 
     def test_department_filter_is_case_insensitive(self):
+        """Guard department filter is case insensitive in the staff directory view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.url, {"department": "informatics"})
 
@@ -76,6 +81,7 @@ class StaffDirectoryViewTests(APITestCase):
         self.assertNotIn(self.staff_c.id, returned_ids)
 
     def test_results_are_ordered_by_last_name_then_first_name(self):
+        """Guard results are ordered by last name then first name in the staff directory view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.url)
 
@@ -91,6 +97,7 @@ class StaffDirectoryViewTests(APITestCase):
         )
 
     def test_unknown_department_returns_empty_list(self):
+        """Guard unknown department returns empty list in the staff directory view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self.url, {"department": "Physics"})
 

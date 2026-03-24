@@ -11,11 +11,14 @@ from ..serializers import TicketCreateSerializer
 
 
 class RichTextSanitizerTests(TestCase):
+    """Group rich text ticket feature checks so the user workflow is guarded against regressions."""
     def test_sanitize_returns_empty_for_none_and_empty(self):
+        """Guard sanitize returns empty for none and empty in the rich text ticket feature flow so regressions surface early."""
         self.assertEqual(sanitize_additional_details(None), "")
         self.assertEqual(sanitize_additional_details(""), "")
 
     def test_sanitize_keeps_only_supported_formatting(self):
+        """Guard sanitize keeps only supported formatting in the rich text ticket feature flow so regressions surface early."""
         html = (
             '<p data-indent="2" style="color:red">'
             'Hello <strong>Bold</strong> <em>Italic</em> '
@@ -35,7 +38,9 @@ class RichTextSanitizerTests(TestCase):
 
 
 class TicketCreateSerializerRichTextTests(TestCase):
+    """Group rich text ticket feature checks so the user workflow is guarded against regressions."""
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.student = User.objects.create_user(
             username="student1",
             email="student1@test.com",
@@ -69,6 +74,7 @@ class TicketCreateSerializerRichTextTests(TestCase):
         )
 
     def test_serializer_assigns_least_loaded_staff_and_sanitizes_details(self):
+        """Guard serializer assigns least loaded staff and sanitizes details in the rich text ticket feature flow so regressions surface early."""
         serializer = TicketCreateSerializer()
 
         ticket = serializer.create(
@@ -86,6 +92,7 @@ class TicketCreateSerializerRichTextTests(TestCase):
         self.assertNotIn("<img", ticket.additional_details)
 
     def test_serializer_skips_sanitizer_for_empty_details(self):
+        """Guard serializer skips sanitizer for empty details in the rich text ticket feature flow so regressions surface early."""
         serializer = TicketCreateSerializer()
 
         with patch("KCLTicketingSystems.serializers.sanitize_additional_details") as sanitize_mock:
@@ -104,7 +111,9 @@ class TicketCreateSerializerRichTextTests(TestCase):
 
 
 class TicketCreateViewRichTextAndAttachmentsTests(TestCase):
+    """Group rich text ticket feature checks so the user workflow is guarded against regressions."""
     def setUp(self):
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.client = APIClient()
         self.user = User.objects.create_user(
             username="api_student",
@@ -127,6 +136,7 @@ class TicketCreateViewRichTextAndAttachmentsTests(TestCase):
 
     @patch("KCLTicketingSystems.views.ticket_create_view.notify_admin_on_ticket")
     def test_create_ticket_sanitizes_html_and_notifies(self, notify_mock):
+        """Guard create ticket sanitizes html and notifies in the rich text ticket feature flow so regressions surface early."""
         payload = {
             "department": "Informatics",
             "type_of_issue": "Software Installation Issues",
@@ -144,6 +154,7 @@ class TicketCreateViewRichTextAndAttachmentsTests(TestCase):
 
     @patch("KCLTicketingSystems.views.ticket_create_view.notify_admin_on_ticket")
     def test_create_ticket_with_attachments_persists_file_records(self, notify_mock):
+        """Guard create ticket with attachments persists file records in the rich text ticket feature flow so regressions surface early."""
         attachment = SimpleUploadedFile(
             "notes.txt",
             b"hello attachment",

@@ -8,8 +8,10 @@ from django.db import models
 
 class StaffDashboardViewTests(TestCase):
 
+    """Group staff dashboard view checks so the user workflow is guarded against regressions."""
     def setUp(self):
         # Create users with unique emails
+        """Establish shared fixtures so tests stay focused on behavior rather than setup details."""
         self.student = User.objects.create_user(
             first_name='Test',
             last_name='User',
@@ -106,10 +108,12 @@ class StaffDashboardViewTests(TestCase):
 
     def test_dashboard_requires_authentication(self):
         # Unauthenticated request should be blocked
+        """Guard dashboard requires authentication in the staff dashboard view flow so regressions surface early."""
         response = self.client.get('/api/staff/dashboard/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_non_staff_returns_access_error(self):
+        """Guard non staff returns access error in the staff dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.student)
         response = self.client.get('/api/staff/dashboard/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -117,6 +121,7 @@ class StaffDashboardViewTests(TestCase):
 
     def test_authenticated_staff_dashboard_returns_their_tickets(self):
         # Authenticate the client
+        """Guard authenticated staff dashboard returns their tickets in the staff dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff1)
         response = self.client.get('/api/staff/dashboard/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -129,6 +134,7 @@ class StaffDashboardViewTests(TestCase):
         self.assertIn(self.ticket2.id, ticket_ids)
 
     def test_staff_cannot_see_others_staff_tickets(self):
+        """Guard staff cannot see others staff tickets in the staff dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff1)
         response = self.client.get('/api/staff/dashboard/')
         data = response.json()
@@ -136,6 +142,7 @@ class StaffDashboardViewTests(TestCase):
         self.assertNotIn(self.other_ticket.id, ticket_ids)
 
     def test_closed_filter(self):
+        """Guard closed filter in the staff dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff1)
         response = self.client.get('/api/staff/dashboard/?filtering=closed')
         data = response.json()
@@ -144,6 +151,7 @@ class StaffDashboardViewTests(TestCase):
         self.assertIn(ticket_id, ticket_ids)
 
     def test_overdue_filter(self):
+        """Guard overdue filter in the staff dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff1)
         response = self.client.get('/api/staff/dashboard/?filtering=overdue')
         data = response.json()
@@ -152,6 +160,7 @@ class StaffDashboardViewTests(TestCase):
         self.assertNotIn(ticket_id, ticket_ids)
 
     def test_all_filter(self):
+        """Guard all filter in the staff dashboard view flow so regressions surface early."""
         self.client.force_authenticate(user=self.staff1)
         response = self.client.get('/api/staff/dashboard/?filtering=all')
         data = response.json()
@@ -166,6 +175,7 @@ class StaffDashboardViewTests(TestCase):
         self.assertIn(ticket_id4, ticket_ids)
 
     def test_search_bar(self):
+        """Guard search bar in the staff dashboard view flow so regressions surface early."""
         self.other_ticket2 = Ticket.objects.create(
             user=self.student2,
             type_of_issue='Network',
@@ -190,6 +200,7 @@ class StaffDashboardViewTests(TestCase):
         self.assertIn(self.other_ticket2.id, ticket_ids_2)
 
     def test_closed_by(self):
+        """Guard closed by in the staff dashboard view flow so regressions surface early."""
         self.other_ticket2 = Ticket.objects.create(
             user=self.student2,
             type_of_issue='Network',

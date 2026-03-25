@@ -61,10 +61,12 @@ const Statistics = () => {
         });
     };
     
-    const handleExportStatistics = () => {
+    const exportCsv = (type) => {
         const token = localStorage.getItem('access');
-        const url = `/api/admin/export/statistics-csv/?start_date=${new Date(dateFilter.startDate).toISOString()}&end_date=${new Date(dateFilter.endDate + 'T23:59:59').toISOString()}`;
-        
+        const endpoint = type === 'statistics'
+            ? '/api/admin/export/statistics-csv/'
+            : '/api/admin/export/tickets-csv/';
+        const url = `${endpoint}?start_date=${new Date(dateFilter.startDate).toISOString()}&end_date=${new Date(dateFilter.endDate + 'T23:59:59').toISOString()}`;
         fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -80,40 +82,16 @@ const Statistics = () => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `ticket_statistics_${dateFilter.startDate}_to_${dateFilter.endDate}.csv`;
+            a.download = `${type === 'statistics' ? 'ticket_statistics' : 'all_tickets'}_${dateFilter.startDate}_to_${dateFilter.endDate}.csv`;
             document.body.appendChild(a);
             a.click();
             a.remove();
         })
-        .catch(err => alert('Failed to export statistics: ' + err.message));
+        .catch(err => alert(`Failed to export ${type === 'statistics' ? 'statistics' : 'tickets'}: ` + err.message));
     };
-    
-    const handleExportAllTickets = () => {
-        const token = localStorage.getItem('access');
-        const url = `/api/admin/export/tickets-csv/?start_date=${new Date(dateFilter.startDate).toISOString()}&end_date=${new Date(dateFilter.endDate + 'T23:59:59').toISOString()}`;
-        
-        fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Export failed: ${response.status} ${response.statusText}`);
-            }
-            return response.blob();
-        })
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `all_tickets_${dateFilter.startDate}_to_${dateFilter.endDate}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        })
-        .catch(err => alert('Failed to export tickets: ' + err.message));
-    };
+
+    const handleExportStatistics = () => exportCsv('statistics');
+    const handleExportAllTickets = () => exportCsv('tickets');
     
     const formatHours = (hours) => {
         if (hours === null || hours === undefined) return 'N/A';

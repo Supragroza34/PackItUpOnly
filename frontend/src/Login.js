@@ -34,6 +34,16 @@ export default function Login() {
     const timer = setTimeout(syncAutofill, 100);
     return () => clearTimeout(timer);
   }, [username, password]);
+  
+  const navigateByRole = (userObj) => {
+    if (userObj.role === "admin" || userObj.is_superuser) {
+      nav("/admin/dashboard", { replace: true });
+    } else if (userObj.role === "staff" || userObj.role === "Staff") {
+      nav("/staff/dashboard", { replace: true });
+    } else {
+      nav("/dashboard", { replace: true });
+    }
+  };
 
   // Redirect when user is set in AuthContext
   useEffect(() => {
@@ -50,6 +60,13 @@ export default function Login() {
         console.log("Redirecting to user dashboard");
         nav("/dashboard", { replace: true });
       }
+    }
+  }, [user, loading, nav]);
+  
+  // Redirect when user is set in AuthContext
+  useEffect(() => {
+    if (user && loading) {
+      navigateByRole(user);
     }
   }, [user, loading, nav]);
 
@@ -81,18 +98,7 @@ export default function Login() {
       console.log("Login successful, user data:", userData);
       
       // Redirect based on user role using the fresh userData
-      if (userData.role === "admin" || userData.is_superuser) {
-        console.log("Redirecting to admin dashboard");
-        nav("/admin/dashboard", { replace: true });
-      }
-      else if(userData.role === "staff" || userData.role === "Staff"){
-        console.log("Redirecting to staff dashboard");
-        nav("/staff/dashboard", { replace: true });
-      } 
-      else {
-        console.log("Redirecting to user dashboard");
-        nav("/dashboard", { replace: true });
-      }
+      navigateByRole(userData);
     } catch (e2) {
       console.error("Login error:", e2);
       // Display the error message (already user-friendly from Redux)

@@ -23,7 +23,7 @@ from ..serializers import (
 )
 from ..permissions import IsAdmin
 
-from ..utils import notify_on_ticket_update
+from ..utils import notify_on_ticket_update, auto_close_stale_awaiting_response
 
 
 # ================= DASHBOARD STATISTICS =================
@@ -62,39 +62,46 @@ def _compute_dept_response_times(tickets):
     staff or admin user.  Only departments that have at least one such reply are
     included in the returned dict.
     """
-    staff_roles = [User.Role.STAFF, User.Role.ADMIN]
+    first_reply = _first_staff_reply_map(tickets)
+    ticket_meta = _ticket_meta_map(tickets)
+    return _dept_response_time_hours(first_reply, ticket_meta)
 
-    # Build {ticket_id: first_staff_reply_at} in Python.
-    # .distinct(field) is only supported on PostgreSQL, so we iterate in Python.
+
+def _first_staff_reply_map(tickets):
+    staff_roles = [User.Role.STAFF, User.Role.ADMIN]
     first_reply = {}
     for reply in (
         Reply.objects.filter(ticket__in=tickets, user__role__in=staff_roles)
-        .order_by('created_at')
-        .values('ticket_id', 'created_at')
+        .order_by("created_at")
+        .values("ticket_id", "created_at")
     ):
-        if reply['ticket_id'] not in first_reply:
-            first_reply[reply['ticket_id']] = reply['created_at']
+        tid = reply["ticket_id"]
+        if tid not in first_reply:
+            first_reply[tid] = reply["created_at"]
+    return first_reply
 
-    # Single query for both department and created_at to avoid two round-trips.
-    ticket_meta = {
+
+def _ticket_meta_map(tickets):
+    return {
         tid: (dept, created)
-        for tid, dept, created in tickets.values_list('id', 'department', 'created_at')
+        for tid, dept, created in tickets.values_list("id", "department", "created_at")
     }
 
+
+def _dept_response_time_hours(first_reply, ticket_meta):
     dept_times = defaultdict(list)
     for ticket_id, first_reply_at in first_reply.items():
         meta = ticket_meta.get(ticket_id)
-        if meta:
-            dept, created = meta
-            if dept and created:
-                delta = (first_reply_at - created).total_seconds()
-                if delta >= 0:
-                    dept_times[dept].append(delta)
-
-    return {
-        dept: round((sum(times) / len(times)) / 3600, 2)
-        for dept, times in dept_times.items()
-    }
+        if not meta:
+            continue
+        dept, created = meta
+        if not (dept and created):
+            continue
+        delta = (first_reply_at - created).total_seconds()
+        if delta < 0:
+            continue
+        dept_times[dept].append(delta)
+    return {dept: round((sum(times) / len(times)) / 3600, 2) for dept, times in dept_times.items()}
 
 
 @api_view(['GET'])
@@ -102,41 +109,40 @@ def _compute_dept_response_times(tickets):
 def dashboard_stats(request):
     """Get dashboard statistics"""
     try:
-        # Ticket statistics
-        total_tickets = Ticket.objects.count()
-        pending = Ticket.objects.filter(status=Ticket.Status.PENDING).count()
-        in_progress = Ticket.objects.filter(status=Ticket.Status.IN_PROGRESS).count()
-        resolved = Ticket.objects.filter(status=Ticket.Status.RESOLVED).count()
-        closed = Ticket.objects.filter(status=Ticket.Status.CLOSED).count()
-        
-        # User statistics
-        total_users = User.objects.count()
-        students = User.objects.filter(role=User.Role.STUDENT, is_superuser=False).count()
-        staff = User.objects.filter(role=User.Role.STAFF, is_superuser=False).count()
-        # Count users with admin role OR superusers
-        admins = User.objects.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True)).count()
-        
-        # Recent tickets (last 7 days)
-        week_ago = timezone.now() - timedelta(days=7)
-        recent = Ticket.objects.filter(created_at__gte=week_ago).order_by('-created_at')[:10]
-        
-        data = {
-            'total_tickets': total_tickets,
-            'pending_tickets': pending,
-            'in_progress_tickets': in_progress,
-            'resolved_tickets': resolved,
-            'closed_tickets': closed,
-            'total_users': total_users,
-            'total_students': students,
-            'total_staff': staff,
-            'total_admins': admins,
-            'recent_tickets': recent,  # Pass queryset, not serialized data
-        }
-        
-        serializer = DashboardStatsSerializer(data)
-        return Response(serializer.data)
+        auto_close_stale_awaiting_response()
+        payload = _dashboard_stats_payload()
+        return Response(DashboardStatsSerializer(payload).data)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _dashboard_stats_payload():
+    total_tickets = Ticket.objects.count()
+    pending = Ticket.objects.filter(status=Ticket.Status.PENDING).count()
+    in_progress = Ticket.objects.filter(status=Ticket.Status.IN_PROGRESS).count()
+    resolved = Ticket.objects.filter(status=Ticket.Status.RESOLVED).count()
+    closed = Ticket.objects.filter(status=Ticket.Status.CLOSED).count()
+    total_users = User.objects.count()
+    students = User.objects.filter(role=User.Role.STUDENT, is_superuser=False).count()
+    staff = User.objects.filter(role=User.Role.STAFF, is_superuser=False).count()
+    admins = User.objects.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True)).count()
+    week_ago = timezone.now() - timedelta(days=7)
+    recent = (
+        Ticket.objects.filter(created_at__gte=week_ago)
+        .order_by("-created_at")[:10]
+    )
+    return {
+        "total_tickets": total_tickets,
+        "pending_tickets": pending,
+        "in_progress_tickets": in_progress,
+        "resolved_tickets": resolved,
+        "closed_tickets": closed,
+        "total_users": total_users,
+        "total_students": students,
+        "total_staff": staff,
+        "total_admins": admins,
+        "recent_tickets": recent,
+    }
 
 
 # ================= TICKET MANAGEMENT =================
@@ -209,58 +215,22 @@ def _paginate_tickets(tickets, request):
 def admin_tickets_list(request):
     """Get all tickets with filtering, searching, and pagination"""
     try:
-        tickets = Ticket.objects.select_related('user', 'closed_by').all().order_by('-created_at')
-        search = request.GET.get('search', '')
-        if search:
-            tickets = tickets.filter(
-                Q(user__first_name__icontains=search) |
-                Q(user__last_name__icontains=search) |
-                Q(user__k_number__icontains=search) |
-                Q(user__email__icontains=search) |
-                Q(department__icontains=search) |
-                Q(type_of_issue__icontains=search)
-            )
-        
-        # Filters
-        status_filter = request.GET.get('status')
-        if status_filter:
-            tickets = tickets.filter(status=status_filter)
-        
-        priority_filter = request.GET.get('priority')
-        if priority_filter:
-            tickets = tickets.filter(priority=priority_filter)
-        
-        department_filter = request.GET.get('department')
-        if department_filter:
-            tickets = tickets.filter(department=department_filter)
-        
-        assigned_filter = request.GET.get('assigned_to')
-        if assigned_filter:
-            if assigned_filter == 'unassigned':
-                tickets = tickets.filter(assigned_to__isnull=True)
-            else:
-                tickets = tickets.filter(assigned_to_id=assigned_filter)
-        
-        # Pagination
-        page = int(request.GET.get('page', 1))
-        page_size = int(request.GET.get('page_size', 20))
-        start = (page - 1) * page_size
-        end = start + page_size
-        
-        total_count = tickets.count()
-        tickets_page = tickets[start:end]
-        
-        serializer = TicketListSerializer(tickets_page, many=True)
-        
-        return Response({
-            'tickets': serializer.data,
-            'total': total_count,
-            'page': page,
-            'page_size': page_size,
-            'total_pages': (total_count + page_size - 1) // page_size
-        })
+        auto_close_stale_awaiting_response()
+        tickets = _admin_tickets_queryset(request)
+        return Response(_paginate_tickets(tickets, request))
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _admin_tickets_queryset(request):
+    tickets = (
+        Ticket.objects.select_related("user", "closed_by")
+        .all()
+        .order_by("-created_at")
+    )
+    search = request.GET.get("search", "")
+    tickets = _apply_ticket_search(tickets, search)
+    return _apply_ticket_filters(tickets, request)
 
 
 @api_view(['GET'])
@@ -282,27 +252,32 @@ def admin_ticket_detail(request, ticket_id):
 def admin_ticket_update(request, ticket_id):
     """Update ticket (status, priority, assignment, notes)"""
     try:
-        ticket = Ticket.objects.select_related('user', 'assigned_to', 'closed_by').get(id=ticket_id)
-        
-        # Use serializer for partial update
-        serializer = TicketUpdateSerializer(ticket, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            ticket.refresh_from_db()
-            if ticket.status == Ticket.Status.CLOSED:
-                ticket.closed_by = request.user
-                ticket.save(update_fields=["closed_by"])
-            ticket.refresh_from_db()
-
-            notify_on_ticket_update(ticket, updated_by=request.user)
-
-            # Return full ticket data with nested user and assigned_to_details
-            return Response(TicketSerializer(ticket).data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return _admin_ticket_update_response(request, ticket_id)
     except Ticket.DoesNotExist:
         return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _set_closed_by_if_needed(ticket, user):
+    if ticket.status != Ticket.Status.CLOSED:
+        return
+    ticket.closed_by = user
+    ticket.save(update_fields=["closed_by"])
+
+
+def _admin_ticket_update_response(request, ticket_id):
+    ticket = Ticket.objects.select_related("user", "assigned_to", "closed_by").get(id=ticket_id)
+    serializer = TicketUpdateSerializer(ticket, data=request.data, partial=True)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer.save()
+    ticket.refresh_from_db()
+    _set_closed_by_if_needed(ticket, request.user)
+    ticket.refresh_from_db()
+    notify_on_ticket_update(ticket, updated_by=request.user)
+    return Response(TicketSerializer(ticket).data)
 
 
 @api_view(['DELETE'])
@@ -357,44 +332,24 @@ def _paginate_users(users, request):
 def admin_users_list(request):
     """Get all users with filtering and pagination"""
     try:
-        users = User.objects.all().order_by('-date_joined')
-        search = request.GET.get('search', '')
-        users = _apply_user_search(users, search)
-        role_filter = request.GET.get('role')
-        if role_filter:
-            if role_filter == 'admin':
-                # Include users with role=admin OR superusers
-                users = users.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True))
-            elif role_filter == 'student':
-                # Only students, exclude superusers
-                users = users.filter(role=User.Role.STUDENT, is_superuser=False)
-            elif role_filter == 'staff':
-                # Only staff, exclude superusers (unless they also have staff role)
-                users = users.filter(role=User.Role.STAFF, is_superuser=False)
-            else:
-                users = users.filter(role=role_filter)
-        
-        # Pagination
-        page = int(request.GET.get('page', 1))
-        page_size = int(request.GET.get('page_size', 20))
-        start = (page - 1) * page_size
-        end = start + page_size
-        
-        total_count = users.count()
-        users_page = users[start:end]
-        
-        serializer = UserSerializer(users_page, many=True)
-        
-        return Response({
-            'users': serializer.data,
-            'total': total_count,
-            'page': page,
-            'page_size': page_size,
-            'total_pages': (total_count + page_size - 1) // page_size
-        })
+        users = User.objects.all().order_by("-date_joined")
+        users = _apply_user_search(users, request.GET.get("search", ""))
+        users = _apply_users_role_filter(users, request.GET.get("role"))
+        return Response(_paginate_users(users, request))
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+def _apply_users_role_filter(users, role_filter):
+    if not role_filter:
+        return users
+    if role_filter == "admin":
+        return users.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True))
+    if role_filter == "student":
+        return users.filter(role=User.Role.STUDENT, is_superuser=False)
+    if role_filter == "staff":
+        return users.filter(role=User.Role.STAFF, is_superuser=False)
+    return users.filter(role=role_filter)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdmin])
@@ -483,100 +438,22 @@ def admin_staff_list(request):
 def get_ticket_statistics(request):
     """Get detailed ticket statistics by department with date filtering."""
     try:
-        # Get date range from query params (default: last 30 days)
-        start_date_str = request.GET.get('start_date')
-        end_date_str = request.GET.get('end_date')
-        
-        # Calculate date range
-        if start_date_str and end_date_str:
-            try:
-                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
-                end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
-            except (ValueError, TypeError):
-                return Response(
-                    {'error': 'Invalid start_date or end_date format. Expected ISO 8601 format.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        else:
-            days_param = request.GET.get('days', '30')
-            try:
-                days = int(days_param)
-                if days <= 0:
-                    raise ValueError
-            except (ValueError, TypeError):
-                return Response(
-                    {'error': 'Invalid "days" parameter. Must be a positive integer.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            end_date = timezone.now()
-            start_date = end_date - timedelta(days=days)
-        
-        # Filter tickets by date range
-        tickets = Ticket.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
-        
-        # Aggregate statistics by department using conditional counts
-        department_stats = tickets.values('department').annotate(
-            total_tickets=Count('id'),
-            # Count by status
-            pending=Count('id', filter=Q(status=Ticket.Status.PENDING)),
-            in_progress=Count('id', filter=Q(status=Ticket.Status.IN_PROGRESS)),
-            resolved=Count('id', filter=Q(status=Ticket.Status.RESOLVED)),
-            closed=Count('id', filter=Q(status=Ticket.Status.CLOSED)),
-            # Count by priority
-            low=Count('id', filter=Q(priority=Ticket.Priority.LOW)),
-            medium=Count('id', filter=Q(priority=Ticket.Priority.MEDIUM)),
-            high=Count('id', filter=Q(priority=Ticket.Priority.HIGH)),
-            urgent=Count('id', filter=Q(priority=Ticket.Priority.URGENT)),
-            # Average resolution time in seconds for closed tickets
-            avg_resolution_seconds=Avg(
-                ExpressionWrapper(
-                    F('updated_at') - F('created_at'),
-                    output_field=DurationField()
-                ),
-                filter=Q(status=Ticket.Status.CLOSED, updated_at__isnull=False)
-            )
-        ).order_by('-total_tickets')
-        
-        # Compute average response time (first staff/admin reply) per department
+        parsed = _parse_get_ticket_statistics_date_range(request)
+        if isinstance(parsed, Response):
+            return parsed
+
+        start_date, end_date = parsed
+        tickets = _tickets_for_date_range(start_date, end_date)
+        department_stats = _ticket_department_stats_queryset(tickets)
         dept_response_times = _compute_dept_response_times(tickets)
-
-        # Format the results
-        formatted_stats = []
-        for stat in department_stats:
-            avg_resolution_hours = None
-            if stat['avg_resolution_seconds']:
-                avg_resolution_hours = round(stat['avg_resolution_seconds'].total_seconds() / 3600, 2)
-
-            dept_name = stat['department']
-            avg_response_time_hours = dept_response_times.get(dept_name)
-
-            formatted_stats.append({
-                'department': dept_name,
-                'total_tickets': stat['total_tickets'],
-                'status_breakdown': {
-                    'pending': stat['pending'],
-                    'in_progress': stat['in_progress'],
-                    'resolved': stat['resolved'],
-                    'closed': stat['closed'],
-                },
-                'priority_breakdown': {
-                    'low': stat['low'],
-                    'medium': stat['medium'],
-                    'high': stat['high'],
-                    'urgent': stat['urgent'],
-                },
-                'avg_resolution_time_hours': avg_resolution_hours,
-                'avg_response_time_hours': avg_response_time_hours,
-            })
-        
-        return Response({
-            'date_range': {
-                'start_date': start_date.isoformat(),
-                'end_date': end_date.isoformat(),
-            },
-            'total_tickets': tickets.count(),
-            'department_statistics': formatted_stats,
-        })
+        formatted_stats = _format_department_statistics(department_stats, dept_response_times)
+        return Response(
+            {
+                "date_range": {"start_date": start_date.isoformat(), "end_date": end_date.isoformat()},
+                "total_tickets": tickets.count(),
+                "department_statistics": formatted_stats,
+            }
+        )
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -586,101 +463,13 @@ def get_ticket_statistics(request):
 def export_statistics_csv(request):
     """Export statistics summary as CSV."""
     try:
-        # Get date range from query params
-        start_date_str = request.GET.get('start_date')
-        end_date_str = request.GET.get('end_date')
-        
-        # Calculate date range
-        if start_date_str and end_date_str:
-            try:
-                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
-                end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
-            except (ValueError, TypeError):
-                return HttpResponse('Invalid date format. Expected ISO 8601 format.', status=400)
-        else:
-            days_param = request.GET.get('days', '30')
-            try:
-                days = int(days_param)
-                if days <= 0:
-                    raise ValueError
-            except (ValueError, TypeError):
-                return HttpResponse('Invalid "days" parameter. Must be a positive integer.', status=400)
-            end_date = timezone.now()
-            start_date = end_date - timedelta(days=days)
-        
-        # Filter tickets by date range
-        tickets = Ticket.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
-        
-        # Create CSV response
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="ticket_statistics_{start_date.date()}_to_{end_date.date()}.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow([
-            'Department', 
-            'Total Tickets', 
-            'Pending', 
-            'In Progress', 
-            'Resolved', 
-            'Closed',
-            'Low Priority',
-            'Medium Priority',
-            'High Priority',
-            'Urgent Priority',
-            'Avg Resolution Time (hours)',
-            'Avg Response Time (hours)'
-        ])
-        
-        # Aggregate statistics by department using conditional counts
-        department_stats = tickets.values('department').annotate(
-            total_tickets=Count('id'),
-            # Count by status
-            pending=Count('id', filter=Q(status=Ticket.Status.PENDING)),
-            in_progress=Count('id', filter=Q(status=Ticket.Status.IN_PROGRESS)),
-            resolved=Count('id', filter=Q(status=Ticket.Status.RESOLVED)),
-            closed=Count('id', filter=Q(status=Ticket.Status.CLOSED)),
-            # Count by priority
-            low=Count('id', filter=Q(priority=Ticket.Priority.LOW)),
-            medium=Count('id', filter=Q(priority=Ticket.Priority.MEDIUM)),
-            high=Count('id', filter=Q(priority=Ticket.Priority.HIGH)),
-            urgent=Count('id', filter=Q(priority=Ticket.Priority.URGENT)),
-            # Average resolution time in seconds for closed tickets
-            avg_resolution_seconds=Avg(
-                ExpressionWrapper(
-                    F('updated_at') - F('created_at'),
-                    output_field=DurationField()
-                ),
-                filter=Q(status=Ticket.Status.CLOSED, updated_at__isnull=False)
-            )
-        ).order_by('-total_tickets')
-        
-        # Compute average response time per department for CSV
-        dept_response_times = _compute_dept_response_times(tickets)
+        parsed = _parse_export_statistics_csv_date_range(request)
+        if isinstance(parsed, HttpResponse):
+            return parsed
 
-        for stat in department_stats:
-            avg_resolution_hours = ''
-            if stat['avg_resolution_seconds']:
-                avg_resolution_hours = round(stat['avg_resolution_seconds'].total_seconds() / 3600, 2)
-
-            dept_name = stat['department']
-            avg_response_hours = dept_response_times.get(dept_name, '')
-
-            writer.writerow([
-                dept_name,
-                stat['total_tickets'],
-                stat['pending'],
-                stat['in_progress'],
-                stat['resolved'],
-                stat['closed'],
-                stat['low'],
-                stat['medium'],
-                stat['high'],
-                stat['urgent'],
-                avg_resolution_hours,
-                avg_response_hours,
-            ])
-        
-        return response
+        start_date, end_date = parsed
+        tickets = _tickets_for_date_range(start_date, end_date)
+        return _export_statistics_csv_response(tickets, start_date, end_date)
     except Exception as e:
         return HttpResponse(f'Error: {str(e)}', status=500)
 
@@ -690,78 +479,258 @@ def export_statistics_csv(request):
 def export_tickets_csv(request):
     """Export all individual tickets as CSV."""
     try:
-        # Get date range from query params
-        start_date_str = request.GET.get('start_date')
-        end_date_str = request.GET.get('end_date')
-        
-        # Calculate date range
-        if start_date_str and end_date_str:
-            try:
-                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
-                end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
-            except (ValueError, TypeError):
-                return HttpResponse('Invalid date format. Expected ISO 8601 format.', status=400)
-        else:
-            days_param = request.GET.get('days', '30')
-            try:
-                days = int(days_param)
-                if days <= 0:
-                    raise ValueError
-            except (ValueError, TypeError):
-                return HttpResponse('Invalid "days" parameter. Must be a positive integer.', status=400)
-            end_date = timezone.now()
-            start_date = end_date - timedelta(days=days)
-        
-        # Filter tickets by date range
-        tickets = Ticket.objects.filter(
-            created_at__gte=start_date, 
-            created_at__lte=end_date
-        ).select_related('user', 'assigned_to').order_by('-created_at')
-        
-        # Create CSV response
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="all_tickets_{start_date.date()}_to_{end_date.date()}.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow([
-            'Ticket ID',
-            'Department',
-            'Issue Type',
-            'Status',
-            'Priority',
-            'Created Date',
-            'Updated Date',
-            'User K-Number',
-            'User Name',
-            'User Email',
-            'Assigned To',
-            'Additional Details',
-            'Admin Notes',
-        ])
-        
-        for ticket in tickets:
-            assigned_name = ''
-            if ticket.assigned_to:
-                assigned_name = f"{ticket.assigned_to.first_name} {ticket.assigned_to.last_name}"
-            
-            user_name = f"{ticket.user.first_name} {ticket.user.last_name}" if ticket.user else ''
-            
-            writer.writerow([
+        parsed = _parse_export_tickets_csv_date_range(request)
+        if isinstance(parsed, HttpResponse):
+            return parsed
+
+        start_date, end_date = parsed
+        tickets = _tickets_for_date_range(start_date, end_date, select_related=True)
+        return _export_tickets_csv_response(tickets, start_date, end_date)
+    except Exception as e:
+        return HttpResponse(f'Error: {str(e)}', status=500)
+
+
+def _tickets_for_date_range(start_date, end_date, select_related=False):
+    qs = Ticket.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
+    if select_related:
+        qs = qs.select_related("user", "assigned_to").order_by("-created_at")
+    return qs
+
+
+def _parse_get_ticket_statistics_date_range(request):
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Invalid start_date or end_date format. Expected ISO 8601 format."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return start_date, end_date
+
+    days_param = request.GET.get("days", "30")
+    try:
+        days = int(days_param)
+        if days <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return Response(
+            {"error": 'Invalid "days" parameter. Must be a positive integer.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    end_date = timezone.now()
+    return end_date - timedelta(days=days), end_date
+
+
+def _ticket_department_stats_annotations():
+    return {
+        "total_tickets": Count("id"),
+        "pending": Count("id", filter=Q(status=Ticket.Status.PENDING)),
+        "in_progress": Count("id", filter=Q(status=Ticket.Status.IN_PROGRESS)),
+        "resolved": Count("id", filter=Q(status=Ticket.Status.RESOLVED)),
+        "closed": Count("id", filter=Q(status=Ticket.Status.CLOSED)),
+        "low": Count("id", filter=Q(priority=Ticket.Priority.LOW)),
+        "medium": Count("id", filter=Q(priority=Ticket.Priority.MEDIUM)),
+        "high": Count("id", filter=Q(priority=Ticket.Priority.HIGH)),
+        "urgent": Count("id", filter=Q(priority=Ticket.Priority.URGENT)),
+        "avg_resolution_seconds": Avg(
+            ExpressionWrapper(
+                F("updated_at") - F("created_at"),
+                output_field=DurationField(),
+            ),
+            filter=Q(status=Ticket.Status.CLOSED, updated_at__isnull=False),
+        ),
+    }
+
+
+def _ticket_department_stats_queryset(tickets):
+    return tickets.values("department").annotate(**_ticket_department_stats_annotations()).order_by("-total_tickets")
+
+
+def _format_department_statistics(department_stats, dept_response_times):
+    formatted = []
+    for stat in department_stats:
+        dept = stat["department"]
+        avg_resolution_hours = (
+            round(stat["avg_resolution_seconds"].total_seconds() / 3600, 2)
+            if stat["avg_resolution_seconds"]
+            else None
+        )
+        formatted.append(
+            {
+                "department": dept,
+                "total_tickets": stat["total_tickets"],
+                "status_breakdown": {
+                    "pending": stat["pending"],
+                    "in_progress": stat["in_progress"],
+                    "resolved": stat["resolved"],
+                    "closed": stat["closed"],
+                },
+                "priority_breakdown": {
+                    "low": stat["low"],
+                    "medium": stat["medium"],
+                    "high": stat["high"],
+                    "urgent": stat["urgent"],
+                },
+                "avg_resolution_time_hours": avg_resolution_hours,
+                "avg_response_time_hours": dept_response_times.get(dept),
+            }
+        )
+    return formatted
+
+
+def _parse_export_statistics_csv_date_range(request):
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return HttpResponse("Invalid date format. Expected ISO 8601 format.", status=400)
+        return start_date, end_date
+
+    days_param = request.GET.get("days", "30")
+    try:
+        days = int(days_param)
+        if days <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return HttpResponse('Invalid "days" parameter. Must be a positive integer.', status=400)
+    end_date = timezone.now()
+    return end_date - timedelta(days=days), end_date
+
+
+def _export_statistics_csv_response(tickets, start_date, end_date):
+    response = HttpResponse(content_type="text/csv")
+    response[
+        "Content-Disposition"
+    ] = f'attachment; filename="ticket_statistics_{start_date.date()}_to_{end_date.date()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "Department",
+            "Total Tickets",
+            "Pending",
+            "In Progress",
+            "Resolved",
+            "Closed",
+            "Low Priority",
+            "Medium Priority",
+            "High Priority",
+            "Urgent Priority",
+            "Avg Resolution Time (hours)",
+            "Avg Response Time (hours)",
+        ]
+    )
+
+    department_stats = _ticket_department_stats_queryset(tickets)
+    dept_response_times = _compute_dept_response_times(tickets)
+    _write_export_statistics_rows(writer, department_stats, dept_response_times)
+    return response
+
+
+def _write_export_statistics_rows(writer, department_stats, dept_response_times):
+    for stat in department_stats:
+        dept = stat["department"]
+        avg_resolution_hours = (
+            round(stat["avg_resolution_seconds"].total_seconds() / 3600, 2)
+            if stat["avg_resolution_seconds"]
+            else ""
+        )
+        avg_response_hours = dept_response_times.get(dept, "")
+        writer.writerow(
+            [
+                dept,
+                stat["total_tickets"],
+                stat["pending"],
+                stat["in_progress"],
+                stat["resolved"],
+                stat["closed"],
+                stat["low"],
+                stat["medium"],
+                stat["high"],
+                stat["urgent"],
+                avg_resolution_hours,
+                avg_response_hours,
+            ]
+        )
+
+
+def _parse_export_tickets_csv_date_range(request):
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return HttpResponse("Invalid date format. Expected ISO 8601 format.", status=400)
+        return start_date, end_date
+
+    days_param = request.GET.get("days", "30")
+    try:
+        days = int(days_param)
+        if days <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return HttpResponse('Invalid "days" parameter. Must be a positive integer.', status=400)
+    end_date = timezone.now()
+    return end_date - timedelta(days=days), end_date
+
+
+def _export_tickets_csv_response(tickets, start_date, end_date):
+    response = HttpResponse(content_type="text/csv")
+    response[
+        "Content-Disposition"
+    ] = f'attachment; filename="all_tickets_{start_date.date()}_to_{end_date.date()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "Ticket ID",
+            "Department",
+            "Issue Type",
+            "Status",
+            "Priority",
+            "Created Date",
+            "Updated Date",
+            "User K-Number",
+            "User Name",
+            "User Email",
+            "Assigned To",
+            "Additional Details",
+            "Admin Notes",
+        ]
+    )
+    _write_export_tickets_rows(writer, tickets)
+    return response
+
+
+def _write_export_tickets_rows(writer, tickets):
+    for ticket in tickets:
+        assigned_name = (
+            f"{ticket.assigned_to.first_name} {ticket.assigned_to.last_name}"
+            if ticket.assigned_to
+            else ""
+        )
+        user_name = f"{ticket.user.first_name} {ticket.user.last_name}" if ticket.user else ""
+        writer.writerow(
+            [
                 ticket.id,
                 ticket.department,
                 ticket.type_of_issue,
                 ticket.status,
                 ticket.priority,
-                ticket.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                ticket.updated_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.updated_at else '',
+                ticket.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S") if ticket.updated_at else "",
                 ticket.user.k_number if ticket.user else ticket.k_number,
                 user_name,
                 ticket.user.email if ticket.user else ticket.email,
                 assigned_name,
                 ticket.additional_details,
-                ticket.admin_notes or '',
-            ])
-        
-        return response
-    except Exception as e:
-        return HttpResponse(f'Error: {str(e)}', status=500)
+                ticket.admin_notes or "",
+            ]
+        )

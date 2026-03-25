@@ -1,0 +1,159 @@
+
+//Amey - ALL HAVE BEEN REFACTORED AND TESTED
+AIChatbot/tests.py - Done (Refactored + Tested)
+AIChatbot/views.py - Done (Refactored + Tested)
+KCLTicketingSystems/management/commands/seed.py
+KCLTicketingSystems/models/meeting_request.py - Done (Refactored + Tested)
+KCLTicketingSystems/tests/services/test_staff_selection.py
+KCLTicketingSystems/tests/test_admin_api.py
+KCLTicketingSystems/tests/test_admin_error_handling.py
+KCLTicketingSystems/tests/test_admin_exports.py
+KCLTicketingSystems/tests/test_admin_filters.py
+KCLTicketingSystems/tests/test_admin_permissions.py
+KCLTicketingSystems/tests/test_admin_serializers.py
+KCLTicketingSystems/tests/test_admin_statistics.py
+KCLTicketingSystems/tests/test_close_ticket.py
+
+
+//Nitin
+KCLTicketingSystems/tests/test_forms_and_staff_meeting_requests.py
+KCLTicketingSystems/tests/test_notifications_view.py
+KCLTicketingSystems/tests/test_reply.py
+KCLTicketingSystems/tests/test_reply_view.py
+KCLTicketingSystems/tests/test_staff_dashboard_view.py
+KCLTicketingSystems/tests/test_staff_directory_view.py
+KCLTicketingSystems/tests/test_ticket_conversation_feature.py
+KCLTicketingSystems/tests/test_ticket_info_view.py
+KCLTicketingSystems/tests/test_user_dashboard_view.py
+KCLTicketingSystems/tests/test_utils.py
+
+
+//Amey
+KCLTicketingSystems/utils.py
+KCLTicketingSystems/views/admin_views.py
+KCLTicketingSystems/views/reply_view.py
+KCLTicketingSystems/views/staff_meeting_requests_views.py
+KCLTicketingSystems/views/ticket_pdf_view.py
+KCLTicketingSystems/views/ticket_view.py
+KCLTicketingSystems/views/user_dashboard_view.py
+
+
+
+
+//Tejas
+frontend/src/AIChatbot/Chatbot.js
+frontend/src/Login.js
+frontend/src/api.js
+frontend/src/components/Admin/AdminDashboard.js
+frontend/src/components/Admin/AdminTopbar.js
+frontend/src/components/Admin/Statistics.js
+frontend/src/components/Admin/Statistics.test.js
+frontend/src/components/Admin/TicketsManagement.js
+frontend/src/components/Admin/UsersManagement.js
+frontend/src/components/FaqAccordion.js
+frontend/src/components/NotificationBell.js
+frontend/src/context/AuthContext.js
+frontend/src/pages/FaqPage.js
+frontend/src/pages/StaffDashboardPage.js
+frontend/src/pages/StaffMeetingPage.js
+frontend/src/pages/StaffMeetingRequestsPage.js
+frontend/src/pages/TicketFormPage.js
+frontend/src/pages/TicketPage.js
+frontend/src/pages/UserDashboardPage.js
+frontend/src/services/adminApi.js
+frontend/src/services/staffApi.js
+frontend/src/utils/PrivateRoute.js
+frontend/src/utils/testUtils.js
+
+
+
+// =============================================================================
+// Band IV/V — full codebase scan (files that still violate the rule)
+// Date: 2026-03-25
+// Rule: any function/method with more than 30 lines OR control-flow nesting depth > 2
+//   (Python: AST — if/for/while/with/try/match/except handlers)
+//   (JavaScript/JSX: @babel/parser — if/for/while/switch/try in function bodies)
+// Scanned: all *.py under repo except venv/, migrations/, __pycache__/, scripts/;
+//          all *.js / *.jsx under frontend/src/ except node_modules.
+// Re-run:  python3 scripts/scan_band_iv_v.py
+//          node scripts/scan_band_iv_v_js.mjs
+// Note:    Some paths below also appear in team sections above; this list is the
+//          authoritative current scan. Refactored files may drop off on re-run.
+// =============================================================================
+
+// --- Python ---
+AIChatbot/views.py
+KCLTicketingSystems/management/commands/seed.py
+KCLTicketingSystems/management/commands/unseed.py
+KCLTicketingSystems/serializers.py
+KCLTicketingSystems/tests/test_admin_view_helpers.py
+KCLTicketingSystems/tests/test_forms_and_staff_meeting_requests.py
+KCLTicketingSystems/tests/test_notifications_view.py
+KCLTicketingSystems/tests/test_reply.py
+KCLTicketingSystems/tests/test_reply_view.py
+KCLTicketingSystems/tests/test_rich_text_ticket_feature.py
+KCLTicketingSystems/tests/test_staff_dashboard_view.py
+KCLTicketingSystems/tests/test_staff_directory_view.py
+KCLTicketingSystems/tests/test_ticket_conversation_feature.py
+KCLTicketingSystems/tests/test_ticket_info_view.py
+KCLTicketingSystems/tests/test_user_dashboard_view.py
+KCLTicketingSystems/tests/test_utils.py
+KCLTicketingSystems/views/admin_views.py
+
+// --- Frontend (JavaScript / JSX) ---
+frontend/src/AIChatbot/Chatbot.js
+frontend/src/AIChatbot/Chatbot.test.js
+frontend/src/App.js
+frontend/src/Login.js
+frontend/src/Login.test.js
+frontend/src/Profile.js
+frontend/src/Profile.test.js
+frontend/src/Signup.js
+frontend/src/Signup.test.js
+frontend/src/api.js
+frontend/src/api.test.js
+frontend/src/components/Admin/AdminDashboard.js
+frontend/src/components/Admin/AdminDashboard.test.js
+frontend/src/components/Admin/AdminTopbar.js
+frontend/src/components/Admin/AdminTopbar.test.js
+frontend/src/components/Admin/Statistics.js
+frontend/src/components/Admin/Statistics.test.js
+frontend/src/components/Admin/TicketsManagement.js
+frontend/src/components/Admin/TicketsManagement.test.js
+frontend/src/components/Admin/UsersManagement.js
+frontend/src/components/Admin/UsersManagement.test.js
+frontend/src/components/FaqAccordion.js
+frontend/src/components/NotificationBell.js
+frontend/src/components/NotificationBell.test.js
+frontend/src/components/RichTextEditor.js
+frontend/src/components/RichTextEditor.test.js
+frontend/src/components/UserNavbar.test.js
+frontend/src/context/AuthContext.js
+frontend/src/pages/CreateTicketPage.js
+frontend/src/pages/CreateTicketPage.test.js
+frontend/src/pages/FaqPage.js
+frontend/src/pages/MyMeetingsPage.js
+frontend/src/pages/MyMeetingsPage.test.js
+frontend/src/pages/StaffDashboardPage.js
+frontend/src/pages/StaffDashboardPage.test.js
+frontend/src/pages/StaffDirectory.js
+frontend/src/pages/StaffDirectory.test.js
+frontend/src/pages/StaffMeetingPage.js
+frontend/src/pages/StaffMeetingRequestsPage.js
+frontend/src/pages/TicketFormPage.js
+frontend/src/pages/TicketFormPage.test.js
+frontend/src/pages/TicketPage.js
+frontend/src/pages/UserDashboardPage.js
+frontend/src/pages/UserDashboardPage.test.js
+frontend/src/pages/WeeklyCalendar.js
+frontend/src/services/adminApi.js
+frontend/src/services/adminApi.test.js
+frontend/src/services/staffApi.test.js
+frontend/src/store/slices/adminSlice.js
+frontend/src/store/slices/adminSlice.test.js
+frontend/src/store/slices/authSlice.js
+frontend/src/store/slices/authSlice.test.js
+frontend/src/store/slices/staffSlice.test.js
+frontend/src/utils/PrivateRoute.js
+frontend/src/utils/PrivateRoute.test.js
+frontend/src/utils/testUtils.js

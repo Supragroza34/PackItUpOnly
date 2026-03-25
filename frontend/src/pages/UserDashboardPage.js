@@ -5,6 +5,7 @@ import { checkAuth } from "../store/slices/authSlice";
 import "./UserDashboardPage.css";
 import UserNavbar from "../components/UserNavbar";
 import NotificationBell from "../components/NotificationBell";
+import { HtmlContent } from "../components/HtmlContent";
 
 const isLocal =
   window.location.hostname === "localhost" ||
@@ -22,11 +23,11 @@ function getProgressWidth(status) {
     case "pending":
         return "20%";
     case "seen":
-        return "40%"
+        return "40%";
     case "in_progress":
         return "60%";
     case "awaiting_response":
-        return "75%"
+        return "75%";
     case "resolved":
       return "90%";
     case "closed":
@@ -96,11 +97,37 @@ function UserDashboardPage() {
   const { user } = useSelector((state) => state.auth);
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [replyBody, setReplyBody] = useState("");
+  const [replyDraftsByTicketId, setReplyDraftsByTicketId] = useState({});
+  const [parentReplyId, setParentReplyId] = useState(null);
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
   const [loadError, setLoadError] = useState("");
   const nav = useNavigate();
+  const [showProgressInfo, setShowProgressInfo] = useState(false);
+
+  const selectedReplyBody =
+    selectedTicket ? replyDraftsByTicketId[selectedTicket.id] || "" : "";
+
+  function openTicket(ticket) {
+    setSelectedTicket(ticket);
+    setReplyError("");
+    setParentReplyId(null);
+  }
+
+  function closeSelectedTicket() {
+    setSelectedTicket(null);
+    setParentReplyId(null);
+    setReplyError("");
+  }
+
+  function updateSelectedTicketReplyDraft(value) {
+    if (!selectedTicket) return;
+
+    setReplyDraftsByTicketId((prev) => ({
+      ...prev,
+      [selectedTicket.id]: value,
+    }));
+  }
 
   useEffect(() => {
     dispatch(checkAuth());
@@ -162,6 +189,45 @@ function UserDashboardPage() {
       return false;
     }
     return true;
+  }
+
+  function Reply({ reply }) {
+    return (
+      <div className="ticket-reply">
+        <p className="ticket-response-meta">
+          <strong>{reply.user_username}</strong>
+          {" · "}
+          {reply.created_at
+            ? new Date(reply.created_at).toLocaleString()
+            : ""}
+        </p>
+        <p className="ticket-response-body">{reply.body}</p>
+
+        {reply.children?.length > 0 && (
+          <div className="reply-children">
+              {reply.children.map(child => (
+                  <Reply key={child.id} reply={child} />
+              ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function findReplyById(replies, targetId) {
+    if (!Array.isArray(replies) || !targetId) return null;
+
+    for (const reply of replies) {
+      if (reply.id === targetId) {
+        return reply;
+      }
+      const childMatch = findReplyById(reply.children, targetId);
+      if (childMatch) {
+        return childMatch;
+      }
+    }
+
+    return null;
   }
 
   async function handleCloseTicket(ticketId) {
@@ -264,7 +330,7 @@ function UserDashboardPage() {
   async function handleSendReply() {
     if (!isTicketOpenForReply(selectedTicket)) return;
 
-    if (validateReplyBeforeSubmit(replyBody, setReplyError)) {
+    if (validateReplyBeforeSubmit(selectedReplyBody, setReplyError)) {
       return;
     }
 
@@ -278,6 +344,11 @@ function UserDashboardPage() {
     setReplyError("");
 
     try {
+      const payload = { body: selectedReplyBody.trim() };
+      if (parentReplyId) {
+        payload.parent = parentReplyId;
+      }
+
       const createRes = await fetch(
         `${API_BASE}/tickets/${selectedTicket.id}/replies/`,
         {
@@ -286,7 +357,7 @@ function UserDashboardPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ body: replyBody.trim() }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -310,7 +381,11 @@ function UserDashboardPage() {
           : prev
       );
 
-      setReplyBody("");
+      setReplyDraftsByTicketId((prev) => ({
+        ...prev,
+        [selectedTicket.id]: "",
+      }));
+      setParentReplyId(null);
     } catch (err) {
       setReplyError(`Could not send reply: ${err.message}`);
     } finally {
@@ -341,6 +416,10 @@ function UserDashboardPage() {
   }
 
   const countByStatus = (s) => tickets.filter((t) => t.status === s).length;
+  const countInProgressMerged = () =>
+    tickets.filter((t) =>
+      ["seen", "in_progress", "awaiting_response"].includes(t.status)
+    ).length;
 
   return (
     <>
@@ -352,7 +431,7 @@ function UserDashboardPage() {
             <NotificationBell
               onNotificationClick={(notif) => {
                 const ticket = tickets.find((t) => t.id === notif.ticket_id);
-                if (ticket) setSelectedTicket(ticket);
+                if (ticket) openTicket(ticket);
               }}
             />
         </div>
@@ -368,7 +447,7 @@ function UserDashboardPage() {
             <div className="summary-label">Pending</div>
           </div>
           <div className="summary-card">
-            <div className="summary-count">{countByStatus("in_progress")}</div>
+            <div className="summary-count">{countInProgressMerged()}</div>
             <div className="summary-label">In Progress</div>
           </div>
           <div className="summary-card">
@@ -403,27 +482,20 @@ function UserDashboardPage() {
                 <div
                   key={ticket.id}
                   className="ticket-item"
-                  onClick={() => setSelectedTicket(ticket)}
+                  onClick={() => openTicket(ticket)}
                 >
                   <div className="ticket-item-info">
                     <h3>{ticket.type_of_issue}</h3>
                     <div className="ticket-dept">📁 {ticket.department}</div>
-                    <div className="ticket-details">{ticket.additional_details}</div>
+                    {ticket.additional_details && (
+                      <HtmlContent html={ticket.additional_details} className="ticket-details" />
+                    )}
 
                     {ticket.replies && ticket.replies.length > 0 && (
                       <div className="ticket-responses">
                         <h4 className="ticket-responses-title">Responses from staff</h4>
-                        {ticket.replies.map((reply) => (
-                          <div key={reply.id} className="ticket-response">
-                            <p className="ticket-response-meta">
-                              <strong>{reply.user_username}</strong>
-                              {" · "}
-                              {reply.created_at
-                                ? new Date(reply.created_at).toLocaleString()
-                                : ""}
-                            </p>
-                            <p className="ticket-response-body">{reply.body}</p>
-                          </div>
+                        {ticket.replies?.filter(r => r.parent ===null).map(reply => (
+                            <Reply key={reply.id} reply={reply} />
                         ))}
                       </div>
                     )}
@@ -480,126 +552,199 @@ function UserDashboardPage() {
             </div>
           )}
         </div>
-
+        
+    
         {selectedTicket && (
-          <div className="modal-overlay" onClick={() => setSelectedTicket(null)}>
+          <div className="modal-overlay" onClick={closeSelectedTicket}>
             <div className="ticket-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="modal-close" onClick={() => setSelectedTicket(null)}>
-                X
-              </button>
-
-              <h2>{selectedTicket.type_of_issue}</h2>
-
-              <div className="ticket-progress-container">
-                <div className="ticket-progress-bar">
-                  <div
-                    className={`ticket-progress-fill status-${selectedTicket.status}`}
-                    style={{ width: getProgressWidth(selectedTicket.status) }}
-                  />
-                  <span className="ticket-progress-text">
-                    {getStatusLabel(selectedTicket)} -{" "}
-                    {getProgressWidth(selectedTicket.status)}
-                  </span>
-                </div>
-              </div>
-
-              <p>
-                <strong>Department: </strong>
-                {selectedTicket.department}
-              </p>
-              <p>
-                <strong>Status: </strong>
-                {getStatusLabel(selectedTicket)}
-              </p>
-              <p>
-                <strong>Priority: </strong>
-                {selectedTicket.priority}
-              </p>
-              <p>
-                <strong>Created at: </strong>
-                {new Date(selectedTicket.created_at).toLocaleString()}
-              </p>
-
-              <p>
-                <strong>Description:</strong>
-              </p>
-              <p>{selectedTicket.additional_details}</p>
-
-              {selectedTicket.status !== "closed" && (
+              <div className="ticket-modal-header">
+                <h2>{selectedTicket.type_of_issue}</h2>
                 <button
+                  className="modal-close"
                   type="button"
-                  className="close-ticket-btn"
-                  onClick={() => handleCloseTicket(selectedTicket.id)}
+                  aria-label="Close ticket details"
+                  onClick={closeSelectedTicket}
                 >
-                  Close ticket
+                  X
                 </button>
-              )}
-
-              <div className="ticket-responses">
-                <h4 className="ticket-responses-title">Conversation:</h4>
-                {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
-                  selectedTicket.replies.map((reply) => (
-                    <div key={reply.id} className="ticket-response">
-                      <p className="ticket-response-meta">
-                        <strong>{reply.user_username}</strong> ·{" "}
-                        {new Date(reply.created_at).toLocaleString()}
-                      </p>
-                      <p className="ticket-response-body">{reply.body}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="ticket-response-none">No Responses Yet.</p>
-                )}
               </div>
 
-              {selectedTicket.status !== "closed" && (
-                <div className="ticket-reply-composer">
-                  <label className="ticket-reply-label" htmlFor="student-reply-box">
-                    Your reply
-                  </label>
-                  <textarea
-                    id="student-reply-box"
-                    className="ticket-reply-textarea"
-                    value={replyBody}
-                    onChange={(e) => {
-                      setReplyBody(e.target.value);
-                      if (replyError) setReplyError("");
-                    }}
-                    placeholder="Write your response to continue the conversation..."
-                    rows={4}
-                    maxLength={2000}
-                  />
-                  {replyError && <p className="ticket-reply-error">{replyError}</p>}
+              <div className="ticket-modal-body">
+                <div className="ticket-progress-container">
+                  <div className="ticket-progress-bar">
+                    <div
+                      className={`ticket-progress-fill status-${selectedTicket.status}`}
+                      style={{ width: getProgressWidth(selectedTicket.status) }}
+                    />
+                    <span className="ticket-progress-text">
+                      {getStatusLabel(selectedTicket)} -{" "}
+                      {getProgressWidth(selectedTicket.status)}
+                    </span>
+                  </div>
+
                   <button
-                    type="button"
-                    className="ticket-reply-send-btn"
-                    onClick={handleSendReply}
-                    disabled={replySubmitting || !replyBody.trim()}
+                    className="progress-info-btn"
+                    onClick={() => setShowProgressInfo(true)}
+                    title="What do these stages mean?"
                   >
-                    {replySubmitting ? "Sending..." : "Send reply"}
+                    ⓘ
                   </button>
                 </div>
-              )}
 
-              <button
-                type="button"
-                className={`download-pdf-btn download-pdf-btn--modal${
-                  !isTicketClosed(selectedTicket)
-                    ? " download-pdf-btn--disabled"
-                    : ""
-                }`}
-                disabled={!isTicketClosed(selectedTicket)}
-                title={
-                  !isTicketClosed(selectedTicket)
-                    ? "Available once the ticket is closed"
-                    : "Download PDF summary"
-                }
-                onClick={() =>
-                  handleDownloadPdf(selectedTicket.id, selectedTicket.status)
-                }
-              >
-                📄 Download PDF Summary
-              </button>
+                {showProgressInfo && (
+                  <div
+                    className="modal-overlay"
+                    onClick={() => setShowProgressInfo(false)}
+                  >
+                    <div
+                      className="info-modal"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        className="modal-close"
+                        onClick={() => setShowProgressInfo(false)}
+                      >
+                        X
+                      </button>
+
+                      <h3>Ticket Progress Stages</h3>
+
+                      <ul className="progress-info-list">
+                        <li><strong>Pending (20%)</strong> - Ticket submitted.</li>
+                        <li><strong>Seen (40%)</strong> - Staff has viewed the ticket.</li>
+                        <li><strong>In Progress (60%)</strong> - Work has started.</li>
+                        <li><strong>Awaiting Response (75%)</strong> - Waiting for student reply.</li>
+                        <li><strong>Resolved (90%)</strong> - Issue resolved.</li>
+                        <li><strong>Closed (100%)</strong> - Ticket finished.</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                <p>
+                  <strong>Department: </strong>
+                  {selectedTicket.department}
+                </p>
+                <p>
+                  <strong>Status: </strong>
+                  {getStatusLabel(selectedTicket)}
+                </p>
+                <p>
+                  <strong>Priority: </strong>
+                  {selectedTicket.priority}
+                </p>
+                <p>
+                  <strong>Created at: </strong>
+                  {new Date(selectedTicket.created_at).toLocaleString()}
+                </p>
+
+                <p>
+                  <strong>Description:</strong>
+                </p>
+                {selectedTicket.additional_details ? (
+                  <HtmlContent html={selectedTicket.additional_details} />
+                ) : (
+                  <p>No description provided.</p>
+                )}
+
+                {selectedTicket.status !== "closed" && (
+                  <button
+                    type="button"
+                    className="close-ticket-btn"
+                    onClick={() => handleCloseTicket(selectedTicket.id)}
+                  >
+                    Close ticket
+                  </button>
+                )}
+
+                <div className="ticket-responses">
+                  <h4 className="ticket-responses-title">Conversation:</h4>
+                  <div className="ticket-responses-scroll">
+                    {selectedTicket.replies && selectedTicket.replies.length > 0 ? (
+                      selectedTicket.replies
+                        .filter((reply) => reply.parent == null)
+                        .map((reply) => (
+                          <ThreadedReply
+                            key={reply.id}
+                            reply={reply}
+                            depth={0}
+                            onReply={(replyId) => {
+                              setParentReplyId(replyId);
+                              if (replyError) setReplyError("");
+                            }}
+                            activeReplyId={parentReplyId}
+                            isTicketClosed={selectedTicket.status === "closed"}
+                          />
+                        ))
+                    ) : (
+                      <p className="ticket-response-none">No Responses Yet.</p>
+                    )}
+                  </div>
+                </div>
+
+                {selectedTicket.status !== "closed" && (
+                  <div className="ticket-reply-composer">
+                    {parentReplyId && (
+                      <div className="ticket-reply-target">
+                        <span>
+                          Replying to {findReplyById(selectedTicket.replies, parentReplyId)?.user_username || "message"}
+                        </span>
+                        <button
+                          type="button"
+                          className="ticket-reply-target-clear"
+                          onClick={() => setParentReplyId(null)}
+                        >
+                          Cancel reply target
+                        </button>
+                      </div>
+                    )}
+                    <label className="ticket-reply-label" htmlFor="student-reply-box">
+                      Your reply
+                    </label>
+                    <textarea
+                      id="student-reply-box"
+                      className="ticket-reply-textarea"
+                      value={selectedReplyBody}
+                      onChange={(e) => {
+                        updateSelectedTicketReplyDraft(e.target.value);
+                        if (replyError) setReplyError("");
+                      }}
+                      placeholder="Write your response to continue the conversation..."
+                      rows={4}
+                      maxLength={2000}
+                    />
+                    {replyError && <p className="ticket-reply-error">{replyError}</p>}
+                    <button
+                      type="button"
+                      className="ticket-reply-send-btn"
+                      onClick={handleSendReply}
+                      disabled={replySubmitting || !selectedReplyBody.trim()}
+                    >
+                      {replySubmitting ? "Sending..." : "Send reply"}
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className={`download-pdf-btn download-pdf-btn--modal${
+                    !isTicketClosed(selectedTicket)
+                      ? " download-pdf-btn--disabled"
+                      : ""
+                  }`}
+                  disabled={!isTicketClosed(selectedTicket)}
+                  title={
+                    !isTicketClosed(selectedTicket)
+                      ? "Available once the ticket is closed"
+                      : "Download PDF summary"
+                  }
+                  onClick={() =>
+                    handleDownloadPdf(selectedTicket.id, selectedTicket.status)
+                  }
+                >
+                  📄 Download PDF Summary
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -609,3 +754,45 @@ function UserDashboardPage() {
 }
 
 export default UserDashboardPage;
+
+function ThreadedReply({
+  reply,
+  depth,
+  onReply,
+  activeReplyId,
+  isTicketClosed,
+}) {
+  return (
+    <div className={`ticket-response ticket-response-depth-${Math.min(depth, 4)}`}>
+      <p className="ticket-response-meta">
+        <strong>{reply.user_username}</strong> · {new Date(reply.created_at).toLocaleString()}
+      </p>
+      <p className="ticket-response-body">{reply.body}</p>
+
+      {!isTicketClosed && (
+        <button
+          type="button"
+          className={`ticket-inline-reply-btn${activeReplyId === reply.id ? " is-active" : ""}`}
+          onClick={() => onReply(reply.id)}
+        >
+          {activeReplyId === reply.id ? "Reply target selected" : "Reply to this"}
+        </button>
+      )}
+
+      {reply.children?.length > 0 && (
+        <div className="ticket-response-children">
+          {reply.children.map((child) => (
+            <ThreadedReply
+              key={child.id}
+              reply={child}
+              depth={depth + 1}
+              onReply={onReply}
+              activeReplyId={activeReplyId}
+              isTicketClosed={isTicketClosed}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

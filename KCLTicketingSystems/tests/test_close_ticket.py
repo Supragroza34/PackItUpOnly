@@ -100,61 +100,42 @@ class StudentCloseTicketTest(TestCase):
 class StaffCloseTicketTest(TestCase):
     """Test cases for staff close ticket (PATCH /api/staff/dashboard/<id>/update/)"""
 
-    def setUp(self):
-        self.client = APIClient()
+    def _create_users(self):
         self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='33333333',
-            role=User.Role.STAFF,
+            username='staff', email='staff@test.com', password='testpass123',
+            k_number='33333333', role=User.Role.STAFF
         )
         self.admin = User.objects.create_user(
-            username='admin',
-            email='admin@test.com',
-            password='testpass123',
-            k_number='99999999',
-            role=User.Role.ADMIN,
+            username='admin', email='admin@test.com', password='testpass123',
+            k_number='99999999', role=User.Role.ADMIN
         )
         self.student = User.objects.create_user(
-            username='student',
-            email='student@test.com',
-            password='testpass123',
-            k_number='11111111',
-            role=User.Role.STUDENT,
+            username='student', email='student@test.com', password='testpass123',
+            k_number='11111111', role=User.Role.STUDENT
         )
         self.other_staff = User.objects.create_user(
-            username='other_staff',
-            email='otherstaff@test.com',
-            password='testpass123',
-            k_number='44444444',
-            role=User.Role.STAFF,
+            username='other_staff', email='otherstaff@test.com', password='testpass123',
+            k_number='44444444', role=User.Role.STAFF
         )
 
+    def _create_tickets(self):
         self.ticket_assigned_to_staff = Ticket.objects.create(
-            user=self.student,
-            department='Informatics',
-            type_of_issue='Software Issue',
-            additional_details='Need help',
-            status=Ticket.Status.PENDING,
-            assigned_to=self.staff,
+            user=self.student, department='Informatics', type_of_issue='Software Issue',
+            additional_details='Need help', status=Ticket.Status.PENDING, assigned_to=self.staff
         )
         self.ticket_assigned_to_other = Ticket.objects.create(
-            user=self.student,
-            department='Math',
-            type_of_issue='Hardware Issue',
-            additional_details='Broken',
-            status=Ticket.Status.PENDING,
-            assigned_to=self.other_staff,
+            user=self.student, department='Math', type_of_issue='Hardware Issue',
+            additional_details='Broken', status=Ticket.Status.PENDING, assigned_to=self.other_staff
         )
         self.unassigned_ticket = Ticket.objects.create(
-            user=self.student,
-            department='Physics',
-            type_of_issue='Lab Issue',
-            additional_details='Equipment',
-            status=Ticket.Status.PENDING,
-            assigned_to=None,
+            user=self.student, department='Physics', type_of_issue='Lab Issue',
+            additional_details='Equipment', status=Ticket.Status.PENDING, assigned_to=None
         )
+
+    def setUp(self):
+        self.client = APIClient()
+        self._create_users()
+        self._create_tickets()
 
     def test_staff_close_assigned_ticket_success(self):
         """Staff can close ticket assigned to them"""

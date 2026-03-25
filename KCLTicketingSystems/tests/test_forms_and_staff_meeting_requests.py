@@ -78,7 +78,14 @@ class StaffMeetingRequestsViewTests(TestCase):
             role=User.Role.ADMIN,
         )
 
-        self.meeting_datetime = timezone.now() + timedelta(days=1)
+        # Serializer requires the meeting to start exactly on a 15-minute boundary (and `second == 0`).
+        dt = timezone.now() + timedelta(days=1)
+        dt = dt.replace(second=0, microsecond=0)
+        minute = ((dt.minute + 14) // 15) * 15
+        if minute == 60:
+            dt = dt + timedelta(hours=1)
+            minute = 0
+        self.meeting_datetime = dt.replace(minute=minute)
         day_name = self.meeting_datetime.strftime("%A")
         meeting_time = self.meeting_datetime.time()
         start_hour = max(0, meeting_time.hour - 1)
@@ -178,7 +185,9 @@ class StaffMeetingRequestsViewTests(TestCase):
 
         payload = {
             "staff": self.staff.id,
-            "meeting_datetime": self.meeting_datetime.isoformat(),
+            # Use a different (free) slot; the serializer blocks (staff, meeting_datetime)
+            # conflicts for pending/accepted requests.
+            "meeting_datetime": (self.meeting_datetime + timedelta(minutes=15)).isoformat(),
             "description": "Can we discuss lab work?",
         }
         created = self.client.post("/api/meeting-requests/", payload, format="json")

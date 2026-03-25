@@ -12,6 +12,7 @@ const Statistics = () => {
     
     const { user } = useSelector((state) => state.auth);
     const { statistics, statisticsLoading: loading, statisticsError: error } = useSelector((state) => state.admin);
+    const [viewMode, setViewMode] = useState('table');
     
     // Date filter state (default: last 30 days)
     const [dateFilter, setDateFilter] = useState({
@@ -121,6 +122,62 @@ const Statistics = () => {
         const remainingHours = Math.floor(hours % 24);
         return `${days}d ${remainingHours}h`;
     };
+
+    const departmentTotals = statistics?.department_statistics?.map((dept) => ({
+        label: dept.department,
+        value: dept.total_tickets,
+    })) || [];
+
+    const statusTotals = (statistics?.department_statistics || []).reduce(
+        (acc, dept) => {
+            acc.pending += dept.status_breakdown.pending || 0;
+            acc.in_progress += dept.status_breakdown.in_progress || 0;
+            acc.resolved += dept.status_breakdown.resolved || 0;
+            acc.closed += dept.status_breakdown.closed || 0;
+            return acc;
+        },
+        { pending: 0, in_progress: 0, resolved: 0, closed: 0 }
+    );
+
+    const priorityTotals = (statistics?.department_statistics || []).reduce(
+        (acc, dept) => {
+            acc.low += dept.priority_breakdown.low || 0;
+            acc.medium += dept.priority_breakdown.medium || 0;
+            acc.high += dept.priority_breakdown.high || 0;
+            acc.urgent += dept.priority_breakdown.urgent || 0;
+            return acc;
+        },
+        { low: 0, medium: 0, high: 0, urgent: 0 }
+    );
+
+    const statusGraphRows = [
+        { label: 'Pending', key: 'pending', colorClass: 'bar-pending' },
+        { label: 'In Progress', key: 'in_progress', colorClass: 'bar-in-progress' },
+        { label: 'Resolved', key: 'resolved', colorClass: 'bar-resolved' },
+        { label: 'Closed', key: 'closed', colorClass: 'bar-closed' },
+    ];
+
+    const priorityGraphRows = [
+        { label: 'Low', key: 'low', colorClass: 'bar-priority-low' },
+        { label: 'Medium', key: 'medium', colorClass: 'bar-priority-medium' },
+        { label: 'High', key: 'high', colorClass: 'bar-priority-high' },
+        { label: 'Urgent', key: 'urgent', colorClass: 'bar-priority-urgent' },
+    ];
+
+    const maxStatusValue = Math.max(
+        1,
+        ...statusGraphRows.map((row) => statusTotals[row.key] || 0)
+    );
+
+    const maxDepartmentValue = Math.max(
+        1,
+        ...departmentTotals.map((row) => row.value || 0)
+    );
+
+    const maxPriorityValue = Math.max(
+        1,
+        ...priorityGraphRows.map((row) => priorityTotals[row.key] || 0)
+    );
     
     return (
         <div className="admin-dashboard">
@@ -129,6 +186,20 @@ const Statistics = () => {
             <main className="dashboard-content">
                 <div className="page-header">
                     <h2>Ticket Statistics & Analytics</h2>
+                    <div className="view-toggle" role="tablist" aria-label="Statistics view mode">
+                        <button
+                            className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                            onClick={() => setViewMode('table')}
+                        >
+                            Table View
+                        </button>
+                        <button
+                            className={`view-toggle-btn ${viewMode === 'graph' ? 'active' : ''}`}
+                            onClick={() => setViewMode('graph')}
+                        >
+                            Graph View
+                        </button>
+                    </div>
                 </div>
                 
                 {/* Date Filter Section */}
@@ -216,66 +287,137 @@ const Statistics = () => {
                                 <div className="summary-label">Departments</div>
                             </div>
                         </div>
-                        
-                        {/* Department Statistics Table */}
-                        <div className="statistics-table-container">
-                            <h3>Department Breakdown</h3>
-                            <table className="statistics-table">
-                                <thead>
-                                    <tr>
-                                        <th>Department</th>
-                                        <th>Total Tickets</th>
-                                        <th>Pending</th>
-                                        <th>In Progress</th>
-                                        <th>Resolved</th>
-                                        <th>Closed</th>
-                                        <th>Avg Resolution Time</th>
-                                        <th>Avg Response Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {statistics.department_statistics.map((dept) => (
-                                        <tr key={dept.department}>
-                                            <td className="dept-name">{dept.department}</td>
-                                            <td className="total-count">{dept.total_tickets}</td>
-                                            <td>{dept.status_breakdown.pending}</td>
-                                            <td>{dept.status_breakdown.in_progress}</td>
-                                            <td>{dept.status_breakdown.resolved}</td>
-                                            <td>{dept.status_breakdown.closed}</td>
-                                            <td>{formatHours(dept.avg_resolution_time_hours)}</td>
-                                            <td>{formatHours(dept.avg_response_time_hours)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        {/* Priority Distribution */}
-                        <div className="statistics-table-container">
-                            <h3>Priority Distribution by Department</h3>
-                            <table className="statistics-table">
-                                <thead>
-                                    <tr>
-                                        <th>Department</th>
-                                        <th>Low</th>
-                                        <th>Medium</th>
-                                        <th>High</th>
-                                        <th>Urgent</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {statistics.department_statistics.map((dept) => (
-                                        <tr key={dept.department}>
-                                            <td className="dept-name">{dept.department}</td>
-                                            <td>{dept.priority_breakdown.low}</td>
-                                            <td>{dept.priority_breakdown.medium}</td>
-                                            <td>{dept.priority_breakdown.high}</td>
-                                            <td>{dept.priority_breakdown.urgent}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+
+                        {viewMode === 'graph' ? (
+                            <div className="graphs-grid">
+                                <div className="graph-card">
+                                    <h3>Status Distribution</h3>
+                                    <div className="bar-graph">
+                                        {statusGraphRows.map((row) => {
+                                            const value = statusTotals[row.key] || 0;
+                                            const width = (value / maxStatusValue) * 100;
+                                            return (
+                                                <div className="bar-row" key={row.key}>
+                                                    <span className="bar-label">{row.label}</span>
+                                                    <div className="bar-track">
+                                                        <div
+                                                            className={`bar-fill ${row.colorClass}`}
+                                                            style={{ width: `${width}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="bar-value">{value}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="graph-card">
+                                    <h3>Tickets by Department</h3>
+                                    <div className="bar-graph">
+                                        {departmentTotals.map((row) => {
+                                            const width = (row.value / maxDepartmentValue) * 100;
+                                            return (
+                                                <div className="bar-row" key={row.label}>
+                                                    <span className="bar-label">{row.label}</span>
+                                                    <div className="bar-track">
+                                                        <div
+                                                            className="bar-fill bar-department"
+                                                            style={{ width: `${width}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="bar-value">{row.value}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="graph-card">
+                                    <h3>Priority Distribution</h3>
+                                    <div className="bar-graph">
+                                        {priorityGraphRows.map((row) => {
+                                            const value = priorityTotals[row.key] || 0;
+                                            const width = (value / maxPriorityValue) * 100;
+                                            return (
+                                                <div className="bar-row" key={row.key}>
+                                                    <span className="bar-label">{row.label}</span>
+                                                    <div className="bar-track">
+                                                        <div
+                                                            className={`bar-fill ${row.colorClass}`}
+                                                            style={{ width: `${width}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="bar-value">{value}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Department Statistics Table */}
+                                <div className="statistics-table-container">
+                                    <h3>Department Breakdown</h3>
+                                    <table className="statistics-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Department</th>
+                                                <th>Total Tickets</th>
+                                                <th>Pending</th>
+                                                <th>In Progress</th>
+                                                <th>Resolved</th>
+                                                <th>Closed</th>
+                                                <th>Avg Resolution Time</th>
+                                                <th>Avg Response Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {statistics.department_statistics.map((dept) => (
+                                                <tr key={dept.department}>
+                                                    <td className="dept-name">{dept.department}</td>
+                                                    <td className="total-count">{dept.total_tickets}</td>
+                                                    <td>{dept.status_breakdown.pending}</td>
+                                                    <td>{dept.status_breakdown.in_progress}</td>
+                                                    <td>{dept.status_breakdown.resolved}</td>
+                                                    <td>{dept.status_breakdown.closed}</td>
+                                                    <td>{formatHours(dept.avg_resolution_time_hours)}</td>
+                                                    <td>{formatHours(dept.avg_response_time_hours)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Priority Distribution */}
+                                <div className="statistics-table-container">
+                                    <h3>Priority Distribution by Department</h3>
+                                    <table className="statistics-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Department</th>
+                                                <th>Low</th>
+                                                <th>Medium</th>
+                                                <th>High</th>
+                                                <th>Urgent</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {statistics.department_statistics.map((dept) => (
+                                                <tr key={dept.department}>
+                                                    <td className="dept-name">{dept.department}</td>
+                                                    <td>{dept.priority_breakdown.low}</td>
+                                                    <td>{dept.priority_breakdown.medium}</td>
+                                                    <td>{dept.priority_breakdown.high}</td>
+                                                    <td>{dept.priority_breakdown.urgent}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
                     </>
                 ) : (
                     <div className="no-data">No statistics available for the selected date range.</div>

@@ -16,6 +16,42 @@ from . import views
 
 User = get_user_model()
 
+SAMPLE_CHAT_MESSAGES = [
+    {"role": "ignored", "content": "nope"},
+    {"role": "user", "content": "  Hi  "},
+    {"role": "assistant", "content": "  Previous  "},
+    {"role": "user", "content": "  Next  "},
+    {"role": "user", "content": None},
+]
+
+
+class FakeChat:
+    def __init__(self, captured):
+        self.captured = captured
+
+    def send_message(self, message):
+        self.captured["new_message"] = message
+        return types.SimpleNamespace(text="  Reply text  ")
+
+
+class FakeModel:
+    def __init__(self, captured, model_name, system_instruction):
+        self.captured = captured
+        self.captured["model_name"] = model_name
+        self.captured["system_instruction"] = system_instruction
+
+    def start_chat(self, history):
+        self.captured["history"] = history
+        return FakeChat(self.captured)
+
+
+def build_fake_genai(captured):
+    return types.SimpleNamespace(
+        GenerativeModel=lambda model_name, system_instruction: FakeModel(
+            captured, model_name, system_instruction
+        )
+    )
+
 
 class AIChatbotAPITest(TestCase):
     """Tests for the JSON AI chat API."""
@@ -97,7 +133,25 @@ class AIChatbotAPITest(TestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-        self.assertIn("GEMINI_API_KEY not configured", resp.data["error"])
+        self.assertIn("Gemini service unavailable", resp.data["error"])
+        self.assertIn("GEMINI_API_KEY", resp.data["detail"])
+
+    @patch("AIChatbot.views._chat_with_gemini")
+    def test_chat_missing_package_runtime_error_maps_to_503(self, mock_chat):
+        """Missing google-generativeai dependency is returned as service unavailable."""
+        mock_chat.side_effect = RuntimeError(
+            "Gemini configuration error: GEMINI_API_KEY or google-generativeai is not available."
+        )
+
+        resp = self.client.post(
+            self.url,
+            {"messages": [{"role": "user", "content": "Hi"}]},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertIn("Gemini service unavailable", resp.data["error"])
+        self.assertIn("google-generativeai", resp.data["detail"])
 
     @patch("AIChatbot.views._chat_with_gemini")
     def test_chat_connection_error_maps_to_503(self, mock_chat):
@@ -186,36 +240,12 @@ class ChatWithGeminiHelperTest(TestCase):
 
     def test_helper_builds_messages_and_strips_content(self):
         captured = {}
-
-        class FakeChat:
-            def __init__(self):
-                self.history = None
-
-            def send_message(self, message):
-                captured["new_message"] = message
-                return types.SimpleNamespace(text="  Reply text  ")
-
-        class FakeModel:
-            def __init__(self, model_name, system_instruction):
-                captured["model_name"] = model_name
-                captured["system_instruction"] = system_instruction
-
-            def start_chat(self, history):
-                captured["history"] = history
-                return FakeChat()
-
-        fake_genai = types.SimpleNamespace(GenerativeModel=FakeModel)
+        fake_genai = build_fake_genai(captured)
         with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}, clear=False), patch(
             "AIChatbot.views._get_genai_client", return_value=fake_genai
         ), patch("AIChatbot.views._get_ticket_context", return_value="Ticket context"):
             content = views._chat_with_gemini(
-                [
-                    {"role": "ignored", "content": "nope"},
-                    {"role": "user", "content": "  Hi  "},
-                    {"role": "assistant", "content": "  Previous  "},
-                    {"role": "user", "content": "  Next  "},
-                    {"role": "user", "content": None},
-                ],
+                SAMPLE_CHAT_MESSAGES,
                 system_prompt="Custom system",
             )
 

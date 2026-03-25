@@ -9,7 +9,6 @@ is swallowed and generation continues.
 
 
 from faker import Faker
-from faker.providers import job
 from random import randint, random, choice
 from django.core.management.base import BaseCommand, CommandError
 from ...models import User, Ticket, OfficeHours
@@ -49,7 +48,6 @@ class Command(BaseCommand):
         """Initialize the command with a locale-specific Faker instance."""
         super().__init__(*args, **kwargs)
         self.faker = Faker('en_GB')
-        self.faker.add_provider(job.Provider)
 
     def handle(self, *args, **options):
         """
@@ -137,12 +135,13 @@ class Command(BaseCommand):
         department = self.get_random_department()
         issue = "Problem in the " + department + " department."
         staff_member_id = self.get_least_busy_staff(department)["id"]
-        staff_member = User.objects.get(id=staff_member_id)        
+        staff_member = User.objects.get(id=staff_member_id)
+        additional_details = self.faker.sentence()
         ticket_data = {
             'user': student,
             'department': department,
             'type_of_issue': issue,
-            'additional_details': 'Everything is broken.',
+            'additional_details': additional_details,
             'assigned_to': staff_member,
         }
         self.try_create_ticket(ticket_data)   

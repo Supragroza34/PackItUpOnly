@@ -148,7 +148,7 @@ const AdminDashboard = () => {
                                                 {ticket.status !== 'closed' && (
                                                     <button
                                                         type="button"
-                                                        className="btn-action btn-close"
+                                                        className="btn-action btn-close-ticket"
                                                         onClick={() => handleCloseTicket(ticket.id)}
                                                     >
                                                         Close

@@ -10,55 +10,59 @@ from rest_framework import status
 
 from ..models import Ticket, Reply
 from ..serializers import ReplySerializer
-from ..utils import notify_on_ticket_update
+from ..utils import notify_on_ticket_update, auto_close_stale_awaiting_response
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_dashboard(request):
+    auto_close_stale_awaiting_response()
+
     user = request.user
-    tickets = (
-        Ticket.objects
-        .filter(user=user)
-        .select_related('user', 'closed_by')
+    tickets = _get_user_tickets(user)
+    tickets_data = _build_tickets_data(tickets)
+    return JsonResponse({"user": _build_user_data(user), "tickets": tickets_data})
+
+
+def _get_user_tickets(user):
+    return (
+        Ticket.objects.filter(user=user)
+        .select_related("user", "closed_by")
         .prefetch_related(
-            Prefetch(
-                'replies',
-                queryset=Reply.objects.select_related('user').order_by('created_at'),
-            )
+            Prefetch("replies", queryset=Reply.objects.select_related("user").order_by("created_at"))
         )
-        .order_by('-created_at')
+        .order_by("-created_at")
     )
 
-    # Prepare list to hold ticket data
-    tickets_data = []
-    for t in tickets:
-        replies_data = ReplySerializer(t.replies.all(), many=True).data
-        closed_by_role = None
-        if t.status == "closed" and t.closed_by_id:
-            closed_by_role = (t.closed_by.role or "student").lower() if hasattr(t.closed_by, "role") else "student"
-        tickets_data.append({
-            "id": t.id,
-            "type_of_issue": t.type_of_issue,
-            "department": t.department,
-            "additional_details": t.additional_details,
-            "status": t.status,
-            "priority": t.priority,
-            "closed_by_role": closed_by_role,
-            "created_at": t.created_at.isoformat() if t.created_at else None,
-            "replies": replies_data,
-        })
 
-    user_data = {
-        "id": user.id,
-        "k_number": user.k_number,
+def _build_user_data(user):
+    return {"id": user.id, "k_number": user.k_number}
+
+
+def _closed_by_role_for_ticket(ticket):
+    if ticket.status != "closed" or not ticket.closed_by_id:
+        return None
+    role = ticket.closed_by.role if hasattr(ticket.closed_by, "role") else "student"
+    return (role or "student").lower()
+
+
+def _ticket_to_dashboard_dict(ticket):
+    replies_data = ReplySerializer(ticket.replies.all(), many=True).data
+    return {
+        "id": ticket.id,
+        "type_of_issue": ticket.type_of_issue,
+        "department": ticket.department,
+        "additional_details": ticket.additional_details,
+        "status": ticket.status,
+        "priority": ticket.priority,
+        "closed_by_role": _closed_by_role_for_ticket(ticket),
+        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+        "replies": replies_data,
     }
 
-    # Return the final JSON response containing user and tickets data
-    return JsonResponse({
-        "user": user_data,
-        "tickets": tickets_data
-    })
+
+def _build_tickets_data(tickets):
+    return [_ticket_to_dashboard_dict(t) for t in tickets]
 
 
 @api_view(['POST'])

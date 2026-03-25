@@ -8,6 +8,7 @@ from django.db.models import Q
 
 from ..models import Ticket
 from ..serializers import UserSerializer
+from ..utils import auto_close_stale_awaiting_response
 
 
 def _check_staff_access(user):
@@ -49,6 +50,8 @@ def _apply_ticket_filter(tickets, filter_options):
         return tickets.filter(status__in=(Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS, Ticket.Status.NEW, Ticket.Status.SEEN, Ticket.Status.AWAITING_RESPONSE))
     if filter_options == 'closed':
         return tickets.filter(status__in=(Ticket.Status.RESOLVED, Ticket.Status.CLOSED))
+    if filter_options == 'reported':
+        return tickets.filter(status__in=(Ticket.Status.REPORTED,))
     if filter_options == 'overdue':
         return tickets.filter(
             status__in=(Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS, Ticket.Status.NEW, Ticket.Status.SEEN, Ticket.Status.AWAITING_RESPONSE),
@@ -62,6 +65,8 @@ def _apply_ticket_filter(tickets, filter_options):
 @permission_classes([IsAuthenticated])
 def staff_dashboard(request):
     """List tickets assigned to the current staff user. Supports filtering by status."""
+    auto_close_stale_awaiting_response()
+
     access_error = _check_staff_access(request.user)
     if access_error:
         return access_error

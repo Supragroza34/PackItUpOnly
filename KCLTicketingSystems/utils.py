@@ -1,7 +1,59 @@
 from .models import MeetingRequest, Notification, Ticket
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+from datetime import timedelta
 
 User = get_user_model()
+
+
+def _is_staff_or_admin(user):
+    if not user:
+        return False
+    return getattr(user, "is_superuser", False) or (getattr(user, "role", "") or "").lower() in ("staff", "admin")
+
+
+def update_ticket_status_after_reply(ticket, reply_user):
+    """Move ticket state based on who replied.
+
+    Staff/admin reply -> awaiting student response.
+    Student reply -> in progress.
+    """
+    if not ticket or ticket.status == Ticket.Status.CLOSED:
+        return False
+
+    target_status = Ticket.Status.AWAITING_RESPONSE if _is_staff_or_admin(reply_user) else Ticket.Status.IN_PROGRESS
+    if ticket.status == target_status:
+        return False
+
+    ticket.status = target_status
+    ticket.save(update_fields=["status"])
+    return True
+
+
+def auto_close_stale_awaiting_response(days=3):
+    """Close tickets waiting on student response for too long.
+
+    A ticket is auto-closed when it is currently awaiting_response and its
+    latest reply is from staff/admin and older than the configured cutoff.
+    """
+    cutoff = timezone.now() - timedelta(days=days)
+    stale_ticket_ids = []
+
+    awaiting_tickets = Ticket.objects.filter(status=Ticket.Status.AWAITING_RESPONSE)
+    for ticket in awaiting_tickets:
+        latest_reply = ticket.replies.select_related("user").order_by("-created_at").first()
+        if not latest_reply:
+            continue
+        if _is_staff_or_admin(latest_reply.user) and latest_reply.created_at <= cutoff:
+            stale_ticket_ids.append(ticket.id)
+
+    if not stale_ticket_ids:
+        return 0
+
+    return Ticket.objects.filter(
+        id__in=stale_ticket_ids,
+        status=Ticket.Status.AWAITING_RESPONSE,
+    ).update(status=Ticket.Status.CLOSED, closed_by=None)
 
 def notify_admin_on_ticket(ticket):
     """Notify all users with role='admin' that a new ticket was created."""
@@ -42,52 +94,70 @@ def notify_on_ticket_update(ticket, updated_by):
     """
 
     if ticket.user and ticket.user != updated_by:
-        message = None
-        if ticket.status == Ticket.Status.CLOSED:
-            message = f"Your ticket '{ticket.type_of_issue}' has been closed by {updated_by.get_full_name()}."
-        elif ticket.assigned_to and ticket.assigned_to != updated_by:
-            message = f"Your ticket '{ticket.type_of_issue}' has been assigned to {ticket.assigned_to.get_full_name()}."
-        elif ticket.status == Ticket.Status.IN_PROGRESS:
-            message = f"Your ticket '{ticket.type_of_issue}' is now in progress."
-
-        if message:
-            Notification.objects.create(
+        student_message = _student_ticket_update_message(ticket, updated_by)
+        if student_message:
+            _create_ticket_update_notification(
                 user=ticket.user,
-                title="Ticket Update",
-                message=message,
-                ticket=ticket
-            )
-
-    # Notify the assigned staff when the ticket is updated.
-    # For "closed" we notify regardless of who performed the update (tests expect
-    # the assigned staff to receive the close notification too).
-    if ticket.assigned_to:
-        message = None
-        if ticket.status == Ticket.Status.CLOSED:
-            message = (
-                f"The ticket '{ticket.type_of_issue}' you were assigned to "
-                f"has been closed by {updated_by.get_full_name()}."
-            )
-        elif ticket.assigned_to != updated_by:
-            message = f"You have been assigned to ticket '{ticket.type_of_issue}'."
-
-        if message:
-            Notification.objects.create(
-                user=ticket.assigned_to,
-                title="Ticket Update",
-                message=message,
                 ticket=ticket,
+                message=student_message,
             )
 
-    admins = User.objects.filter(role='admin').exclude(id=updated_by.id)
+    staff_message = _staff_ticket_update_message(ticket, updated_by)
+    if staff_message:
+        _create_ticket_update_notification(
+            user=ticket.assigned_to,
+            ticket=ticket,
+            message=staff_message,
+        )
+
     if ticket.status == Ticket.Status.CLOSED:
-        for admin in admins:
-            Notification.objects.create(
-                user=admin,
-                title="Ticket Update",
-                message=f"Ticket '{ticket.type_of_issue}' has been closed by admin.",
-                ticket=ticket
-            )
+        _notify_admins_ticket_closed(ticket, updated_by)
+
+
+def _create_ticket_update_notification(user, ticket, message):
+    Notification.objects.create(
+        user=user,
+        title="Ticket Update",
+        message=message,
+        ticket=ticket,
+    )
+
+
+def _student_ticket_update_message(ticket, updated_by):
+    if ticket.status == Ticket.Status.CLOSED:
+        return (
+            f"Your ticket '{ticket.type_of_issue}' has been closed by "
+            f"{updated_by.get_full_name()}."
+        )
+    if ticket.assigned_to and ticket.assigned_to != updated_by:
+        return (
+            f"Your ticket '{ticket.type_of_issue}' has been assigned to "
+            f"{ticket.assigned_to.get_full_name()}."
+        )
+    if ticket.status == Ticket.Status.IN_PROGRESS:
+        return f"Your ticket '{ticket.type_of_issue}' is now in progress."
+    return None
+
+
+def _staff_ticket_update_message(ticket, updated_by):
+    if not ticket.assigned_to or ticket.assigned_to == updated_by:
+        return None
+    if ticket.status == Ticket.Status.CLOSED:
+        return (
+            f"The ticket '{ticket.type_of_issue}' you were assigned to "
+            f"has been closed by {updated_by.get_full_name()}."
+        )
+    return f"You have been assigned to ticket '{ticket.type_of_issue}'."
+
+
+def _notify_admins_ticket_closed(ticket, updated_by):
+    admins = User.objects.filter(role="admin").exclude(id=updated_by.id)
+    for admin in admins:
+        _create_ticket_update_notification(
+            user=admin,
+            ticket=ticket,
+            message=f"Ticket '{ticket.type_of_issue}' has been closed by admin.",
+        )
 
 
 

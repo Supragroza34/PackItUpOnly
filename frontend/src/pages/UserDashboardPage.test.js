@@ -22,6 +22,7 @@ jest.mock("../store/slices/authSlice", () => ({
 }));
 
 jest.mock("../components/UserNavbar", () => () => <div>Mock Navbar</div>);
+jest.mock("../components/NotificationBell", () => () => <div>Mock Notification Bell</div>);
 
 jest.mock("react-router-dom", () => ({
   ...jest.requireActual("react-router-dom"),

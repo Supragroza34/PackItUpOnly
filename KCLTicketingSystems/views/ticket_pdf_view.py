@@ -41,89 +41,17 @@ LABEL_GREY = colors.HexColor("#555555")
 def _build_styles():
     """Return a dict of named ParagraphStyles used in the PDF."""
     base = getSampleStyleSheet()
-
-    title_style = ParagraphStyle(
-        "KCLTitle",
-        parent=base["Title"],
-        fontSize=20,
-        textColor=KCL_RED,
-        spaceAfter=2 * mm,
-    )
-    subtitle_style = ParagraphStyle(
-        "KCLSubtitle",
-        parent=base["Normal"],
-        fontSize=10,
-        textColor=LABEL_GREY,
-        spaceAfter=6 * mm,
-    )
-    section_heading_style = ParagraphStyle(
-        "SectionHeading",
-        parent=base["Heading2"],
-        fontSize=12,
-        textColor=KCL_RED,
-        spaceBefore=4 * mm,
-        spaceAfter=2 * mm,
-    )
-    label_style = ParagraphStyle(
-        "Label",
-        parent=base["Normal"],
-        fontSize=9,
-        textColor=LABEL_GREY,
-        leading=14,
-    )
-    value_style = ParagraphStyle(
-        "Value",
-        parent=base["Normal"],
-        fontSize=10,
-        leading=14,
-    )
-    sender_student_style = ParagraphStyle(
-        "SenderStudent",
-        parent=base["Normal"],
-        fontSize=9,
-        textColor=colors.HexColor("#1A6FAF"),
-        spaceAfter=1 * mm,
-        fontName="Helvetica-Bold",
-    )
-    sender_staff_style = ParagraphStyle(
-        "SenderStaff",
-        parent=base["Normal"],
-        fontSize=9,
-        textColor=colors.HexColor("#2E7D32"),
-        spaceAfter=1 * mm,
-        fontName="Helvetica-Bold",
-    )
-    message_style = ParagraphStyle(
-        "Message",
-        parent=base["Normal"],
-        fontSize=10,
-        leading=15,
-    )
-    timestamp_style = ParagraphStyle(
-        "Timestamp",
-        parent=base["Normal"],
-        fontSize=8,
-        textColor=LABEL_GREY,
-        spaceBefore=1 * mm,
-    )
-    footer_style = ParagraphStyle(
-        "Footer",
-        parent=base["Normal"],
-        fontSize=8,
-        textColor=LABEL_GREY,
-    )
-
     return {
-        "title": title_style,
-        "subtitle": subtitle_style,
-        "section_heading": section_heading_style,
-        "label": label_style,
-        "value": value_style,
-        "sender_student": sender_student_style,
-        "sender_staff": sender_staff_style,
-        "message": message_style,
-        "timestamp": timestamp_style,
-        "footer": footer_style,
+        "title": ParagraphStyle("KCLTitle", parent=base["Title"], fontSize=20, textColor=KCL_RED, spaceAfter=2 * mm),
+        "subtitle": ParagraphStyle("KCLSubtitle", parent=base["Normal"], fontSize=10, textColor=LABEL_GREY, spaceAfter=6 * mm),
+        "section_heading": ParagraphStyle("SectionHeading", parent=base["Heading2"], fontSize=12, textColor=KCL_RED, spaceBefore=4 * mm, spaceAfter=2 * mm),
+        "label": ParagraphStyle("Label", parent=base["Normal"], fontSize=9, textColor=LABEL_GREY, leading=14),
+        "value": ParagraphStyle("Value", parent=base["Normal"], fontSize=10, leading=14),
+        "sender_student": ParagraphStyle("SenderStudent", parent=base["Normal"], fontSize=9, textColor=colors.HexColor("#1A6FAF"), spaceAfter=1 * mm, fontName="Helvetica-Bold"),
+        "sender_staff": ParagraphStyle("SenderStaff", parent=base["Normal"], fontSize=9, textColor=colors.HexColor("#2E7D32"), spaceAfter=1 * mm, fontName="Helvetica-Bold"),
+        "message": ParagraphStyle("Message", parent=base["Normal"], fontSize=10, leading=15),
+        "timestamp": ParagraphStyle("Timestamp", parent=base["Normal"], fontSize=8, textColor=LABEL_GREY, spaceBefore=1 * mm),
+        "footer": ParagraphStyle("Footer", parent=base["Normal"], fontSize=8, textColor=LABEL_GREY),
     }
 
 
@@ -174,7 +102,20 @@ def _pdf_safe_text(value):
 def _build_pdf(ticket) -> bytes:
     """Construct the PDF in memory and return the raw bytes."""
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
+    doc = _build_pdf_doc(buffer, ticket)
+    styles = _build_styles()
+    story = []
+    _build_pdf_header(story, ticket, styles)
+    _build_pdf_ticket_details(story, ticket, styles)
+    _build_pdf_original_message(story, ticket, styles)
+    _build_pdf_conversation_thread(story, ticket, styles)
+    _build_pdf_footer(story, styles)
+    doc.build(story)
+    return buffer.getvalue()
+
+
+def _build_pdf_doc(buffer, ticket):
+    return SimpleDocTemplate(
         buffer,
         pagesize=A4,
         leftMargin=20 * mm,
@@ -185,12 +126,8 @@ def _build_pdf(ticket) -> bytes:
         author="KCL Ticketing System",
     )
 
-    styles = _build_styles()
-    story = []
 
-    # ------------------------------------------------------------------
-    # Header
-    # ------------------------------------------------------------------
+def _build_pdf_header(story, ticket, styles):
     story.append(Paragraph("KCL Ticketing System", styles["title"]))
     story.append(
         Paragraph(
@@ -201,103 +138,110 @@ def _build_pdf(ticket) -> bytes:
     )
     story.append(HRFlowable(width="100%", thickness=1.5, color=KCL_RED, spaceAfter=4 * mm))
 
-    # ------------------------------------------------------------------
-    # Ticket metadata table
-    # ------------------------------------------------------------------
-    story.append(Paragraph("Ticket Details", styles["section_heading"]))
 
-    student_name = (
-        _user_display_name(ticket.user)
-        if ticket.user
-        else f"{ticket.name} {ticket.surname}".strip() or "Unknown"
-    )
+def _build_pdf_ticket_details(story, ticket, styles):
+    story.append(Paragraph("Ticket Details", styles["section_heading"]))
+    student_name = _user_display_name(ticket.user) if ticket.user else ((f"{ticket.name} {ticket.surname}".strip() or "Unknown"))
     assigned_name = _user_display_name(ticket.assigned_to) if ticket.assigned_to else "Unassigned"
     closed_by_name = _user_display_name(ticket.closed_by) if ticket.closed_by else "—"
-
-    meta_rows = [
-        [Paragraph("Student",     styles["label"]), Paragraph(_pdf_safe_text(student_name),  styles["value"])],
-        [Paragraph("Department",  styles["label"]), Paragraph(_pdf_safe_text(ticket.department), styles["value"])],
-        [Paragraph("Issue Type",  styles["label"]), Paragraph(_pdf_safe_text(ticket.type_of_issue), styles["value"])],
-        [Paragraph("Status",      styles["label"]), Paragraph(_pdf_safe_text(ticket.status.replace("_", " ").title()), styles["value"])],
-        [Paragraph("Priority",    styles["label"]), Paragraph(_pdf_safe_text(ticket.priority.title()), styles["value"])],
-        [Paragraph("Assigned To", styles["label"]), Paragraph(_pdf_safe_text(assigned_name), styles["value"])],
-        [Paragraph("Closed By",   styles["label"]), Paragraph(_pdf_safe_text(closed_by_name), styles["value"])],
-        [Paragraph("Opened",      styles["label"]), Paragraph(_pdf_safe_text(_format_datetime(ticket.created_at)), styles["value"])],
-    ]
-
-    meta_table = Table(meta_rows, colWidths=[40 * mm, None])
-    meta_table.setStyle(TableStyle([
-        ("VALIGN",          (0, 0), (-1, -1), "TOP"),
-        ("ROWBACKGROUNDS",  (0, 0), (-1, -1), [colors.white, colors.HexColor("#F9F9F9")]),
-        ("GRID",            (0, 0), (-1, -1), 0.5, BORDER_GREY),
-        ("LEFTPADDING",     (0, 0), (-1, -1), 3 * mm),
-        ("RIGHTPADDING",    (0, 0), (-1, -1), 3 * mm),
-        ("TOPPADDING",      (0, 0), (-1, -1), 2 * mm),
-        ("BOTTOMPADDING",   (0, 0), (-1, -1), 2 * mm),
-    ]))
+    meta_table = _build_pdf_meta_table(
+        ticket=ticket,
+        student_name=student_name,
+        assigned_name=assigned_name,
+        closed_by_name=closed_by_name,
+        styles=styles,
+    )
     story.append(meta_table)
     story.append(Spacer(1, 4 * mm))
 
-    # ------------------------------------------------------------------
-    # Original message
-    # ------------------------------------------------------------------
+
+def _build_pdf_meta_table(ticket, student_name, assigned_name, closed_by_name, styles):
+    meta_rows = [
+        [Paragraph("Student", styles["label"]), Paragraph(_pdf_safe_text(student_name), styles["value"])],
+        [Paragraph("Department", styles["label"]), Paragraph(_pdf_safe_text(ticket.department), styles["value"])],
+        [Paragraph("Issue Type", styles["label"]), Paragraph(_pdf_safe_text(ticket.type_of_issue), styles["value"])],
+        [Paragraph("Status", styles["label"]), Paragraph(_pdf_safe_text(ticket.status.replace("_", " ").title()), styles["value"])],
+        [Paragraph("Priority", styles["label"]), Paragraph(_pdf_safe_text(ticket.priority.title()), styles["value"])],
+        [Paragraph("Assigned To", styles["label"]), Paragraph(_pdf_safe_text(assigned_name), styles["value"])],
+        [Paragraph("Closed By", styles["label"]), Paragraph(_pdf_safe_text(closed_by_name), styles["value"])],
+        [Paragraph("Opened", styles["label"]), Paragraph(_pdf_safe_text(_format_datetime(ticket.created_at)), styles["value"])],
+    ]
+
+    meta_table = Table(meta_rows, colWidths=[40 * mm, None])
+    meta_table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ROWBACKGROUNDS", (0, 0), (-1, -1), [colors.white, colors.HexColor("#F9F9F9")]),
+                ("GRID", (0, 0), (-1, -1), 0.5, BORDER_GREY),
+                ("LEFTPADDING", (0, 0), (-1, -1), 3 * mm),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 3 * mm),
+                ("TOPPADDING", (0, 0), (-1, -1), 2 * mm),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2 * mm),
+            ]
+        )
+    )
+    return meta_table
+
+
+def _build_pdf_original_message(story, ticket, styles):
     story.append(Paragraph("Original Message", styles["section_heading"]))
     original_message = _pdf_safe_text(ticket.additional_details) or "(no message)"
     story.append(Paragraph(original_message, styles["message"]))
     story.append(Spacer(1, 4 * mm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER_GREY, spaceAfter=4 * mm))
 
-    # ------------------------------------------------------------------
-    # Conversation thread
-    # ------------------------------------------------------------------
+
+def _build_pdf_conversation_thread(story, ticket, styles):
     story.append(Paragraph("Conversation Thread", styles["section_heading"]))
-
     replies = ticket.replies.select_related("user").order_by("created_at", "id")
-
     if not replies.exists():
         story.append(Paragraph("No replies yet.", styles["message"]))
-    else:
-        for reply in replies:
-            role = (getattr(reply.user, "role", "student") or "student").lower() if reply.user else "student"
-            is_staff = getattr(reply.user, "is_superuser", False) or role in ("staff", "admin")
+        return
 
-            sender_label = "Staff" if is_staff else "Student"
-            sender_style = styles["sender_staff"] if is_staff else styles["sender_student"]
+    for reply in replies:
+        inner_table = _build_reply_inner_table(reply=reply, styles=styles)
+        story.append(inner_table)
+        story.append(Spacer(1, 3 * mm))
 
-            inner_content = [
-                [Paragraph(f"{_pdf_safe_text(_user_display_name(reply.user))} &nbsp;({_pdf_safe_text(sender_label)})", sender_style)],
-                [Paragraph(_pdf_safe_text(reply.body), styles["message"])],
-                [Paragraph(_pdf_safe_text(_format_datetime(reply.created_at)), styles["timestamp"])],
-            ]
-            inner_table = Table(inner_content, colWidths=["100%"])
-            bg = STAFF_BG if is_staff else STUDENT_BG
-            inner_table.setStyle(TableStyle([
-                ("BACKGROUND",    (0, 0), (-1, -1), bg),
-                ("BOX",           (0, 0), (-1, -1), 0.75, BORDER_GREY),
-                ("LEFTPADDING",   (0, 0), (-1, -1), 3 * mm),
-                ("RIGHTPADDING",  (0, 0), (-1, -1), 3 * mm),
-                ("TOPPADDING",    (0, 0), (-1, -1), 2 * mm),
+
+def _build_reply_inner_table(reply, styles):
+    role = (getattr(reply.user, "role", "student") or "student").lower() if reply.user else "student"
+    is_staff = getattr(reply.user, "is_superuser", False) or role in ("staff", "admin")
+    sender_label = "Staff" if is_staff else "Student"
+    sender_style = styles["sender_staff"] if is_staff else styles["sender_student"]
+    inner_content = [
+        [Paragraph(f"{_pdf_safe_text(_user_display_name(reply.user))} &nbsp;({_pdf_safe_text(sender_label)})", sender_style)],
+        [Paragraph(_pdf_safe_text(reply.body), styles["message"])],
+        [Paragraph(_pdf_safe_text(_format_datetime(reply.created_at)), styles["timestamp"])],
+    ]
+    inner_table = Table(inner_content, colWidths=["100%"])
+    bg = STAFF_BG if is_staff else STUDENT_BG
+    inner_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), bg),
+                ("BOX", (0, 0), (-1, -1), 0.75, BORDER_GREY),
+                ("LEFTPADDING", (0, 0), (-1, -1), 3 * mm),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 3 * mm),
+                ("TOPPADDING", (0, 0), (-1, -1), 2 * mm),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 2 * mm),
-                ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-            ]))
-            story.append(inner_table)
-            story.append(Spacer(1, 3 * mm))
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        )
+    )
+    return inner_table
 
-    # ------------------------------------------------------------------
-    # Footer
-    # ------------------------------------------------------------------
+
+def _build_pdf_footer(story, styles):
     story.append(Spacer(1, 6 * mm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER_GREY, spaceAfter=2 * mm))
     story.append(
         Paragraph(
-            "This document is an official record generated by the KCL Ticketing System. "
-            "Do not alter its contents.",
+            "This document is an official record generated by the KCL Ticketing System. Do not alter its contents.",
             styles["footer"],
         )
     )
-
-    doc.build(story)
-    return buffer.getvalue()
 
 
 # ---------------------------------------------------------------------------

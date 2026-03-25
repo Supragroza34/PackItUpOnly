@@ -43,7 +43,7 @@ def reply_details(request, ticket_id):
 
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-    if request.user.role not in ("staff", "Staff", "admin") and not getattr(request.user, "is_superuser", False):
+    if not _staff_can_reply(request.user):
         return Response(status=status.HTTP_403_FORBIDDEN)
 
     ticket = get_object_or_404(Ticket, pk=ticket_id)
@@ -51,24 +51,8 @@ def reply_details(request, ticket_id):
         return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == "GET":
-        replies = Reply.objects.filter(ticket=ticket_id, parent=None).select_related("user").prefetch_related("children")
-        serializer = ReplySerializer(replies, many=True)
-        return Response(serializer.data)
-
-    # POST: create reply
-    if ticket.status == Ticket.Status.CLOSED:
-        return Response(
-            {"error": "Replies are disabled because this ticket is closed"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    data = {**request.data, "ticket": ticket.id}
-    serializer = ReplyCreateSerializer(data=data)
-    if serializer.is_valid():
-        reply = serializer.save(user=request.user)
-        update_ticket_status_after_reply(reply.ticket, reply.user)
-        notify_user_on_reply(reply.ticket, reply.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return _reply_details_get(ticket_id=ticket_id)
+    return _reply_details_post(request=request, ticket=ticket)
 
 
 class ReplyCreateView(generics.CreateAPIView):
@@ -111,10 +95,48 @@ def ticket_replies(request, ticket_id):
         return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == "GET":
-        replies = Reply.objects.filter(ticket=ticket, parent=None).order_by("created_at")
-        serializer = ReplySerializer(replies, many=True)
-        return Response(serializer.data)
+        return _ticket_replies_get(ticket=ticket)
+    return _ticket_replies_post(request=request, ticket=ticket)
 
+
+def _staff_can_reply(user):
+    return user.role in ("staff", "Staff", "admin") or getattr(user, "is_superuser", False)
+
+
+def _reply_details_get(ticket_id):
+    replies = (
+        Reply.objects.filter(ticket=ticket_id, parent=None)
+        .select_related("user")
+        .prefetch_related("children")
+    )
+    serializer = ReplySerializer(replies, many=True)
+    return Response(serializer.data)
+
+
+def _reply_details_post(request, ticket):
+    if ticket.status == Ticket.Status.CLOSED:
+        return Response(
+            {"error": "Replies are disabled because this ticket is closed"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    data = {**request.data, "ticket": ticket.id}
+    serializer = ReplyCreateSerializer(data=data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    reply = serializer.save(user=request.user)
+    update_ticket_status_after_reply(reply.ticket, reply.user)
+    notify_user_on_reply(reply.ticket, reply.user)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+def _ticket_replies_get(ticket):
+    replies = Reply.objects.filter(ticket=ticket, parent=None).order_by("created_at")
+    serializer = ReplySerializer(replies, many=True)
+    return Response(serializer.data)
+
+
+def _ticket_replies_post(request, ticket):
     if ticket.status == Ticket.Status.CLOSED:
         return Response(
             {"error": "Replies are disabled because this ticket is closed"},
@@ -123,15 +145,15 @@ def ticket_replies(request, ticket_id):
 
     data = {**request.data, "ticket": ticket.id}
     serializer = ReplyCreateSerializer(data=data)
-    if serializer.is_valid():
-        reply = serializer.save(user=request.user)
-        ticket = reply.ticket
-        update_ticket_status_after_reply(ticket, reply.user)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if _is_staff_or_admin(reply.user):
-            notify_user_on_reply(ticket, reply.user)
-        else:
-            notify_staff_on_student_reply(ticket, reply.user)
+    reply = serializer.save(user=request.user)
+    update_ticket_status_after_reply(reply.ticket, reply.user)
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if _is_staff_or_admin(reply.user):
+        notify_user_on_reply(reply.ticket, reply.user)
+    else:
+        notify_staff_on_student_reply(reply.ticket, reply.user)
+
+    return Response(serializer.data, status=status.HTTP_201_CREATED)

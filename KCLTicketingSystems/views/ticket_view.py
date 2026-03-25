@@ -64,9 +64,11 @@ def _validate_surname(surname, errors):
 def _validate_k_number(k_number, errors):
     if not k_number:
         errors["k_number"] = "K-Number is required"
-    elif re.search(r"[a-zA-Z]", k_number):
+        return
+    if re.search(r"[a-zA-Z]", k_number):
         errors["k_number"] = "K-Number cannot contain letters"
-    elif len(k_number) > 8:
+        return
+    if len(k_number) > 8:
         errors["k_number"] = "K-Number cannot be more than 8 digits"
 
 

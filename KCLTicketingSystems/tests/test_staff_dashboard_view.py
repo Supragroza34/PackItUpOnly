@@ -203,3 +203,12 @@ class StaffDashboardViewTests(TestCase):
         self.client.force_authenticate(user=self.staff1)
         response = self.client.get('/api/staff/dashboard/?filtering=all')
         data = response.json()
+
+    def test_closed_by_role_fallback(self):
+        self.ticket3.closed_by = self.staff1
+        self.ticket3.save()
+        self.client.force_authenticate(user=self.staff1)
+        response = self.client.get('/api/staff/dashboard/?filtering=closed')
+        data = response.json()
+        ticket = next(t for t in data if t['id'] == self.ticket3.id)
+        self.assertEqual(ticket['closed_by_role'], 'staff')

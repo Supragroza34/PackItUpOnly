@@ -1,7 +1,13 @@
+from unittest.mock import patch
+
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils.html import escape
-from ..models import Ticket
+
+from rest_framework.test import APITestCase
+from rest_framework import status
+
+from ..models import Ticket, User
 
 
 class TicketFormViewTest(TestCase):
@@ -370,3 +376,33 @@ class TicketFormBootstrapTest(TestCase):
         self.assertIn('is-invalid', content)
         self.assertIn('invalid-feedback', content)
 
+
+class TicketCreateAPIViewTest(APITestCase):
+    """Test cases for the authenticated TicketCreateView API endpoint"""
+
+    def setUp(self):
+        self.student = User.objects.create_user(
+            username="student_create",
+            email="student_create@test.com",
+            password="testpass123",
+            role=User.Role.STUDENT,
+            department="Informatics",
+            k_number="12345678",
+            first_name="John",
+            last_name="Doe",
+        )
+
+    def test_authenticated_ticket_creation_triggers_notify_admin(self):
+        self.client.force_authenticate(user=self.student)
+        with patch('KCLTicketingSystems.views.ticket_create_view.notify_admin_on_ticket') as mock_notify:
+            response = self.client.post(
+                '/api/tickets/',
+                {
+                    'department': 'Informatics',
+                    'type_of_issue': 'Software Installation Issues',
+                    'additional_details': 'Need help installing Python'
+                },
+                format='json'
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            mock_notify.assert_called_once()

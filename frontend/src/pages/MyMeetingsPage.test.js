@@ -1,3 +1,16 @@
+  test("renders staff card with missing name and department", async () => {
+    apiFetch.mockResolvedValue([
+      { id: 3, staff_name: "", staff_department: "", meeting_datetime: "2026-01-15T10:00:00Z", status: "pending", description: "No name" },
+      { id: 4, staff_name: "Single", meeting_datetime: "2026-01-15T10:00:00Z", status: "pending", description: "Single name" },
+    ]);
+    render(<MyMeetingsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Staff")).toBeInTheDocument();
+      expect(screen.getByText("Single")).toBeInTheDocument();
+    });
+    // Initials fallback
+    expect(screen.getAllByText("S").length).toBeGreaterThan(0);
+  });
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";

@@ -1,3 +1,14 @@
+  test("renders staff card with missing fields", async () => {
+    apiFetch.mockResolvedValueOnce([{ id: 3 }]);
+    render(
+      <MemoryRouter>
+        <StaffDirectory />
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByText("Staff Directory")).toBeInTheDocument();
+    });
+  });
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

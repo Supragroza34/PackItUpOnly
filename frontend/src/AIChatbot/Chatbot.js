@@ -2,10 +2,18 @@ import React, { useState, useRef, useEffect } from "react";
 import { authHeaders } from "../api";
 import "./Chatbot.css";
 
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_CHAT = isLocal
-  ? `${window.location.protocol}//${window.location.hostname}:8000/api/ai-chatbot/chat/`
-  : `${window.location.origin}/api/ai-chatbot/chat/`;
+
+
+export function getApiChatUrl() {
+  const { hostname, protocol, origin } = window.location;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+  return isLocal
+    ? `${protocol}//${hostname}:8000/api/ai-chatbot/chat/`
+    : `${origin}/api/ai-chatbot/chat/`;
+}
+
+export const API_CHAT = getApiChatUrl();
+
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -65,9 +73,30 @@ export default function Chatbot() {
     }
   }
 
+  // Welcome message for initial render
+  const welcomeText = "Ask me anything about support, tickets, or studying.";
+
   return (
     <div className="ai-chatbot">
-      {/* ...existing code for displaying messages and error... */}
+      <div className="ai-chatbot-messages">
+        {/* Welcome message only if no messages yet */}
+        {messages.length === 0 && (
+          <div className="ai-chatbot-welcome">{welcomeText}</div>
+        )}
+        {/* Render chat messages */}
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`ai-chatbot-msg ai-chatbot-msg-${msg.role}`}>
+            {msg.content}
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      {/* Error alert for accessibility */}
+      {error && (
+        <div role="alert" className="ai-chatbot-error">
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="ai-chatbot-form">
         <input
           type="text"

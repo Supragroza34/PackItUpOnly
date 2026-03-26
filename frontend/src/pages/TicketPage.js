@@ -18,7 +18,12 @@ const STATUS_OPTIONS = [
     { value: 'reported', label: 'Reported' },
 ];
 
-
+export function formatFileSize(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return 'Unknown size';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function TicketPage() {
     const { ticket_id } = useParams();
@@ -35,13 +40,6 @@ function TicketPage() {
     const authHeaders = () => ({
         'Authorization': `Bearer ${localStorage.getItem('access')}`,
     });
-
-    function formatFileSize(bytes) {
-        if (!Number.isFinite(bytes) || bytes <= 0) return 'Unknown size';
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    }
 
     function changeStatus(newStatus) {
     fetch(`/api/staff/dashboard/${ticket_id}/update/`, {

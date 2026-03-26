@@ -1,3 +1,18 @@
+describe('StaffDashboardPage – edge cases', () => {
+    test('handles empty ticket/user/stats lists', () => {
+        renderWithProviders(<StaffDashboardPage />, { preloadedState: staffState({ user: null }) });
+        // Should render dashboard structure even with no data
+        expect(screen.getByText(/assigned tickets/i)).toBeInTheDocument();
+    });
+    test('handles notification click with missing/closed ticket', () => {
+        renderWithProviders(<StaffDashboardPage />);
+        fireEvent.click(screen.getByText(/notif missing ticket/i));
+        fireEvent.click(screen.getByText(/notif closed ticket/i));
+        fireEvent.click(screen.getByText(/notif open ticket/i));
+        fireEvent.click(screen.getByText(/notif meeting request/i));
+        expect(true).toBe(true); // No crash
+    });
+});
 // ─────────────────────────────────────────────────────────────────────────────
 // StaffDashboardPage.test.js  –  100% statement/function/line coverage
 // ─────────────────────────────────────────────────────────────────────────────

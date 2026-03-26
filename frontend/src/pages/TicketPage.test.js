@@ -1,3 +1,11 @@
+  test("file size formatting edge cases", () => {
+    const { formatFileSize } = require("./TicketPage");
+    expect(formatFileSize(-1)).toBe("Unknown size");
+    expect(formatFileSize(0)).toBe("Unknown size");
+    expect(formatFileSize(500)).toBe("500 B");
+    expect(formatFileSize(2048)).toBe("2.0 KB");
+    expect(formatFileSize(2 * 1024 * 1024)).toBe("2.0 MB");
+  });
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";

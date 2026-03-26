@@ -18,7 +18,7 @@ function AdminTopbar({ user, handleLogout }) {
   return (
     <div className="admin-topbar-container">
       <div className="topbar-row-1">
-        <h1> Welcome, {user?.first_name || user?.username || "Admin"}</h1>
+        <h1>👋 Welcome, {user?.first_name || user?.username || "Admin"}</h1>
         <div className="topbar-row-1-actions">
           <NotificationBell
             onNotificationClick={(notif) => {

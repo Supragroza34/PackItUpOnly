@@ -86,15 +86,19 @@
   border-top: 1px solid #fecaca;
 }
 
+
 .ai-chatbot-form {
   display: flex;
   gap: 10px;
-  padding: 14px 20px;
+  padding: 14px 0px 14px 0px;
   border-top: 1px solid #e2e8f0;
   background: #f8fafc;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.ai-chatbot-input {
+
+.ai-chatbot-form input[type="text"] {
   flex: 1;
   padding: 10px 14px;
   border: 1px solid #e2e8f0;
@@ -102,6 +106,8 @@
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .ai-chatbot-input:focus {

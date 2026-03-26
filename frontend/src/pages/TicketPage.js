@@ -36,6 +36,13 @@ function TicketPage() {
         'Authorization': `Bearer ${localStorage.getItem('access')}`,
     });
 
+    function formatFileSize(bytes) {
+        if (!Number.isFinite(bytes) || bytes <= 0) return 'Unknown size';
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
     function changeStatus(newStatus) {
     fetch(`/api/staff/dashboard/${ticket_id}/update/`, {
         method: 'PATCH',
@@ -215,6 +222,29 @@ function TicketPage() {
                   <p className="ticket-description">No description provided.</p>
                 )}
                 {ticket.department && <span className="ticket-department">📁 {ticket.department}</span>}
+            </div>
+
+            <div className="ticket-card">
+                <h2 className="ticket-card-title">Attachments</h2>
+                {ticket.attachments?.length ? (
+                    <ul className="ticket-attachments-list">
+                        {ticket.attachments.map((attachment) => (
+                            <li key={attachment.id} className="ticket-attachments-item">
+                                <a
+                                    href={attachment.file_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="ticket-attachment-link"
+                                >
+                                    {attachment.original_filename}
+                                </a>
+                                <span className="ticket-attachment-size">({formatFileSize(attachment.file_size)})</span>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="ticket-replies-empty">No attachments provided.</p>
+                )}
             </div>
 
             <div className="ticket-card">

@@ -75,11 +75,12 @@ class Command(BaseCommand):
         # Seed office hours for staff users so they have default availability
         try:
             self.seed_office_hours()
+            print("Staff hours seeding complete.        ")
         except Exception as e:
             print(f"Seeding office hours skipped: {e}")
 
         self.users = User.objects.all()
-        self.create_student_tickets()
+        self.generate_tickets()
         self.tickets = Ticket.objects.all()
 
     def get_random_department(self):
@@ -99,18 +100,27 @@ class Command(BaseCommand):
 
         return choice(departments)    
 
-    def create_student_tickets(self):
+    def create_student_tickets(self, student):
         """
         Create some tickets for all generated students.
         """
-        students = User.objects.filter(role="student")
         ticket_count = Ticket.objects.count()
-        for student in students:
-            print(f"Seeding ticket {ticket_count}/{self.STUDENT_COUNT * self.TICKET_COUNT_PER_STUDENT}", end='\r')
+        student_ticket_count = Ticket.objects.filter(user=student).count()
+        expected_ticket_count = self.STUDENT_COUNT * self.TICKET_COUNT_PER_STUDENT
+        while student_ticket_count < self.TICKET_COUNT_PER_STUDENT:
+            print(f"Seeding ticket {ticket_count}/{expected_ticket_count}", end='\r')
             self.generate_n_tickets(self.TICKET_COUNT_PER_STUDENT, student)
-            ticket_count = Ticket.objects.count()  
-        
-        print("Ticket seeding complete.        ")                 
+            ticket_count = Ticket.objects.count()
+            student_ticket_count = Ticket.objects.filter(user=student).count()        
+
+    def generate_tickets(self):
+        """
+        Generate all example ticekts.
+        """
+        students = User.objects.filter(role="student")
+        for student in students:
+            self.create_student_tickets(student)
+        print("Ticket seeding complete.        ")
 
     def create_users(self):
         """
@@ -283,7 +293,7 @@ class Command(BaseCommand):
                         start_time=b["start_time"],
                         end_time=b["end_time"],
                     )
-                print(f"Seeded office hours for {staff.username}")
+                print(f"Seeded office hours for {staff.username}", end='\r')
             except Exception:
                 # don't fail the entire seeding process for one user
                 print(f"Could not seed office hours for {staff}")

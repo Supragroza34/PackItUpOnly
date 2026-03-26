@@ -164,7 +164,7 @@ const Statistics = () => {
             <main className="dashboard-content">
                 <div className="page-header">
                     <h2>Ticket Statistics & Analytics</h2>
-                    <div className="view-toggle" role="tablist" aria-label="Statistics view mode">
+                    <div className="view-toggle" aria-label="Statistics view mode">
                         <button
                             className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
                             onClick={() => setViewMode('table')}

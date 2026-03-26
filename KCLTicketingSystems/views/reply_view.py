@@ -39,12 +39,13 @@ def reply_details(request, ticket_id):
     GET: List replies for a ticket (staff dashboard).
     POST: Create a reply for the ticket (staff only, must have access to ticket).
     """
-    auto_close_stale_awaiting_response()
 
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
     if request.user.role not in ("staff", "Staff", "admin") and not getattr(request.user, "is_superuser", False):
         return Response(status=status.HTTP_403_FORBIDDEN)
+
+    auto_close_stale_awaiting_response()
 
     ticket = get_object_or_404(Ticket, pk=ticket_id)
     if not _staff_can_access_ticket(request.user, ticket):

@@ -112,12 +112,14 @@ function UserDashboardPage() {
     setSelectedTicket(ticket);
     setReplyError("");
     setParentReplyId(null);
+    setShowProgressInfo(false);
   }
 
   function closeSelectedTicket() {
     setSelectedTicket(null);
     setParentReplyId(null);
     setReplyError("");
+    setShowProgressInfo(false);
   }
 
   function updateSelectedTicketReplyDraft(value) {

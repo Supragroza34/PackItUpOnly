@@ -200,3 +200,88 @@ class StaffMeetingRequestsViewTests(TestCase):
         }
         invalid = self.client.post("/api/meeting-requests/", invalid_payload, format="json")
         self.assertEqual(invalid.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_staff_available_slots_valid_and_invalid(self):
+        self._auth(self.staff)
+        # Valid date, should return slots
+        date_str = self.meeting_datetime.date().isoformat()
+        url = f"/api/staff/{self.staff.id}/available-slots/?date={date_str}"
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn("slots", resp.data)
+
+        # Invalid date format
+        url = f"/api/staff/{self.staff.id}/available-slots/?date=2026-99-99"
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", resp.data)
+
+        # Missing date param
+        url = f"/api/staff/{self.staff.id}/available-slots/"
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", resp.data)
+
+        # No office hours for that day
+        url = f"/api/staff/{self.staff2.id}/available-slots/?date={date_str}"
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["slots"], [])
+
+    def test_office_hours_delete_invalid_id_and_permission(self):
+        self._auth(self.staff)
+        # Try deleting non-existent office hours
+        resp = self.client.delete("/api/staff/office-hours/99999/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Try deleting as non-staff
+        self._auth(self.student)
+        resp = self.client.delete("/api/staff/office-hours/99999/")
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_office_hours_create_missing_fields(self):
+        self._auth(self.staff)
+        # Missing required fields
+        resp = self.client.post("/api/staff/office-hours/", {}, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("day_of_week", resp.data)
+
+    def test_meeting_request_create_missing_fields(self):
+        self._auth(self.student)
+        # Missing required fields
+        resp = self.client.post("/api/meeting-requests/", {}, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("staff", resp.data)
+
+    def test_meeting_request_create_invalid_staff(self):
+        self._auth(self.student)
+        # Non-existent staff
+        payload = {
+            "staff": 99999,
+            "meeting_datetime": self.meeting_datetime.isoformat(),
+            "description": "Invalid staff",
+        }
+        resp = self.client.post("/api/meeting-requests/", payload, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_method_restrictions_and_permissions(self):
+        # POST to meeting_request_list (should be 405)
+        self._auth(self.staff)
+        resp = self.client.post("/api/staff/dashboard/meeting-requests/")
+        self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # GET to office_hours_delete (should be 405)
+        resp = self.client.get("/api/staff/office-hours/99999/")
+        self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # POST to office_hours_delete (should be 405)
+        resp = self.client.post("/api/staff/office-hours/99999/")
+        self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # GET to meeting_request_accept (should be 405)
+        resp = self.client.get(f"/api/staff/dashboard/meeting-requests/{self.pending_request.id}/accept/")
+        self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # GET to meeting_request_deny (should be 405)
+        resp = self.client.get(f"/api/staff/dashboard/meeting-requests/{self.pending_request.id}/deny/")
+        self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

@@ -134,10 +134,11 @@ const TicketsManagement = () => {
         }
     };
 
-    const confirmCloseTwice = (ticketId) => {
-        if (!window.confirm('Are you sure you want to close this ticket?')) return false;
-        if (!window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')) return false;
-        return true;
+    const confirmCloseTwice = () => {
+        return (
+            window.confirm('Are you sure you want to close this ticket?') &&
+            window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')
+        );
     };
 
     const getStatusLabel = (ticket) => {
@@ -148,7 +149,7 @@ const TicketsManagement = () => {
     };
 
     const handleCloseTicket = async (ticketId) => {
-        if (!confirmCloseTwice(ticketId)) return;
+        if (!confirmCloseTwice()) return;
         try {
             await dispatch(updateTicket({
                 ticketId,

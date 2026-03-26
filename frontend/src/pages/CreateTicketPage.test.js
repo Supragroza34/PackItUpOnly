@@ -73,4 +73,25 @@ describe("CreateTicketPage", () => {
     await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
   });
+
+  test("updates priority from dropdown and submits selected priority", async () => {
+    apiFetch.mockResolvedValue({ id: 2 });
+
+    render(<CreateTicketPage />);
+
+    await userEvent.selectOptions(screen.getByLabelText(/department/i), "Medicine");
+    await userEvent.selectOptions(screen.getByLabelText(/type of issue/i), "Other");
+    await userEvent.type(screen.getByLabelText(/additional details/i), "Need urgent support");
+    await userEvent.selectOptions(screen.getByLabelText(/priority/i), "urgent");
+    await userEvent.click(screen.getByRole("button", { name: /submit ticket/i }));
+
+    await waitFor(() => {
+      expect(apiFetch).toHaveBeenCalledWith(
+        "/tickets/",
+        expect.objectContaining({
+          body: expect.stringContaining('"priority":"urgent"'),
+        })
+      );
+    });
+  });
 });

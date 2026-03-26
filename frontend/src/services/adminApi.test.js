@@ -77,4 +77,66 @@ describe("adminApi", () => {
 
     expect(global.fetch.mock.calls[0][0]).toContain("days=30");
   });
+
+  test("getDashboardStats success", async () => {
+    global.fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ ok: true }) });
+    await expect(adminApi.getDashboardStats()).resolves.toEqual({ ok: true });
+  });
+
+  test("getDashboardStats maps 401 and text error", async () => {
+    global.fetch
+      .mockResolvedValueOnce({ ok: false, status: 401, text: () => Promise.resolve("") })
+      .mockResolvedValueOnce({ ok: false, status: 500, text: () => Promise.resolve("boom") });
+
+    await expect(adminApi.getDashboardStats()).rejects.toThrow(/please log in again/i);
+    await expect(adminApi.getDashboardStats()).rejects.toThrow(/boom/i);
+  });
+
+  test("ticket detail and delete ticket branches", async () => {
+    global.fetch
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) })
+      .mockResolvedValueOnce({ ok: false, json: () => Promise.resolve({ error: "bad delete" }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
+
+    await expect(adminApi.getTicketDetail(1)).resolves.toEqual({ id: 1 });
+    await expect(adminApi.deleteTicket(1)).rejects.toThrow(/bad delete/i);
+    await expect(adminApi.deleteTicket(1)).resolves.toEqual({ ok: true });
+  });
+
+  test("updateTicket accepts error and detail fallbacks", async () => {
+    global.fetch
+      .mockResolvedValueOnce({ ok: false, json: () => Promise.resolve({ error: "x" }) })
+      .mockResolvedValueOnce({ ok: false, json: () => Promise.resolve({ detail: "y" }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 2 }) });
+
+    await expect(adminApi.updateTicket(1, {})).rejects.toThrow(/^x$/i);
+    await expect(adminApi.updateTicket(1, {})).rejects.toThrow(/^y$/i);
+    await expect(adminApi.updateTicket(1, {})).resolves.toEqual({ id: 2 });
+  });
+
+  test("users API methods success and failure", async () => {
+    global.fetch
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ users: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 7 }) })
+      .mockResolvedValueOnce({ ok: false, json: () => Promise.resolve({ error: "no" }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 8 }) })
+      .mockResolvedValueOnce({ ok: false, json: () => Promise.resolve({ error: "cannot" }) });
+
+    await expect(adminApi.getUsers({ role: "staff" })).resolves.toEqual({ users: [] });
+    await expect(adminApi.getUserDetail(7)).resolves.toEqual({ id: 7 });
+    await expect(adminApi.updateUser(7, {})).rejects.toThrow(/no/i);
+    await expect(adminApi.updateUser(7, {})).resolves.toEqual({ id: 8 });
+    await expect(adminApi.deleteUser(7)).rejects.toThrow(/cannot/i);
+  });
+
+  test("staff list and statistics failure branches", async () => {
+    global.fetch
+      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValueOnce({ ok: false });
+
+    await expect(adminApi.getStaffList()).rejects.toThrow(/failed to fetch staff list/i);
+    await expect(adminApi.getStatistics({ start_date: "2026-01-01", end_date: "2026-01-10" })).rejects.toThrow(
+      /failed to fetch statistics/i
+    );
+  });
 });

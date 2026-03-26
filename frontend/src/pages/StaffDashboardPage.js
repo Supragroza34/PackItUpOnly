@@ -88,9 +88,10 @@ function StaffDashboardPage() {
     };
 
     function confirmCloseTwice() {
-        if (!window.confirm('Are you sure you want to close this ticket?')) return false;
-        if (!window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')) return false;
-        return true;
+        return (
+            window.confirm('Are you sure you want to close this ticket?') &&
+            window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')
+        );
     }
 
     async function handleCloseTicket(e, ticketId) {

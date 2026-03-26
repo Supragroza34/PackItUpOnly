@@ -1,3 +1,17 @@
+  test("handles slot fetch error and loading state", async () => {
+    apiFetch.mockResolvedValueOnce(staff);
+    apiFetch.mockRejectedValueOnce(new Error("Slot error"));
+    render(<StaffMeetingPage />);
+    expect(await screen.findByText("Alice Johnson")).toBeInTheDocument();
+    const dateInput = document.querySelector('input[type="date"]');
+    fireEvent.change(dateInput, { target: { value: "2026-03-25" } });
+    expect(await screen.findByText("Slot error")).toBeInTheDocument();
+  });
+  test("renders staff details with missing fields", async () => {
+    apiFetch.mockResolvedValueOnce({ ...staff, department: undefined, email: undefined, k_number: undefined });
+    render(<StaffMeetingPage />);
+    expect(await screen.findByText("—")).toBeInTheDocument();
+  });
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -5,6 +6,11 @@ import { authHeaders } from "../api";
 import "./TicketFormPage.css";
 import UserNavbar from "../components/UserNavbar";
 import RichTextEditor from "../components/RichTextEditor";
+
+// Export API_BASE for testability (must be at very top of the file)
+export const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? `${window.location.protocol}//${window.location.hostname}:8000/api`
+  : `${window.location.origin}/api`;
 
 const ISSUE_TYPES = {
   Informatics: [
@@ -139,6 +145,11 @@ export default function TicketFormPage() {
 
   /* ---------- Submit ---------- */
 
+
+
+
+
+
   async function handleSubmit(e) {
     e.preventDefault();
     setGeneralError("");
@@ -159,8 +170,6 @@ export default function TicketFormPage() {
       formData.append("additional_details", additionalDetails);
       selectedFiles.forEach((file) => formData.append("attachments", file));
 
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const API_BASE = isLocal ? `${window.location.protocol}//${window.location.hostname}:8000/api` : `${window.location.origin}/api`;
       const res = await fetch(`${API_BASE}/tickets/`, {
         method: "POST",
         headers: authHeaders(), // JWT token; no Content-Type so browser sets multipart boundary

@@ -1,3 +1,25 @@
+  test("initials function edge cases", () => {
+    const { initials } = require("./StaffMeetingRequestsPage");
+    expect(initials("")).toBe("");
+    expect(initials("A")).toBe("A");
+    expect(initials("A B")).toBe("AB");
+    expect(initials("A B C")).toBe("AB");
+  });
+  test("StatusBadge renders all statuses", () => {
+    const { StatusBadge } = require("./StaffMeetingRequestsPage");
+    ["pending", "accepted", "denied", "other"].forEach(status => {
+      const { container } = render(<StatusBadge status={status} />);
+      expect(container).toHaveTextContent(/pending|accepted|declined|other/i);
+    });
+  });
+  test("accept/deny/add office hours error handling", async () => {
+    apiFetch.mockResolvedValueOnce([{ id: 1, status: "pending" }]);
+    apiFetch.mockRejectedValue(new Error("fail"));
+    render(<StaffMeetingRequestsPage />);
+    expect(await screen.findByText(/meeting requests/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /accept/i }));
+    await waitFor(() => expect(screen.getByText(/fail/i)).toBeInTheDocument());
+  });
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";

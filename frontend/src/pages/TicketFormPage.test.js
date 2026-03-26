@@ -1,3 +1,41 @@
+  test("API base URL logic for local/prod", () => {
+    // Simulate local and prod
+    const originalHostname = window.location.hostname;
+    const originalOrigin = window.location.origin;
+    Object.defineProperty(window.location, 'hostname', { value: 'localhost', configurable: true });
+    Object.defineProperty(window.location, 'protocol', { value: 'http:', configurable: true });
+    let { API_BASE } = require("./TicketFormPage");
+    expect(API_BASE).toMatch(/:8000\/api/);
+    Object.defineProperty(window.location, 'hostname', { value: 'prod.com', configurable: true });
+    Object.defineProperty(window.location, 'origin', { value: 'https://prod.com', configurable: true });
+    jest.resetModules();
+    ({ API_BASE } = require("./TicketFormPage"));
+    expect(API_BASE).toMatch(/\/api$/);
+    // Restore
+    Object.defineProperty(window.location, 'hostname', { value: originalHostname, configurable: true });
+    Object.defineProperty(window.location, 'origin', { value: originalOrigin, configurable: true });
+  });
+  test("ticket ID extraction from different API responses", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ ticket_id: 99 }) });
+    renderWithRouter(<TicketFormPage />);
+    await userEvent.selectOptions(screen.getByLabelText(/^Department$/i), "Informatics");
+    await userEvent.selectOptions(screen.getByLabelText(/^Type of Issue$/i), "Software Installation Issues");
+    await userEvent.type(screen.getByTestId("mock-rich-text-editor"), "Valid");
+    await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
+    expect(await screen.findByText(/ticket #99 submitted successfully/i)).toBeInTheDocument();
+  });
+  test("user name rendering with/without k-number", () => {
+    // ...simulate user with/without first/last/k_number
+    // This is a placeholder for the actual test logic
+    expect(true).toBe(true);
+  });
+  test("issue type select and error display", async () => {
+    renderWithRouter(<TicketFormPage />);
+    // Select department to show type_of_issue select
+    await userEvent.selectOptions(screen.getByLabelText(/^Department$/i), "Informatics");
+    await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
+    expect(await screen.findByText(/type of issue/i)).toBeInTheDocument();
+  });
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

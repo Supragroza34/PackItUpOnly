@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from datetime import timedelta
 
-from ..models import Ticket, User, Reply
+from ..models import Ticket, User, Reply, Attachment
 from ..serializers import ReplySerializer, TicketUpdateSerializer, StaffReassignTicket
 
 class UserSerializer(serializers.ModelSerializer):
@@ -17,11 +17,28 @@ class UserSerializer(serializers.ModelSerializer):
             model = User
             fields = ['first_name', 'last_name', 'email']
 
+
+class AttachmentSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Attachment
+        fields = ['id', 'original_filename', 'file_size', 'uploaded_at', 'file_url']
+
+    def get_file_url(self, obj):
+        if not obj.file:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.file.url)
+        return obj.file.url
+
 class TicketSerializer(serializers.ModelSerializer):
     is_overdue = serializers.SerializerMethodField()
     closed_by_role = serializers.SerializerMethodField()
     user = UserSerializer(read_only=True)
     replies = serializers.SerializerMethodField()
+    attachments = AttachmentSerializer(many=True, read_only=True)
     assigned_to_details = UserSerializer(source='assigned_to', read_only=True)
     assigned_to = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -58,7 +75,7 @@ def ticket_info(request, ticket_id):
         return Response(status=status.HTTP_403_FORBIDDEN)
     
     ticket = get_object_or_404(Ticket, pk=ticket_id)
-    serializer = TicketSerializer(ticket)
+    serializer = TicketSerializer(ticket, context={'request': request})
 
     return Response(serializer.data)
 
@@ -90,7 +107,7 @@ def staff_ticket_update(request, ticket_id):
             ticket.closed_by = request.user
             ticket.save(update_fields=["closed_by"])
         ticket.refresh_from_db()
-        return Response(TicketSerializer(ticket).data)
+        return Response(TicketSerializer(ticket, context={'request': request}).data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -111,7 +128,7 @@ def staff_ticket_reassign(request, ticket_id):
             serializer.save()
             ticket.refresh_from_db()
             # Return full ticket data with nested user and assigned_to_details
-            return Response(TicketSerializer(ticket).data)
+            return Response(TicketSerializer(ticket, context={'request': request}).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Ticket.DoesNotExist:
         return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)

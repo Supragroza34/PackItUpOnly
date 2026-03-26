@@ -5,9 +5,13 @@ from KCLTicketingSystems.models import User
 
 
 class StaffDirectoryViewTests(APITestCase):
-    def setUp(self):
-        self.url = "/api/staff/"
+    STAFF_DIRECTORY_URL = "/api/staff/"
 
+    def setUp(self):
+        self.url = self.STAFF_DIRECTORY_URL
+        self._create_users()
+
+    def _create_users(self):
         self.student = User.objects.create_user(
             username="student_dir",
             email="student_dir@test.com",
@@ -50,33 +54,40 @@ class StaffDirectoryViewTests(APITestCase):
             k_number="81000004",
         )
 
+    def _auth_as_student(self):
+        self.client.force_authenticate(user=self.student)
+
+    @staticmethod
+    def _returned_ids(response):
+        return [item["id"] for item in response.data]
+
     def test_requires_authentication(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_returns_only_staff_users(self):
-        self.client.force_authenticate(user=self.student)
+        self._auth_as_student()
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        returned_ids = [item["id"] for item in response.data]
+        returned_ids = self._returned_ids(response)
         self.assertNotIn(self.student.id, returned_ids)
         self.assertIn(self.staff_a.id, returned_ids)
         self.assertIn(self.staff_b.id, returned_ids)
         self.assertIn(self.staff_c.id, returned_ids)
 
     def test_department_filter_is_case_insensitive(self):
-        self.client.force_authenticate(user=self.student)
+        self._auth_as_student()
         response = self.client.get(self.url, {"department": "informatics"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        returned_ids = [item["id"] for item in response.data]
+        returned_ids = self._returned_ids(response)
         self.assertIn(self.staff_a.id, returned_ids)
         self.assertIn(self.staff_b.id, returned_ids)
         self.assertNotIn(self.staff_c.id, returned_ids)
 
     def test_results_are_ordered_by_last_name_then_first_name(self):
-        self.client.force_authenticate(user=self.student)
+        self._auth_as_student()
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -91,7 +102,7 @@ class StaffDirectoryViewTests(APITestCase):
         )
 
     def test_unknown_department_returns_empty_list(self):
-        self.client.force_authenticate(user=self.student)
+        self._auth_as_student()
         response = self.client.get(self.url, {"department": "Physics"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -16,8 +16,8 @@ KCLTicketingSystems/tests/test_close_ticket.py
 
 
 //Nitin
-KCLTicketingSystems/tests/test_forms_and_staff_meeting_requests.py
-KCLTicketingSystems/tests/test_notifications_view.py
+KCLTicketingSystems/tests/test_forms_and_staff_meeting_requests.py (Done)
+KCLTicketingSystems/tests/test_notifications_view.py (Done)
 KCLTicketingSystems/tests/test_reply.py
 KCLTicketingSystems/tests/test_reply_view.py
 KCLTicketingSystems/tests/test_staff_dashboard_view.py

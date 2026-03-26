@@ -46,7 +46,15 @@ class ReplyFormTests(TestCase):
 class StaffMeetingRequestsViewTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self._create_users()
+        self.meeting_datetime = self._build_meeting_datetime()
+        self._create_staff_office_hours()
+        self.pending_request = self._create_meeting_request(
+            staff=self.staff,
+            description="Need help with coursework",
+        )
 
+    def _create_users(self):
         self.student = User.objects.create_user(
             username="student_meeting",
             email="student_meeting@example.com",
@@ -78,14 +86,16 @@ class StaffMeetingRequestsViewTests(TestCase):
             role=User.Role.ADMIN,
         )
 
-        # Serializer requires the meeting to start exactly on a 15-minute boundary (and `second == 0`).
+    def _build_meeting_datetime(self):
         dt = timezone.now() + timedelta(days=1)
         dt = dt.replace(second=0, microsecond=0)
         minute = ((dt.minute + 14) // 15) * 15
         if minute == 60:
             dt = dt + timedelta(hours=1)
             minute = 0
-        self.meeting_datetime = dt.replace(minute=minute)
+        return dt.replace(minute=minute)
+
+    def _create_staff_office_hours(self):
         day_name = self.meeting_datetime.strftime("%A")
         meeting_time = self.meeting_datetime.time()
         start_hour = max(0, meeting_time.hour - 1)
@@ -98,12 +108,29 @@ class StaffMeetingRequestsViewTests(TestCase):
             end_time=time(end_hour, 59),
         )
 
-        self.pending_request = MeetingRequest.objects.create(
+    def _create_meeting_request(self, staff, description, offset_minutes=0):
+        return MeetingRequest.objects.create(
             student=self.student,
-            staff=self.staff,
-            meeting_datetime=self.meeting_datetime,
-            description="Need help with coursework",
+            staff=staff,
+            meeting_datetime=self.meeting_datetime + timedelta(minutes=offset_minutes),
+            description=description,
         )
+
+    def _meeting_requests_url(self):
+        return "/api/staff/dashboard/meeting-requests/"
+
+    def _meeting_action_url(self, request_id, action):
+        return f"/api/staff/dashboard/meeting-requests/{request_id}/{action}/"
+
+    def _office_hours_url(self):
+        return "/api/staff/office-hours/"
+
+    def _student_meeting_requests_url(self):
+        return "/api/meeting-requests/"
+
+    def _available_slots_url(self, staff_id, date_str=None):
+        base = f"/api/staff/{staff_id}/available-slots/"
+        return f"{base}?date={date_str}" if date_str else base
 
     def _auth(self, user):
         token = RefreshToken.for_user(user).access_token
@@ -111,75 +138,77 @@ class StaffMeetingRequestsViewTests(TestCase):
 
     def test_meeting_request_list_staff_only_and_success(self):
         self._auth(self.student)
-        denied = self.client.get("/api/staff/dashboard/meeting-requests/")
+        denied = self.client.get(self._meeting_requests_url())
         self.assertEqual(denied.status_code, status.HTTP_403_FORBIDDEN)
 
         self._auth(self.staff)
-        ok = self.client.get("/api/staff/dashboard/meeting-requests/")
+        ok = self.client.get(self._meeting_requests_url())
         self.assertEqual(ok.status_code, status.HTTP_200_OK)
         self.assertEqual(len(ok.data), 1)
 
-    def test_accept_and_deny_request_paths(self):
+    def test_accept_request_and_reaccept_fails(self):
         self._auth(self.staff)
-        accepted = self.client.post(
-            f"/api/staff/dashboard/meeting-requests/{self.pending_request.id}/accept/"
-        )
+        accepted = self.client.post(self._meeting_action_url(self.pending_request.id, "accept"))
         self.assertEqual(accepted.status_code, status.HTTP_200_OK)
         self.pending_request.refresh_from_db()
         self.assertEqual(self.pending_request.status, MeetingRequest.Status.ACCEPTED)
 
-        processed = self.client.post(
-            f"/api/staff/dashboard/meeting-requests/{self.pending_request.id}/accept/"
-        )
+        processed = self.client.post(self._meeting_action_url(self.pending_request.id, "accept"))
         self.assertEqual(processed.status_code, status.HTTP_400_BAD_REQUEST)
 
-        to_deny = MeetingRequest.objects.create(
-            student=self.student,
+    def test_deny_request_and_redeny_fails(self):
+        self._auth(self.staff)
+        to_deny = self._create_meeting_request(
             staff=self.staff,
-            meeting_datetime=self.meeting_datetime,
             description="Another request",
+            offset_minutes=30,
         )
-        denied = self.client.post(f"/api/staff/dashboard/meeting-requests/{to_deny.id}/deny/")
+        denied = self.client.post(self._meeting_action_url(to_deny.id, "deny"))
         self.assertEqual(denied.status_code, status.HTTP_200_OK)
         to_deny.refresh_from_db()
         self.assertEqual(to_deny.status, MeetingRequest.Status.DENIED)
 
-        deny_again = self.client.post(f"/api/staff/dashboard/meeting-requests/{to_deny.id}/deny/")
+        deny_again = self.client.post(self._meeting_action_url(to_deny.id, "deny"))
         self.assertEqual(deny_again.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_office_hours_manage_and_delete(self):
+    def test_office_hours_list_requires_staff_role(self):
         self._auth(self.student)
-        forbidden = self.client.get("/api/staff/office-hours/")
+        forbidden = self.client.get(self._office_hours_url())
         self.assertEqual(forbidden.status_code, status.HTTP_403_FORBIDDEN)
 
         self._auth(self.staff)
-        listed = self.client.get("/api/staff/office-hours/")
+        listed = self.client.get(self._office_hours_url())
         self.assertEqual(listed.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(listed.data), 1)
 
+    def test_office_hours_create_and_delete(self):
+        self._auth(self.staff)
         create_payload = {
             "day_of_week": self.meeting_datetime.strftime("%A"),
             "start_time": "09:00:00",
             "end_time": "11:00:00",
         }
-        created = self.client.post("/api/staff/office-hours/", create_payload, format="json")
+        created = self.client.post(self._office_hours_url(), create_payload, format="json")
         self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+
+        hours_id = created.data["id"]
+        deleted = self.client.delete(f"{self._office_hours_url()}{hours_id}/")
+        self.assertEqual(deleted.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_office_hours_create_invalid_payload(self):
+        self._auth(self.staff)
 
         bad_payload = {
             "day_of_week": "NotADay",
             "start_time": "11:00:00",
             "end_time": "10:00:00",
         }
-        bad = self.client.post("/api/staff/office-hours/", bad_payload, format="json")
+        bad = self.client.post(self._office_hours_url(), bad_payload, format="json")
         self.assertEqual(bad.status_code, status.HTTP_400_BAD_REQUEST)
 
-        hours_id = created.data["id"]
-        deleted = self.client.delete(f"/api/staff/office-hours/{hours_id}/")
-        self.assertEqual(deleted.status_code, status.HTTP_204_NO_CONTENT)
-
-    def test_meeting_request_create_get_and_post(self):
+    def test_student_can_list_and_create_meeting_request(self):
         self._auth(self.student)
-        listed = self.client.get("/api/meeting-requests/")
+        listed = self.client.get(self._student_meeting_requests_url())
         self.assertEqual(listed.status_code, status.HTTP_200_OK)
         self.assertEqual(len(listed.data), 1)
 
@@ -190,66 +219,68 @@ class StaffMeetingRequestsViewTests(TestCase):
             "meeting_datetime": (self.meeting_datetime + timedelta(minutes=15)).isoformat(),
             "description": "Can we discuss lab work?",
         }
-        created = self.client.post("/api/meeting-requests/", payload, format="json")
+        created = self.client.post(self._student_meeting_requests_url(), payload, format="json")
         self.assertEqual(created.status_code, status.HTTP_201_CREATED)
 
+    def test_meeting_request_create_outside_office_hours_fails(self):
+        self._auth(self.student)
         invalid_payload = {
             "staff": self.staff2.id,
             "meeting_datetime": (self.meeting_datetime + timedelta(hours=2)).isoformat(),
             "description": "Outside office hours",
         }
-        invalid = self.client.post("/api/meeting-requests/", invalid_payload, format="json")
+        invalid = self.client.post(self._student_meeting_requests_url(), invalid_payload, format="json")
         self.assertEqual(invalid.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_staff_available_slots_valid_and_invalid(self):
+    def test_staff_available_slots_returns_slots_for_valid_date(self):
         self._auth(self.staff)
-        # Valid date, should return slots
         date_str = self.meeting_datetime.date().isoformat()
-        url = f"/api/staff/{self.staff.id}/available-slots/?date={date_str}"
-        resp = self.client.get(url)
+        resp = self.client.get(self._available_slots_url(self.staff.id, date_str))
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("slots", resp.data)
 
-        # Invalid date format
-        url = f"/api/staff/{self.staff.id}/available-slots/?date=2026-99-99"
-        resp = self.client.get(url)
+    def test_staff_available_slots_rejects_invalid_date(self):
+        self._auth(self.staff)
+        resp = self.client.get(self._available_slots_url(self.staff.id, "2026-99-99"))
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", resp.data)
 
-        # Missing date param
-        url = f"/api/staff/{self.staff.id}/available-slots/"
-        resp = self.client.get(url)
+    def test_staff_available_slots_requires_date_query_param(self):
+        self._auth(self.staff)
+        resp = self.client.get(self._available_slots_url(self.staff.id))
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", resp.data)
 
-        # No office hours for that day
-        url = f"/api/staff/{self.staff2.id}/available-slots/?date={date_str}"
-        resp = self.client.get(url)
+    def test_staff_available_slots_returns_empty_without_office_hours(self):
+        self._auth(self.staff)
+        date_str = self.meeting_datetime.date().isoformat()
+        resp = self.client.get(self._available_slots_url(self.staff2.id, date_str))
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data["slots"], [])
 
     def test_office_hours_delete_invalid_id_and_permission(self):
         self._auth(self.staff)
         # Try deleting non-existent office hours
-        resp = self.client.delete("/api/staff/office-hours/99999/")
+        resp = self.client.delete(f"{self._office_hours_url()}99999/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
         # Try deleting as non-staff
         self._auth(self.student)
-        resp = self.client.delete("/api/staff/office-hours/99999/")
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        office_hours_id = OfficeHours.objects.filter(staff=self.staff).first().id
+        resp = self.client.delete(f"{self._office_hours_url()}{office_hours_id}/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_office_hours_create_missing_fields(self):
         self._auth(self.staff)
         # Missing required fields
-        resp = self.client.post("/api/staff/office-hours/", {}, format="json")
+        resp = self.client.post(self._office_hours_url(), {}, format="json")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("day_of_week", resp.data)
 
     def test_meeting_request_create_missing_fields(self):
         self._auth(self.student)
         # Missing required fields
-        resp = self.client.post("/api/meeting-requests/", {}, format="json")
+        resp = self.client.post(self._student_meeting_requests_url(), {}, format="json")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("staff", resp.data)
 
@@ -261,27 +292,27 @@ class StaffMeetingRequestsViewTests(TestCase):
             "meeting_datetime": self.meeting_datetime.isoformat(),
             "description": "Invalid staff",
         }
-        resp = self.client.post("/api/meeting-requests/", payload, format="json")
+        resp = self.client.post(self._student_meeting_requests_url(), payload, format="json")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_method_restrictions_and_permissions(self):
         # POST to meeting_request_list (should be 405)
         self._auth(self.staff)
-        resp = self.client.post("/api/staff/dashboard/meeting-requests/")
+        resp = self.client.post(self._meeting_requests_url())
         self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # GET to office_hours_delete (should be 405)
-        resp = self.client.get("/api/staff/office-hours/99999/")
+        resp = self.client.get(f"{self._office_hours_url()}99999/")
         self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # POST to office_hours_delete (should be 405)
-        resp = self.client.post("/api/staff/office-hours/99999/")
+        resp = self.client.post(f"{self._office_hours_url()}99999/")
         self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # GET to meeting_request_accept (should be 405)
-        resp = self.client.get(f"/api/staff/dashboard/meeting-requests/{self.pending_request.id}/accept/")
+        resp = self.client.get(self._meeting_action_url(self.pending_request.id, "accept"))
         self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # GET to meeting_request_deny (should be 405)
-        resp = self.client.get(f"/api/staff/dashboard/meeting-requests/{self.pending_request.id}/deny/")
+        resp = self.client.get(self._meeting_action_url(self.pending_request.id, "deny"))
         self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

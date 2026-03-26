@@ -7,10 +7,16 @@ import "./TicketFormPage.css";
 import UserNavbar from "../components/UserNavbar";
 import RichTextEditor from "../components/RichTextEditor";
 
-// Export API_BASE for testability (must be at very top of the file)
-export const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? `${window.location.protocol}//${window.location.hostname}:8000/api`
-  : `${window.location.origin}/api`;
+
+export function getApiBaseUrl() {
+  const { hostname, protocol, origin } = window.location;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+  return isLocal
+    ? `${protocol}//${hostname}:8000/api`
+    : `${origin}/api`;
+}
+
+export const API_BASE = getApiBaseUrl();
 
 const ISSUE_TYPES = {
   Informatics: [
@@ -44,7 +50,7 @@ const ISSUE_TYPES = {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-function formatFileSize(bytes) {
+export function formatFileSize(bytes) {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB"];

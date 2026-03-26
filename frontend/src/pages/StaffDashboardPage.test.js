@@ -2,7 +2,7 @@ describe('StaffDashboardPage – edge cases', () => {
     test('handles empty ticket/user/stats lists', () => {
         renderWithProviders(<StaffDashboardPage />, { preloadedState: staffState({ user: null }) });
         // Should render dashboard structure even with no data
-        expect(screen.getByText(/dashboard/i)).toBeInTheDocument();
+        expect(screen.getByText(/assigned tickets/i)).toBeInTheDocument();
     });
     test('handles notification click with missing/closed ticket', () => {
         renderWithProviders(<StaffDashboardPage />);

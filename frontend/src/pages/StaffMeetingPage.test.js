@@ -1,17 +1,31 @@
-  test("handles slot fetch error and loading state", async () => {
-    apiFetch.mockResolvedValueOnce(staff);
-    apiFetch.mockRejectedValueOnce(new Error("Slot error"));
-    render(<StaffMeetingPage />);
-    expect(await screen.findByText("Alice Johnson")).toBeInTheDocument();
-    const dateInput = document.querySelector('input[type="date"]');
-    fireEvent.change(dateInput, { target: { value: "2026-03-25" } });
-    expect(await screen.findByText("Slot error")).toBeInTheDocument();
-  });
-  test("renders staff details with missing fields", async () => {
-    apiFetch.mockResolvedValueOnce({ ...staff, department: undefined, email: undefined, k_number: undefined });
-    render(<StaffMeetingPage />);
-    expect(await screen.findByText("—")).toBeInTheDocument();
-  });
+const staff = {
+  id: 42,
+  first_name: "Alice",
+  last_name: "Johnson",
+  department: "IT",
+  email: "alice@kcl.ac.uk",
+  k_number: "K100",
+  office_hours: [
+    { day_of_week: "Friday", start_time: "10:00:00", end_time: "12:00:00" },
+    { day_of_week: "Monday", start_time: "09:00:00", end_time: "11:00:00" },
+  ],
+};
+
+test("handles slot fetch error and loading state", async () => {
+  apiFetch.mockResolvedValueOnce(staff);
+  apiFetch.mockRejectedValueOnce(new Error("Slot error"));
+  render(<StaffMeetingPage />);
+  expect(await screen.findByText("Alice Johnson")).toBeInTheDocument();
+  const dateInput = document.querySelector('input[type="date"]');
+  fireEvent.change(dateInput, { target: { value: "2026-03-25" } });
+  expect(await screen.findByText("Slot error")).toBeInTheDocument();
+});
+test("renders staff details with missing fields", async () => {
+  apiFetch.mockResolvedValueOnce({ ...staff, department: undefined, email: undefined, k_number: undefined });
+  render(<StaffMeetingPage />);
+  const dashes = await screen.findAllByText("—");
+  expect(dashes.length).toBeGreaterThan(0);
+});
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";

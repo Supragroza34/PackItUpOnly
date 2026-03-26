@@ -3,10 +3,16 @@ import { authHeaders } from "../api";
 import "./Chatbot.css";
 
 
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-export const API_CHAT = isLocal
-  ? `${window.location.protocol}//${window.location.hostname}:8000/api/ai-chatbot/chat/`
-  : `${window.location.origin}/api/ai-chatbot/chat/`;
+
+export function getApiChatUrl() {
+  const { hostname, protocol, origin } = window.location;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+  return isLocal
+    ? `${protocol}//${hostname}:8000/api/ai-chatbot/chat/`
+    : `${origin}/api/ai-chatbot/chat/`;
+}
+
+export const API_CHAT = getApiChatUrl();
 
 
 export default function Chatbot() {

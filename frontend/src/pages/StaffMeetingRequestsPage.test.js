@@ -13,11 +13,13 @@
     });
   });
   test("accept/deny/add office hours error handling", async () => {
+    useDispatch.mockReturnValue(jest.fn(() => Promise.resolve()));
     apiFetch.mockResolvedValueOnce([{ id: 1, status: "pending" }]);
+    apiFetch.mockResolvedValueOnce([]);
     apiFetch.mockRejectedValue(new Error("fail"));
     render(<StaffMeetingRequestsPage />);
     expect(await screen.findByText(/meeting requests/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /accept/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /accept/i }));
     await waitFor(() => expect(screen.getByText(/fail/i)).toBeInTheDocument());
   });
 import React from "react";

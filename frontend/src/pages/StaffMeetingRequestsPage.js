@@ -16,12 +16,12 @@ const TABS = [
   { key: "denied",   label: "Declined" },
 ];
 
-function initials(name = "") {
+export function initials(name = "") {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase();
 }
 
-function StatusBadge({ status }) {
+export function StatusBadge({ status }) {
   const labels = { pending: "Pending", accepted: "Accepted", denied: "Declined" };
   return (
     <span className={`smr-badge smr-badge-${status}`}>

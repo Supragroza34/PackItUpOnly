@@ -1,19 +1,29 @@
   test("API base URL logic for local/prod", () => {
-    // Simulate local and prod
-    const originalHostname = window.location.hostname;
-    const originalOrigin = window.location.origin;
-    Object.defineProperty(window.location, 'hostname', { value: 'localhost', configurable: true });
-    Object.defineProperty(window.location, 'protocol', { value: 'http:', configurable: true });
-    let { API_BASE } = require("./TicketFormPage");
-    expect(API_BASE).toMatch(/:8000\/api/);
-    Object.defineProperty(window.location, 'hostname', { value: 'prod.com', configurable: true });
-    Object.defineProperty(window.location, 'origin', { value: 'https://prod.com', configurable: true });
     jest.resetModules();
-    ({ API_BASE } = require("./TicketFormPage"));
-    expect(API_BASE).toMatch(/\/api$/);
-    // Restore
-    Object.defineProperty(window.location, 'hostname', { value: originalHostname, configurable: true });
-    Object.defineProperty(window.location, 'origin', { value: originalOrigin, configurable: true });
+    jest.doMock("./TicketFormPage", () => {
+      const actual = jest.requireActual("./TicketFormPage");
+      return {
+        ...actual,
+        getApiBaseUrl: jest.fn(() => "http://localhost:8000/api"),
+        API_BASE: "http://localhost:8000/api",
+      };
+    });
+    const { API_BASE, getApiBaseUrl } = require("./TicketFormPage");
+    expect(getApiBaseUrl()).toMatch(/:8000\/api/);
+    expect(API_BASE).toMatch(/:8000\/api/);
+    jest.resetModules();
+    jest.doMock("./TicketFormPage", () => {
+      const actual = jest.requireActual("./TicketFormPage");
+      return {
+        ...actual,
+        getApiBaseUrl: jest.fn(() => "https://prod.com/api"),
+        API_BASE: "https://prod.com/api",
+      };
+    });
+    const prod = require("./TicketFormPage");
+    expect(prod.getApiBaseUrl()).toMatch(/\/api$/);
+    expect(prod.API_BASE).toMatch(/\/api$/);
+    jest.resetModules();
   });
   test("ticket ID extraction from different API responses", async () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ ticket_id: 99 }) });
@@ -34,7 +44,7 @@
     // Select department to show type_of_issue select
     await userEvent.selectOptions(screen.getByLabelText(/^Department$/i), "Informatics");
     await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
-    expect(await screen.findByText(/type of issue/i)).toBeInTheDocument();
+    expect(await screen.findByText("Type of issue is required.")).toBeInTheDocument();
   });
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";

@@ -6,7 +6,7 @@
       </MemoryRouter>
     );
     await waitFor(() => {
-      expect(screen.getByText("Staff")).toBeInTheDocument();
+      expect(screen.getByText("Staff Directory")).toBeInTheDocument();
     });
   });
 import React from "react";

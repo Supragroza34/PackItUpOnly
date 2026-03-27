@@ -11,57 +11,60 @@ from KCLTicketingSystems.serializers import ReplyCreateSerializer, ReplySerializ
 
 
 class TicketConversationApiTests(APITestCase):
+    REPLY_CREATE_URL = "/api/replies/create/"
+    DASHBOARD_URL = "/api/dashboard/"
+
     def setUp(self):
         self.client = APIClient()
-        self.owner = User.objects.create_user(
-            username="owner",
-            email="owner@kcl.ac.uk",
+        self._create_users()
+        self.ticket = self._create_ticket(self.owner, self.staff, "Login", "Cannot sign in")
+
+    def _create_user(self, username, email, role, **extra):
+        return User.objects.create_user(
+            username=username,
+            email=email,
             password="Pass123!",
-            role=User.Role.STUDENT,
+            role=role,
+            **extra,
+        )
+
+    def _create_users(self):
+        self.owner = self._create_user(
+            "owner",
+            "owner@kcl.ac.uk",
+            User.Role.STUDENT,
             first_name="Olivia",
             last_name="Owner",
         )
-        self.other_student = User.objects.create_user(
-            username="other",
-            email="other@kcl.ac.uk",
-            password="Pass123!",
-            role=User.Role.STUDENT,
-        )
-        self.staff = User.objects.create_user(
-            username="staff1",
-            email="staff1@kcl.ac.uk",
-            password="Pass123!",
-            role=User.Role.STAFF,
+        self.other_student = self._create_user("other", "other@kcl.ac.uk", User.Role.STUDENT)
+        self.staff = self._create_user(
+            "staff1",
+            "staff1@kcl.ac.uk",
+            User.Role.STAFF,
             first_name="Sam",
             last_name="Staff",
         )
-        self.unassigned_staff = User.objects.create_user(
-            username="staff2",
-            email="staff2@kcl.ac.uk",
-            password="Pass123!",
-            role=User.Role.STAFF,
-        )
-        self.admin = User.objects.create_user(
-            username="admin1",
-            email="admin1@kcl.ac.uk",
-            password="Pass123!",
-            role=User.Role.ADMIN,
-        )
-        self.superuser = User.objects.create_user(
-            username="root",
-            email="root@kcl.ac.uk",
-            password="Pass123!",
-            role=User.Role.STUDENT,
+        self.unassigned_staff = self._create_user("staff2", "staff2@kcl.ac.uk", User.Role.STAFF)
+        self.admin = self._create_user("admin1", "admin1@kcl.ac.uk", User.Role.ADMIN)
+        self.superuser = self._create_user(
+            "root",
+            "root@kcl.ac.uk",
+            User.Role.STUDENT,
             is_superuser=True,
         )
-        self.ticket = Ticket.objects.create(
-            user=self.owner,
+
+    def _create_ticket(self, user, assigned_to, issue, details, status=Ticket.Status.IN_PROGRESS):
+        return Ticket.objects.create(
+            user=user,
             department="IT",
-            type_of_issue="Login",
-            additional_details="Cannot sign in",
-            status=Ticket.Status.IN_PROGRESS,
-            assigned_to=self.staff,
+            type_of_issue=issue,
+            additional_details=details,
+            status=status,
+            assigned_to=assigned_to,
         )
+
+    def _auth(self, user):
+        self.client.force_authenticate(user=user)
 
     def _conversation_url(self, ticket_id=None):
         return f"/api/tickets/{ticket_id or self.ticket.id}/replies/"
@@ -77,7 +80,7 @@ class TicketConversationApiTests(APITestCase):
         Reply.objects.create(user=self.staff, ticket=self.ticket, body="Staff reply")
         Reply.objects.create(user=self.owner, ticket=self.ticket, body="Student follow up")
 
-        self.client.force_authenticate(user=self.owner)
+        self._auth(self.owner)
         response = self.client.get(self._conversation_url())
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -86,14 +89,14 @@ class TicketConversationApiTests(APITestCase):
         self.assertEqual(response.data[1]["user_role"], "student")
 
     def test_owner_can_post_reply_to_own_ticket(self):
-        self.client.force_authenticate(user=self.owner)
+        self._auth(self.owner)
         response = self.client.post(self._conversation_url(), {"body": "More details from student"}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Reply.objects.filter(ticket=self.ticket, user=self.owner, body="More details from student").exists())
 
     def test_assigned_staff_can_post_reply(self):
-        self.client.force_authenticate(user=self.staff)
+        self._auth(self.staff)
         response = self.client.post(self._conversation_url(), {"body": "Here is help"}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -101,7 +104,7 @@ class TicketConversationApiTests(APITestCase):
 
     def test_owner_can_post_nested_reply(self):
         parent = Reply.objects.create(user=self.staff, ticket=self.ticket, body="Can you confirm?")
-        self.client.force_authenticate(user=self.owner)
+        self._auth(self.owner)
 
         response = self.client.post(
             self._conversation_url(),
@@ -119,21 +122,14 @@ class TicketConversationApiTests(APITestCase):
         self.assertEqual(get_response.data[0]["children"][0]["parent"], parent.id)
 
     def test_rejects_parent_from_another_ticket(self):
-        other_ticket = Ticket.objects.create(
-            user=self.owner,
-            department="IT",
-            type_of_issue="Network",
-            additional_details="VPN issue",
-            status=Ticket.Status.IN_PROGRESS,
-            assigned_to=self.staff,
-        )
+        other_ticket = self._create_ticket(self.owner, self.staff, "Network", "VPN issue")
         other_parent = Reply.objects.create(
             user=self.staff,
             ticket=other_ticket,
             body="Reply on other ticket",
         )
 
-        self.client.force_authenticate(user=self.owner)
+        self._auth(self.owner)
         response = self.client.post(
             self._conversation_url(),
             {"body": "invalid parent", "parent": other_parent.id},
@@ -146,7 +142,7 @@ class TicketConversationApiTests(APITestCase):
     def test_staff_reply_sets_ticket_to_awaiting_response(self):
         self.ticket.status = Ticket.Status.IN_PROGRESS
         self.ticket.save(update_fields=["status"])
-        self.client.force_authenticate(user=self.staff)
+        self._auth(self.staff)
 
         response = self.client.post(self._conversation_url(), {"body": "Please confirm this fix"}, format="json")
 
@@ -157,7 +153,7 @@ class TicketConversationApiTests(APITestCase):
     def test_student_reply_sets_ticket_back_to_in_progress(self):
         self.ticket.status = Ticket.Status.AWAITING_RESPONSE
         self.ticket.save(update_fields=["status"])
-        self.client.force_authenticate(user=self.owner)
+        self._auth(self.owner)
 
         response = self.client.post(self._conversation_url(), {"body": "I still need help"}, format="json")
 
@@ -172,38 +168,38 @@ class TicketConversationApiTests(APITestCase):
         old_reply = Reply.objects.create(user=self.staff, ticket=self.ticket, body="Waiting for your response")
         Reply.objects.filter(id=old_reply.id).update(created_at=timezone.now() - timedelta(days=4))
 
-        self.client.force_authenticate(user=self.owner)
-        response = self.client.get("/api/dashboard/")
+        self._auth(self.owner)
+        response = self.client.get(self.DASHBOARD_URL)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.ticket.refresh_from_db()
         self.assertEqual(self.ticket.status, Ticket.Status.CLOSED)
 
     def test_admin_can_access_ticket_conversation(self):
-        self.client.force_authenticate(user=self.admin)
+        self._auth(self.admin)
         response = self.client.get(self._conversation_url())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_superuser_can_access_ticket_conversation(self):
-        self.client.force_authenticate(user=self.superuser)
+        self._auth(self.superuser)
         response = self.client.get(self._conversation_url())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_other_student_cannot_access_ticket_conversation(self):
-        self.client.force_authenticate(user=self.other_student)
+        self._auth(self.other_student)
         response = self.client.get(self._conversation_url())
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data["error"], "Access denied")
 
     def test_unassigned_staff_cannot_access_ticket_conversation(self):
-        self.client.force_authenticate(user=self.unassigned_staff)
+        self._auth(self.unassigned_staff)
         response = self.client.get(self._conversation_url())
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cannot_post_reply_to_closed_ticket(self):
         self.ticket.status = Ticket.Status.CLOSED
         self.ticket.save()
-        self.client.force_authenticate(user=self.owner)
+        self._auth(self.owner)
 
         response = self.client.post(self._conversation_url(), {"body": "Late reply"}, format="json")
 
@@ -211,13 +207,13 @@ class TicketConversationApiTests(APITestCase):
         self.assertIn("closed", response.data["error"].lower())
 
     def test_staff_reply_endpoint_rejects_student(self):
-        self.client.force_authenticate(user=self.owner)
+        self._auth(self.owner)
         response = self.client.get(self._staff_url())
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_staff_reply_endpoint_lists_replies_for_assigned_staff(self):
         Reply.objects.create(user=self.staff, ticket=self.ticket, body="Assigned staff response")
-        self.client.force_authenticate(user=self.staff)
+        self._auth(self.staff)
 
         response = self.client.get(self._staff_url())
 
@@ -225,7 +221,7 @@ class TicketConversationApiTests(APITestCase):
         self.assertEqual(response.data[0]["body"], "Assigned staff response")
 
     def test_staff_reply_endpoint_creates_reply_for_assigned_staff(self):
-        self.client.force_authenticate(user=self.staff)
+        self._auth(self.staff)
 
         response = self.client.post(self._staff_url(), {"body": "Staff dashboard reply"}, format="json")
 
@@ -235,7 +231,7 @@ class TicketConversationApiTests(APITestCase):
     def test_staff_reply_endpoint_rejects_closed_ticket(self):
         self.ticket.status = Ticket.Status.CLOSED
         self.ticket.save()
-        self.client.force_authenticate(user=self.staff)
+        self._auth(self.staff)
 
         response = self.client.post(self._staff_url(), {"body": "Should fail"}, format="json")
 
@@ -243,15 +239,15 @@ class TicketConversationApiTests(APITestCase):
         self.assertIn("closed", response.data["error"].lower())
 
     def test_staff_reply_endpoint_rejects_unassigned_staff(self):
-        self.client.force_authenticate(user=self.unassigned_staff)
+        self._auth(self.unassigned_staff)
         response = self.client.get(self._staff_url())
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_reply_view_accepts_valid_payload(self):
-        self.client.force_authenticate(user=self.staff)
+        self._auth(self.staff)
 
         response = self.client.post(
-            "/api/replies/create/",
+            self.REPLY_CREATE_URL,
             {"ticket": self.ticket.id, "body": "Direct create view reply"},
             format="json",
         )
@@ -260,10 +256,10 @@ class TicketConversationApiTests(APITestCase):
         self.assertTrue(Reply.objects.filter(ticket=self.ticket, user=self.staff, body="Direct create view reply").exists())
 
     def test_create_reply_view_rejects_invalid_payload(self):
-        self.client.force_authenticate(user=self.staff)
+        self._auth(self.staff)
 
         response = self.client.post(
-            "/api/replies/create/",
+            self.REPLY_CREATE_URL,
             {"ticket": self.ticket.id, "body": "   "},
             format="json",
         )
@@ -272,7 +268,7 @@ class TicketConversationApiTests(APITestCase):
         self.assertIn("blank", str(response.data["body"][0]).lower())
 
     def test_ticket_replies_rejects_invalid_payload(self):
-        self.client.force_authenticate(user=self.owner)
+        self._auth(self.owner)
 
         response = self.client.post(self._conversation_url(), {"body": ""}, format="json")
 
@@ -280,7 +276,7 @@ class TicketConversationApiTests(APITestCase):
         self.assertIn("blank", str(response.data["body"][0]).lower())
 
     def test_staff_reply_endpoint_rejects_invalid_payload(self):
-        self.client.force_authenticate(user=self.staff)
+        self._auth(self.staff)
 
         response = self.client.post(self._staff_url(), {"body": ""}, format="json")
 
@@ -357,36 +353,56 @@ class ReplySerializerTests(TestCase):
 
 
 class UserDashboardConversationTests(APITestCase):
+    DASHBOARD_URL = "/api/dashboard/"
+
     def setUp(self):
         self.client = APIClient()
-        self.student = User.objects.create_user(
-            username="dashstudent",
-            email="dashstudent@kcl.ac.uk",
-            password="Pass123!",
-            role=User.Role.STUDENT,
+        self.student = self._create_user(
+            "dashstudent",
+            "dashstudent@kcl.ac.uk",
+            User.Role.STUDENT,
             k_number="K000001",
         )
-        self.staff = User.objects.create_user(
-            username="dashstaff",
-            email="dashstaff@kcl.ac.uk",
-            password="Pass123!",
-            role=User.Role.STAFF,
-        )
-        self.ticket = Ticket.objects.create(
+        self.staff = self._create_user("dashstaff", "dashstaff@kcl.ac.uk", User.Role.STAFF)
+        self.ticket = self._create_ticket(
             user=self.student,
-            department="IT",
-            type_of_issue="WiFi",
-            additional_details="Drops out often",
+            issue="WiFi",
+            details="Drops out often",
             status=Ticket.Status.CLOSED,
             closed_by=self.staff,
         )
+        self._create_ticket_replies()
+
+    def _create_user(self, username, email, role, **extra):
+        return User.objects.create_user(
+            username=username,
+            email=email,
+            password="Pass123!",
+            role=role,
+            **extra,
+        )
+
+    def _create_ticket(self, user, issue, details, status, closed_by=None):
+        return Ticket.objects.create(
+            user=user,
+            department="IT",
+            type_of_issue=issue,
+            additional_details=details,
+            status=status,
+            closed_by=closed_by,
+        )
+
+    def _create_ticket_replies(self):
         Reply.objects.create(user=self.staff, ticket=self.ticket, body="Initial reply")
         Reply.objects.create(user=self.student, ticket=self.ticket, body="Follow up")
 
-    def test_dashboard_returns_replies_in_chronological_order_and_closed_by_role(self):
-        self.client.force_authenticate(user=self.student)
+    def _auth(self, user):
+        self.client.force_authenticate(user=user)
 
-        response = self.client.get("/api/dashboard/")
+    def test_dashboard_returns_replies_in_chronological_order_and_closed_by_role(self):
+        self._auth(self.student)
+
+        response = self.client.get(self.DASHBOARD_URL)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         ticket_data = response.json()["tickets"][0]
@@ -396,14 +412,13 @@ class UserDashboardConversationTests(APITestCase):
         self.assertEqual(ticket_data["replies"][1]["user_role"], "student")
 
     def test_student_can_close_own_ticket(self):
-        open_ticket = Ticket.objects.create(
+        open_ticket = self._create_ticket(
             user=self.student,
-            department="IT",
-            type_of_issue="Mouse",
-            additional_details="Stops working",
+            issue="Mouse",
+            details="Stops working",
             status=Ticket.Status.PENDING,
         )
-        self.client.force_authenticate(user=self.student)
+        self._auth(self.student)
 
         response = self.client.post(f"/api/dashboard/tickets/{open_ticket.id}/close/")
 
@@ -413,27 +428,21 @@ class UserDashboardConversationTests(APITestCase):
         self.assertEqual(open_ticket.closed_by, self.student)
 
     def test_student_cannot_close_someone_elses_ticket(self):
-        other_student = User.objects.create_user(
-            username="otherdash",
-            email="otherdash@kcl.ac.uk",
-            password="Pass123!",
-            role=User.Role.STUDENT,
-        )
-        other_ticket = Ticket.objects.create(
+        other_student = self._create_user("otherdash", "otherdash@kcl.ac.uk", User.Role.STUDENT)
+        other_ticket = self._create_ticket(
             user=other_student,
-            department="IT",
-            type_of_issue="Keyboard",
-            additional_details="Keys stuck",
+            issue="Keyboard",
+            details="Keys stuck",
             status=Ticket.Status.PENDING,
         )
-        self.client.force_authenticate(user=self.student)
+        self._auth(self.student)
 
         response = self.client.post(f"/api/dashboard/tickets/{other_ticket.id}/close/")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_student_cannot_close_ticket_twice(self):
-        self.client.force_authenticate(user=self.student)
+        self._auth(self.student)
 
         response = self.client.post(f"/api/dashboard/tickets/{self.ticket.id}/close/")
 

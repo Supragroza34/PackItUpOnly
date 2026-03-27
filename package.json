@@ -6,7 +6,7 @@
 
     "test:run": "coverage run manage.py test; npm --prefix frontend test -- --watchAll=true",
 
-    "test:coverage": "coverage html; coverage xml; npm --prefix frontend test -- --coverage --watchAll=true; echo ''; echo 'Coverage reports generated:'; echo '  Backend HTML: htmlcov/index.html'; echo '  Backend XML: coverage.xml'; echo '  Frontend HTML: frontend/coverage/lcov-report/index.html'; echo '  Frontend LCOV: frontend/coverage/lcov.info'",
+    "test:coverage": "coverage html; coverage xml; cd frontend then npm test -- --coverage --watchAll=false; echo ''; echo 'Coverage reports generated:'; echo '  Backend HTML: htmlcov/index.html'; echo '  Backend XML: coverage.xml'; echo '  Frontend HTML: frontend/coverage/lcov-report/index.html'; echo '  Frontend LCOV: frontend/coverage/lcov.info'",
     
     "unseed": "python manage.py unseed"
   },

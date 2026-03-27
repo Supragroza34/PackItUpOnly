@@ -121,7 +121,7 @@
               coverage html
 
               cd frontend
-              npm run test -- --watchAll=false || true
+              npm run test -- --coverage --watchAll=true
             fi
 
             echo "Tests complete"

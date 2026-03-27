@@ -114,6 +114,9 @@
             if [ -f package.json ]; then
               npm run test:run
               npm run test:coverage
+              
+              coverage run manage.py test
+              coverage html
             else
               echo "Fallback test execution"
 

@@ -20,23 +20,23 @@ describe("NotificationBell", () => {
     localStorage.removeItem("access");
   });
 
-  test("opens dropdown and fetches notifications once", async () => {
+  test("fetches notifications on mount and keeps single fetch", async () => {
     api.apiFetch.mockResolvedValue([
       { id: 1, title: "T", message: "M", is_read: false },
     ]);
 
     render(<NotificationBell />);
 
-    await userEvent.click(screen.getByText(/Notifications/i));
-
     await waitFor(() => {
       expect(api.apiFetch).toHaveBeenCalledWith("/notifications/", {}, { auth: true });
     });
 
+    expect(screen.getByText("1")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText(/Notifications/i));
     expect(screen.getByText("T")).toBeInTheDocument();
     expect(screen.getByText("M")).toBeInTheDocument();
 
-    // Second open should not fetch again
     await userEvent.click(screen.getByText(/Notifications/i));
     await userEvent.click(screen.getByText(/Notifications/i));
     expect(api.apiFetch).toHaveBeenCalledTimes(1);

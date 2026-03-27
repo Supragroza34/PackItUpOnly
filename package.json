@@ -4,9 +4,9 @@
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
 
-    "test:run": "cd frontend && npm test -- --coverage --watchAll=false",
+    "test:run": "cd frontend && npm test",
 
-    "test:coverage": "cd frontend coverage html && npm --prefix frontend test -- --coverage",
+    "test:coverage": "cd frontend && npm test -- --coverage --watchAll=false",
 
     "unseed": "python manage.py unseed"
   },

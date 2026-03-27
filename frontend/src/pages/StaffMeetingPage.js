@@ -100,9 +100,10 @@ export default function StaffMeetingPage() {
   }
 
   // Format ISO datetime to a readable time string (e.g. "09:15")
+  // Use UTC so displayed times match the office hours (stored/shown in UTC).
   function formatTime(isoStr) {
     const d = new Date(isoStr);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
   }
 
   const formatOfficeHours = (officeHours) => {

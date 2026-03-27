@@ -87,4 +87,95 @@ describe("AuthContext", () => {
       expect(screen.getByTestId("user")).toHaveTextContent("none");
     });
   });
+
+  test("useAuth throws when used outside AuthProvider", () => {
+    const Bad = () => {
+      useAuth();
+      return null;
+    };
+    expect(() => render(<Bad />)).toThrow(/must be used within an AuthProvider/i);
+  });
+
+  test("checkAuth leaves user unset when no token", async () => {
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading")).toHaveTextContent("false");
+    });
+    expect(screen.getByTestId("user")).toHaveTextContent("none");
+    expect(adminApi.getCurrentUser).not.toHaveBeenCalled();
+  });
+
+  test("checkAuth clears user when getCurrentUser fails", async () => {
+    localStorage.setItem("access", "bad");
+    adminApi.getCurrentUser.mockRejectedValueOnce(new Error("expired"));
+
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading")).toHaveTextContent("false");
+    });
+    expect(screen.getByTestId("user")).toHaveTextContent("none");
+  });
+
+  test("login failure sets error and returns success false", async () => {
+    apiFetch.mockRejectedValueOnce(new Error("bad credentials"));
+
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading")).toHaveTextContent("false");
+    });
+
+    fireEvent.click(screen.getByText("login"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("user")).toHaveTextContent("none");
+    });
+  });
+
+  test("logout returns failure when storage throws", async () => {
+    const removeSpy = jest.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw new Error("storage full");
+    });
+
+    localStorage.setItem("access", "a");
+
+    function LogoutErr() {
+      const { logout } = useAuth();
+      const [out, setOut] = React.useState(null);
+      return (
+        <div>
+          <button onClick={async () => setOut(await logout())}>logout</button>
+          <div data-testid="logout-result">{out ? JSON.stringify(out) : ""}</div>
+        </div>
+      );
+    }
+
+    render(
+      <AuthProvider>
+        <LogoutErr />
+      </AuthProvider>
+    );
+
+    fireEvent.click(screen.getByText("logout"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("logout-result")).toHaveTextContent(/storage full/i);
+    });
+
+    removeSpy.mockRestore();
+  });
 });

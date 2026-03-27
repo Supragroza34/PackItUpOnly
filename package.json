@@ -4,7 +4,7 @@
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
 
-    "test:run": "cd frontend && npm test -- --coverage --watchAll=true",
+    "test:run": "cd frontend && npm test",
 
     "test:coverage": "cd frontend && npm test -- --coverage --watchAll=true",
 

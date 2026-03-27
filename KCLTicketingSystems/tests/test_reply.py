@@ -2,63 +2,70 @@ from django.test import TestCase
 from datetime import datetime
 from KCLTicketingSystems.models import Ticket, Reply, User
 
+
 class ReplyModelTest(TestCase):
     """Test cases for the Reply model"""
 
+    STUDENT_EMAIL = "teststudent@test.com"
+    REPLY_BODY = "Try switching off and then on again."
+
     def setUp(self):
         """Set up test data"""
-        # Create a student first
-        self.student = User.objects.create_user(
-            username='teststudent',
-            email='teststudent@test.com',
-            password='testpass123',
-            first_name='Tester',
-            last_name='One',
-            k_number='73573402',
-            role=User.Role.STUDENT
+        self.student = self._create_student()
+        self.staff = self._create_staff()
+        self.ticket_data = self._build_ticket_data()
+        ticket = Ticket.objects.create(**self.ticket_data)
+        self.reply_data = self._build_reply_data(ticket)
+
+    def _create_student(self):
+        return User.objects.create_user(
+            username="teststudent",
+            email=self.STUDENT_EMAIL,
+            password="testpass123",
+            first_name="Tester",
+            last_name="One",
+            k_number="73573402",
+            role=User.Role.STUDENT,
         )
 
-        # create a ticket by this student (as in test_ticket.py)
-        
-        self.ticket_data = {
-            'user': self.student,
-            'department': 'Informatics',
-            'type_of_issue': 'Software Installation Issues',
-            'additional_details': 'Need help installing Python'
+    def _create_staff(self):
+        return User.objects.create_user(
+            username="teststaff",
+            email="teststaff@test.com",
+            password="testpass123",
+            first_name="Tester",
+            last_name="Two",
+            k_number="73573473",
+            role=User.Role.STAFF,
+        )
+
+    def _build_ticket_data(self):
+        return {
+            "user": self.student,
+            "department": "Informatics",
+            "type_of_issue": "Software Installation Issues",
+            "additional_details": "Need help installing Python",
         }
 
-        # create a staff member to reply
-
-        self.staff = User.objects.create_user(
-            username='teststaff',
-            email='teststaff@test.com',
-            password='testpass123',
-            first_name='Tester',
-            last_name='Two',
-            k_number='73573473',
-            role=User.Role.STAFF
-        )
-
-        ticket = Ticket.objects.create(**self.ticket_data)
-        body = "Try switching off and then on again."
-        self.reply_data = {
-            'user': self.staff,
-            'ticket': ticket,
-            'body': body,
+    def _build_reply_data(self, ticket):
+        return {
+            "user": self.staff,
+            "ticket": ticket,
+            "body": self.REPLY_BODY,
         }
 
     def test_reply_creation(self):
         """Test creating a reply"""
         reply = Reply.objects.create(**self.reply_data)
-        self.assertEqual(reply.user.role, 'staff')
-        self.assertEqual(reply.body, 'Try switching off and then on again.')
-        self.assertEqual(reply.ticket.user.first_name, 'Tester')
-        self.assertEqual(reply.ticket.user.last_name, 'One')
-        self.assertEqual(reply.ticket.user.k_number, '73573402')
-        self.assertEqual(reply.ticket.user.email, 'teststudent@test.com')
-        self.assertEqual(reply.ticket.department, 'Informatics')
-        self.assertEqual(reply.ticket.type_of_issue, 'Software Installation Issues')
-        self.assertEqual(reply.ticket.additional_details, 'Need help installing Python')
+        self.assertEqual(reply.user.role, "staff")
+        self.assertEqual(reply.body, self.REPLY_BODY)
+        self.assertEqual(reply.ticket.user.first_name, "Tester")
+        self.assertEqual(reply.ticket.user.last_name, "One")
+        self.assertEqual(reply.ticket.user.k_number, "73573402")
+        self.assertEqual(reply.ticket.user.email, self.STUDENT_EMAIL)
+        self.assertEqual(reply.ticket.department, "Informatics")
+        self.assertEqual(reply.ticket.type_of_issue, "Software Installation Issues")
+        self.assertEqual(reply.ticket.additional_details, "Need help installing Python")
         self.assertIsNotNone(reply.ticket.created_at)
         self.assertIsNotNone(reply.ticket.updated_at)
 

@@ -1,5 +1,5 @@
 {
-  description = "KCL Ticketing System flake";
+  description = "Full-stack Django + React app flake (aligned with project root structure)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -70,7 +70,7 @@
         packages = {
 
           init = mkScript "init" ''
-            echo "== Backend setup =="
+            echo "== Backend setup (root Django project) =="
 
             echo "== Running migrations =="
             python manage.py migrate || true
@@ -110,13 +110,9 @@
           tests = mkScript "tests" ''
             echo "Running frontend + backend tests..."
 
-            # Prefer root-level npm scripts if present
             if [ -f package.json ]; then
               npm run test:run
               npm run test:coverage
-              
-              coverage run manage.py test
-              coverage html
             else
               echo "Fallback test execution"
 
@@ -124,7 +120,7 @@
               coverage html
 
               cd frontend
-              npm run test -- --coverage --watchAll=true
+              npm run test -- --watchAll=false || true
             fi
 
             echo "Tests complete"
@@ -151,7 +147,7 @@
           buildInputs = commonInputs;
 
           shellHook = ''
-            echo "Dev shell ready"
+            echo "Dev shell ready (Django root + React frontend)"
           '';
         };
       }

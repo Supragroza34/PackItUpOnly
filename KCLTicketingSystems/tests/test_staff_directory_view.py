@@ -12,46 +12,25 @@ class StaffDirectoryViewTests(APITestCase):
         self._create_users()
 
     def _create_users(self):
-        self.student = User.objects.create_user(
-            username="student_dir",
-            email="student_dir@test.com",
-            password="testpass123",
-            role=User.Role.STUDENT,
-            first_name="Student",
-            last_name="User",
-            department="Informatics",
-            k_number="81000001",
-        )
+        users = {
+            "student": ("student_dir", "student_dir@test.com", User.Role.STUDENT, "Student", "User", "Informatics", "81000001"),
+            "staff_a": ("staff_a_dir", "staff_a_dir@test.com", User.Role.STAFF, "Alice", "Brown", "informatics", "81000002"),
+            "staff_b": ("staff_b_dir", "staff_b_dir@test.com", User.Role.STAFF, "Bob", "Anderson", "Informatics", "81000003"),
+            "staff_c": ("staff_c_dir", "staff_c_dir@test.com", User.Role.STAFF, "Carol", "Smith", "Maths", "81000004"),
+        }
+        for attr, args in users.items():
+            setattr(self, attr, self._create_user(*args))
 
-        self.staff_a = User.objects.create_user(
-            username="staff_a_dir",
-            email="staff_a_dir@test.com",
+    def _create_user(self, username, email, role, first_name, last_name, department, k_number):
+        return User.objects.create_user(
+            username=username,
+            email=email,
             password="testpass123",
-            role=User.Role.STAFF,
-            first_name="Alice",
-            last_name="Brown",
-            department="informatics",
-            k_number="81000002",
-        )
-        self.staff_b = User.objects.create_user(
-            username="staff_b_dir",
-            email="staff_b_dir@test.com",
-            password="testpass123",
-            role=User.Role.STAFF,
-            first_name="Bob",
-            last_name="Anderson",
-            department="Informatics",
-            k_number="81000003",
-        )
-        self.staff_c = User.objects.create_user(
-            username="staff_c_dir",
-            email="staff_c_dir@test.com",
-            password="testpass123",
-            role=User.Role.STAFF,
-            first_name="Carol",
-            last_name="Smith",
-            department="Maths",
-            k_number="81000004",
+            role=role,
+            first_name=first_name,
+            last_name=last_name,
+            department=department,
+            k_number=k_number,
         )
 
     def _auth_as_student(self):

@@ -55,35 +55,36 @@ class StaffMeetingRequestsViewTests(TestCase):
         )
 
     def _create_users(self):
-        self.student = User.objects.create_user(
-            username="student_meeting",
-            email="student_meeting@example.com",
-            password="pass123",
+        self.student = self._create_user(
+            "student_meeting",
+            "student_meeting@example.com",
+            User.Role.STUDENT,
             first_name="Stu",
             last_name="Dent",
-            role=User.Role.STUDENT,
         )
-        self.staff = User.objects.create_user(
-            username="staff_meeting",
-            email="staff_meeting@example.com",
-            password="pass123",
+        self.staff = self._create_user(
+            "staff_meeting",
+            "staff_meeting@example.com",
+            User.Role.STAFF,
             first_name="Sta",
             last_name="Ff",
-            role=User.Role.STAFF,
         )
-        self.staff2 = User.objects.create_user(
-            username="staff_meeting_2",
-            email="staff_meeting2@example.com",
-            password="pass123",
+        self.staff2 = self._create_user(
+            "staff_meeting_2",
+            "staff_meeting2@example.com",
+            User.Role.STAFF,
             first_name="Other",
             last_name="Staff",
-            role=User.Role.STAFF,
         )
-        self.admin = User.objects.create_user(
-            username="admin_meeting",
-            email="admin_meeting@example.com",
+        self.admin = self._create_user("admin_meeting", "admin_meeting@example.com", User.Role.ADMIN)
+
+    def _create_user(self, username, email, role, **extra):
+        return User.objects.create_user(
+            username=username,
+            email=email,
             password="pass123",
-            role=User.Role.ADMIN,
+            role=role,
+            **extra,
         )
 
     def _build_meeting_datetime(self):

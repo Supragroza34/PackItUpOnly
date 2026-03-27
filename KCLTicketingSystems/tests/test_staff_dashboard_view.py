@@ -72,6 +72,10 @@ class StaffDashboardViewTests(TestCase):
         )
 
     def _create_base_tickets(self):
+        self._create_primary_assigned_tickets()
+        self._create_additional_status_tickets()
+
+    def _create_primary_assigned_tickets(self):
         self.ticket1 = self._create_ticket(
             user=self.student,
             assigned_to=self.staff1,
@@ -88,6 +92,8 @@ class StaffDashboardViewTests(TestCase):
             additional_details="Issue details 2",
             status=Ticket.Status.PENDING,
         )
+
+    def _create_additional_status_tickets(self):
         self.ticket3 = self._create_ticket(
             user=self.student,
             assigned_to=self.staff1,
@@ -104,6 +110,40 @@ class StaffDashboardViewTests(TestCase):
             additional_details="Issue details 1",
             status=Ticket.Status.IN_PROGRESS,
         )
+
+    def _create_open_status_tickets(self):
+        new_ticket = self._create_ticket(
+            user=self.student,
+            assigned_to=self.staff1,
+            type_of_issue="Software",
+            department="IT",
+            additional_details="New ticket",
+            status=Ticket.Status.NEW,
+        )
+        seen_ticket = self._create_ticket(
+            user=self.student,
+            assigned_to=self.staff1,
+            type_of_issue="Software",
+            department="IT",
+            additional_details="Seen ticket",
+            status=Ticket.Status.SEEN,
+        )
+        awaiting_ticket = self._create_ticket(
+            user=self.student,
+            assigned_to=self.staff1,
+            type_of_issue="Software",
+            department="IT",
+            additional_details="Awaiting response",
+            status=Ticket.Status.AWAITING_RESPONSE,
+        )
+        return [new_ticket, seen_ticket, awaiting_ticket]
+
+    def _assert_open_filter_contains_expected_tickets(self, ticket_ids, dynamic_open_tickets):
+        self.assertIn(self.ticket1.id, ticket_ids)
+        self.assertIn(self.ticket2.id, ticket_ids)
+        for ticket in dynamic_open_tickets:
+            self.assertIn(ticket.id, ticket_ids)
+        self.assertNotIn(self.ticket3.id, ticket_ids)
 
     def _create_replies_for_ticket1(self):
         self.reply1 = Reply.objects.create(ticket=self.ticket1, user=self.staff1, body="Reply 1")
@@ -202,44 +242,11 @@ class StaffDashboardViewTests(TestCase):
 
     def test_open_filter_all_statuses(self):
         """Test that 'open' filter includes all open status types"""
-        # Create tickets with different open statuses
-        new_ticket = Ticket.objects.create(
-            user=self.student,
-            type_of_issue='Software',
-            department='IT',
-            additional_details='New ticket',
-            status=Ticket.Status.NEW,
-            assigned_to=self.staff1
-        )
-        seen_ticket = Ticket.objects.create(
-            user=self.student,
-            type_of_issue='Software',
-            department='IT',
-            additional_details='Seen ticket',
-            status=Ticket.Status.SEEN,
-            assigned_to=self.staff1
-        )
-        awaiting_ticket = Ticket.objects.create(
-            user=self.student,
-            type_of_issue='Software',
-            department='IT',
-            additional_details='Awaiting response',
-            status=Ticket.Status.AWAITING_RESPONSE,
-            assigned_to=self.staff1
-        )
-        
+        dynamic_open_tickets = self._create_open_status_tickets()
         self._auth(self.staff1)
         response = self._dashboard_response('?filtering=open')
         ticket_ids = self._ticket_ids(response)
-        
-        # All open status tickets should be included
-        self.assertIn(self.ticket1.id, ticket_ids)  # PENDING
-        self.assertIn(self.ticket2.id, ticket_ids)  # PENDING (IN_PROGRESS)
-        self.assertIn(new_ticket.id, ticket_ids)
-        self.assertIn(seen_ticket.id, ticket_ids)
-        self.assertIn(awaiting_ticket.id, ticket_ids)
-        # Closed ticket should NOT be included
-        self.assertNotIn(self.ticket3.id, ticket_ids)
+        self._assert_open_filter_contains_expected_tickets(ticket_ids, dynamic_open_tickets)
 
     def test_open_filter_explicitly(self):
         """Test that 'open' filter explicitly shows open statuses"""

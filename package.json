@@ -6,7 +6,7 @@
 
     "test:run": "coverage run manage.py test; npm --prefix frontend test -- --watchAll=false",
 
-    "test:coverage": "coverage html; npm --prefix frontend test -- --coverage",
+    "test:coverage": "coverage html; npm --prefix frontend test -- --coverage --watchAll=false; echo 'Opening coverage reports...'; xdg-open htmlcov/index.html >/dev/null 2>&1 & xdg-open frontend/coverage/lcov-report/index.html >/dev/null 2>&1 &",
 
     "unseed": "python manage.py unseed"
   },

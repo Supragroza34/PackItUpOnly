@@ -14,6 +14,13 @@ export function getApiChatUrl() {
 
 export const API_CHAT = getApiChatUrl();
 
+function getApiError(data, status) {
+  return data.error || data.detail || `Error ${status}`;
+}
+
+function toAssistantMessage(data) {
+  return data.message || { role: "assistant", content: "" };
+}
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -32,6 +39,22 @@ export default function Chatbot() {
     scrollToBottom();
   }, [messages]);
 
+  async function sendChatRequest(history) {
+    const res = await fetch(API_CHAT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify({
+        messages: history.map((m) => ({ role: m.role, content: m.content })),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(getApiError(data, res.status));
+    return data;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     const text = input.trim();
@@ -39,32 +62,14 @@ export default function Chatbot() {
 
     setError("");
     const userMessage = { role: "user", content: text };
+    const requestHistory = [...messages, userMessage];
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
     try {
-      const res = await fetch(API_CHAT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders(),
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || data.detail || `Error ${res.status}`);
-        setMessages((prev) => prev.slice(0, -1));
-        return;
-      }
-      const assistantMessage = data.message || { role: "assistant", content: "" };
-      setMessages((prev) => [...prev, assistantMessage]);
+      const data = await sendChatRequest(requestHistory);
+      setMessages((prev) => [...prev, toAssistantMessage(data)]);
     } catch (err) {
       setError(err.message || "Could not reach the chat service.");
       setMessages((prev) => prev.slice(0, -1));
@@ -89,6 +94,11 @@ export default function Chatbot() {
             {msg.content}
           </div>
         ))}
+        {loading && (
+          <div className="ai-chatbot-typing" aria-live="polite">
+            Thinking...
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       {/* Error alert for accessibility */}

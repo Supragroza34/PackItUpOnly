@@ -174,6 +174,33 @@ describe('Chatbot component (AI helper)', () => {
     });
     HTMLElement.prototype.scrollIntoView = orig;
   });
+
+  test('shows and hides thinking indicator around request', async () => {
+    let resolveRequest;
+    global.fetch = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve;
+        })
+    );
+
+    render(<Chatbot />);
+    const input = screen.getByPlaceholderText(/type your question/i);
+    fireEvent.change(input, { target: { value: 'Hi' } });
+    fireEvent.submit(input.closest('form'));
+
+    expect(screen.getByText(/thinking\.\.\./i)).toBeInTheDocument();
+
+    resolveRequest({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ message: { role: 'assistant', content: 'done' } }),
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/thinking\.\.\./i)).not.toBeInTheDocument();
+    });
+  });
 });
 
 describe('getApiChatUrl (fresh module)', () => {

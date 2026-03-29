@@ -4,45 +4,46 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from KCLTicketingSystems.models import Ticket, Reply, User
 
+
 class ReplyCreateViewTests(APITestCase):
 
-    def setUp(self):
-        # Create users
-        self.staff = User.objects.create_user(
-            username='staff',
-            email='staff@test.com',
-            password='testpass123',
-            k_number='22222222',
-            role=User.Role.STAFF
-        )
-        
-        # Create test user for ticket
-        self.ticket_user = User.objects.create_user(
-            username='ticketuser',
-            email='ticketuser@test.com',
-            password='testpass123',
-            first_name='John',
-            last_name='Doe',
-            k_number='12345678',
-            role=User.Role.STUDENT
-        )
+    REPLY_URL = "/api/replies/create/"
 
-        # Create test ticket
+    def setUp(self):
+        self.staff = self._create_user("staff", "staff@test.com", User.Role.STAFF, "22222222")
+        self.ticket_user = self._create_user(
+            "ticketuser",
+            "ticketuser@test.com",
+            User.Role.STUDENT,
+            "12345678",
+            first_name="John",
+            last_name="Doe",
+        )
         self.ticket = Ticket.objects.create(
             user=self.ticket_user,
-            department='Informatics',
-            type_of_issue='Software Installation Issues',
-            additional_details='Need help with software',
-            status=Ticket.Status.PENDING
+            department="Informatics",
+            type_of_issue="Software Installation Issues",
+            additional_details="Need help with software",
+            status=Ticket.Status.PENDING,
+        )
+        self.url = self.REPLY_URL
+
+    def _create_user(self, username, email, role, k_number, **extra):
+        return User.objects.create_user(
+            username=username,
+            email=email,
+            password="testpass123",
+            k_number=k_number,
+            role=role,
+            **extra,
         )
 
-        self.url = f'/api/replies/create/'
+    def _auth_with_jwt(self, user):
+        refresh = RefreshToken.for_user(user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
     def test_authenticated_user_can_post_reply(self):
-        refresh = RefreshToken.for_user(self.staff)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self._auth_with_jwt(self.staff)
         data = {
             "user": self.staff.id,
             "ticket": self.ticket.id,
@@ -54,7 +55,7 @@ class ReplyCreateViewTests(APITestCase):
         count_after = Reply.objects.count()
         created_reply = Reply.objects.get(ticket=self.ticket)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(count_before, count_after-1)
+        self.assertEqual(count_before, count_after - 1)
         self.assertEqual(created_reply.body, "This is a test reply")
 
     def test_unauthenticated_user_cannot_post_reply(self):
@@ -71,15 +72,11 @@ class ReplyCreateViewTests(APITestCase):
         self.assertEqual(count_after, count_before)        
 
     def test_reply_is_linked_to_logged_in_staff(self):
-
-        refresh = RefreshToken.for_user(self.staff)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self._auth_with_jwt(self.staff)
         data = {
             "user": self.staff.id,
             "ticket": self.ticket.id,
-            "body": "User link test"
+            "body": "User link test",
         }
 
         self.client.post(self.url, data)
@@ -88,10 +85,7 @@ class ReplyCreateViewTests(APITestCase):
         self.assertEqual(reply.user, self.staff)
 
     def test_invalid_reply_post_no_body(self):
-        refresh = RefreshToken.for_user(self.staff)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self._auth_with_jwt(self.staff)
         data = {
             "user": self.staff.id,
             "ticket": self.ticket.id,
@@ -105,10 +99,7 @@ class ReplyCreateViewTests(APITestCase):
         self.assertEqual(count_before, count_after)
 
     def test_invalid_reply_post_no_ticket(self):
-        refresh = RefreshToken.for_user(self.staff)
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
-        )
+        self._auth_with_jwt(self.staff)
         data = {
             "user": self.staff.id,
             "ticket": "",
@@ -124,34 +115,20 @@ class ReplyCreateViewTests(APITestCase):
 
 class ReplyDetailsViewTests(APITestCase):
     def setUp(self):
-        self.student = User.objects.create_user(
-            username="student_reply",
-            email="student_reply@test.com",
-            password="testpass123",
-            role=User.Role.STUDENT,
-            k_number="30000001",
+        self.student = self._create_user("student_reply", "student_reply@test.com", User.Role.STUDENT, "30000001")
+        self.staff = self._create_user("staff_reply", "staff_reply@test.com", User.Role.STAFF, "30000002")
+        self.other_staff = self._create_user(
+            "other_staff_reply",
+            "other_staff_reply@test.com",
+            User.Role.STAFF,
+            "30000003",
         )
-        self.staff = User.objects.create_user(
-            username="staff_reply",
-            email="staff_reply@test.com",
-            password="testpass123",
-            role=User.Role.STAFF,
-            k_number="30000002",
-        )
-        self.other_staff = User.objects.create_user(
-            username="other_staff_reply",
-            email="other_staff_reply@test.com",
-            password="testpass123",
-            role=User.Role.STAFF,
-            k_number="30000003",
-        )
-        self.admin = User.objects.create_user(
-            username="admin_reply",
-            email="admin_reply@test.com",
-            password="testpass123",
-            role=User.Role.ADMIN,
+        self.admin = self._create_user(
+            "admin_reply",
+            "admin_reply@test.com",
+            User.Role.ADMIN,
+            "30000004",
             is_superuser=True,
-            k_number="30000004",
         )
 
         self.ticket = Ticket.objects.create(
@@ -163,6 +140,16 @@ class ReplyDetailsViewTests(APITestCase):
             status=Ticket.Status.PENDING,
         )
         self.url = f"/api/staff/dashboard/reply/{self.ticket.id}/"
+
+    def _create_user(self, username, email, role, k_number, **extra):
+        return User.objects.create_user(
+            username=username,
+            email=email,
+            password="testpass123",
+            role=role,
+            k_number=k_number,
+            **extra,
+        )
 
     def test_unauthenticated_user_gets_401(self):
         response = self.client.get(self.url)

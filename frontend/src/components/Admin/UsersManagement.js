@@ -77,9 +77,12 @@ const UsersManagement = () => {
         }
     };
 
+    const confirmDeleteUser = () => {
+        return window.confirm('Are you sure you want to delete this user? This action cannot be undone.');
+    };
+
     const handleDeleteUser = async (userId) => {
-        if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-        
+        if (!confirmDeleteUser()) return;
         try {
             await dispatch(deleteUserAction(userId)).unwrap();
             alert('User deleted successfully!');

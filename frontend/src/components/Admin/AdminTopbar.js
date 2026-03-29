@@ -6,9 +6,17 @@ function AdminTopbar({ user, handleLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const navTabs = [
+    { path: "/admin/dashboard", label: "Dashboard" },
+    { path: "/admin/tickets", label: "Tickets" },
+    { path: "/admin/users", label: "Users" },
+    { path: "/admin/statistics", label: "Statistics" },
+  ];
+
+  const handleTabClick = (path) => navigate(path);
+
   return (
     <div className="admin-topbar-container">
-      {/* Row 1: Welcome left, bell+logout right */}
       <div className="topbar-row-1">
         <h1>👋 Welcome, {user?.first_name || user?.username || "Admin"}</h1>
         <div className="topbar-row-1-actions">
@@ -22,41 +30,16 @@ function AdminTopbar({ user, handleLogout }) {
           </button>
         </div>
       </div>
-
-      {/* Row 2: Navigation tabs centered */}
       <div className="topbar-row-2">
-        <button
-          className={`nav-tab ${
-            location.pathname === "/admin/dashboard" ? "active" : ""
-          }`}
-          onClick={() => navigate("/admin/dashboard")}
-        >
-          Dashboard
-        </button>
-        <button
-          className={`nav-tab ${
-            location.pathname === "/admin/tickets" ? "active" : ""
-          }`}
-          onClick={() => navigate("/admin/tickets")}
-        >
-          Tickets
-        </button>
-        <button
-          className={`nav-tab ${
-            location.pathname === "/admin/users" ? "active" : ""
-          }`}
-          onClick={() => navigate("/admin/users")}
-        >
-          Users
-        </button>
-        <button
-          className={`nav-tab ${
-            location.pathname === "/admin/statistics" ? "active" : ""
-          }`}
-          onClick={() => navigate("/admin/statistics")}
-        >
-          Statistics
-        </button>
+        {navTabs.map((tab) => (
+          <button
+            key={tab.path}
+            className={`nav-tab ${location.pathname === tab.path ? "active" : ""}`}
+            onClick={() => handleTabClick(tab.path)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
     </div>
   );

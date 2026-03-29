@@ -2,10 +2,18 @@ import React, { useState, useRef, useEffect } from "react";
 import { authHeaders } from "../api";
 import "./Chatbot.css";
 
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_CHAT = isLocal
-  ? `${window.location.protocol}//${window.location.hostname}:8000/api/ai-chatbot/chat/`
-  : `${window.location.origin}/api/ai-chatbot/chat/`;
+
+
+export function getApiChatUrl() {
+  const { hostname, protocol, origin } = window.location;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+  return isLocal
+    ? `${protocol}//${hostname}:8000/api/ai-chatbot/chat/`
+    : `${origin}/api/ai-chatbot/chat/`;
+}
+
+export const API_CHAT = getApiChatUrl();
+
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -49,15 +57,12 @@ export default function Chatbot() {
           })),
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.error || data.detail || `Error ${res.status}`);
         setMessages((prev) => prev.slice(0, -1));
         return;
       }
-
       const assistantMessage = data.message || { role: "assistant", content: "" };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
@@ -68,41 +73,33 @@ export default function Chatbot() {
     }
   }
 
+  // Welcome message for initial render
+  const welcomeText = "Ask me anything about support, tickets, or studying.";
+
   return (
     <div className="ai-chatbot">
-      <div className="ai-chatbot-messages" role="log" aria-live="polite">
+      <div className="ai-chatbot-messages">
+        {/* Welcome message only if no messages yet */}
         {messages.length === 0 && (
-          <div className="ai-chatbot-welcome">
-            <p>Ask me anything about support, tickets, or studying. I’ll try to help.</p>
-          </div>
+          <div className="ai-chatbot-welcome">{welcomeText}</div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`ai-chatbot-msg ai-chatbot-msg--${m.role}`}>
-            <span className="ai-chatbot-msg-role">
-              {m.role === "user" ? "You" : "Assistant"}
-            </span>
-            <div className="ai-chatbot-msg-content">{m.content}</div>
+        {/* Render chat messages */}
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`ai-chatbot-msg ai-chatbot-msg-${msg.role}`}>
+            {msg.content}
           </div>
         ))}
-        {loading && (
-          <div className="ai-chatbot-msg ai-chatbot-msg--assistant">
-            <span className="ai-chatbot-msg-role">Assistant</span>
-            <div className="ai-chatbot-msg-content ai-chatbot-typing">Thinking…</div>
-          </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
-
+      {/* Error alert for accessibility */}
       {error && (
-        <div className="ai-chatbot-error" role="alert">
+        <div role="alert" className="ai-chatbot-error">
           {error}
         </div>
       )}
-
-      <form className="ai-chatbot-form" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="ai-chatbot-form">
         <input
           type="text"
-          className="ai-chatbot-input"
           placeholder="Type your question…"
           value={input}
           onChange={(e) => setInput(e.target.value)}

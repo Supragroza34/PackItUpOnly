@@ -69,6 +69,22 @@ export function canDownloadTicketPdf(ticketStatus) {
   return ticketStatus === "closed";
 }
 
+export function findReplyById(replies, targetId) {
+  if (!Array.isArray(replies) || !targetId) return null;
+
+  for (const reply of replies) {
+    if (reply.id === targetId) {
+      return reply;
+    }
+    const childMatch = findReplyById(reply.children, targetId);
+    if (childMatch) {
+      return childMatch;
+    }
+  }
+
+  return null;
+}
+
 export function getReplyMessageError(message) {
   return message.trim() ? "" : "Reply cannot be empty.";
 }
@@ -112,12 +128,14 @@ function UserDashboardPage() {
     setSelectedTicket(ticket);
     setReplyError("");
     setParentReplyId(null);
+    setShowProgressInfo(false);
   }
 
   function closeSelectedTicket() {
     setSelectedTicket(null);
     setParentReplyId(null);
     setReplyError("");
+    setShowProgressInfo(false);
   }
 
   function updateSelectedTicketReplyDraft(value) {
@@ -212,22 +230,6 @@ function UserDashboardPage() {
         )}
       </div>
     );
-  }
-
-  function findReplyById(replies, targetId) {
-    if (!Array.isArray(replies) || !targetId) return null;
-
-    for (const reply of replies) {
-      if (reply.id === targetId) {
-        return reply;
-      }
-      const childMatch = findReplyById(reply.children, targetId);
-      if (childMatch) {
-        return childMatch;
-      }
-    }
-
-    return null;
   }
 
   async function handleCloseTicket(ticketId) {

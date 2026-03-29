@@ -4,13 +4,13 @@ describe("staffApi", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    localStorage.setItem("access", "jwt-test");
+    sessionStorage.setItem("access", "jwt-test");
     global.fetch = jest.fn();
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   test("getStaffList returns JSON on success", async () => {
@@ -54,5 +54,34 @@ describe("staffApi", () => {
 
     const out = await staffApi.reassignTicket(5, { assigned_to: 2 });
     expect(out.status).toBe("pending");
+  });
+
+  test("getAuthHeaders omits Authorization when no token", async () => {
+    sessionStorage.clear();
+    global.fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ staff: [] }) });
+
+    await staffApi.getStaffList();
+
+    expect(global.fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
+  });
+
+  test("reassignTicket throws with detail and generic fallback", async () => {
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ detail: "Not allowed" }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({}),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.reject(new Error("bad json")),
+      });
+
+    await expect(staffApi.reassignTicket(1, {})).rejects.toThrow(/Not allowed/i);
+    await expect(staffApi.reassignTicket(1, {})).rejects.toThrow(/failed to reassign ticket/i);
+    await expect(staffApi.reassignTicket(1, {})).rejects.toThrow(/failed to reassign ticket/i);
   });
 });

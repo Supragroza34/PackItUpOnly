@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -5,6 +6,17 @@ import { authHeaders } from "../api";
 import "./TicketFormPage.css";
 import UserNavbar from "../components/UserNavbar";
 import RichTextEditor from "../components/RichTextEditor";
+
+
+export function getApiBaseUrl() {
+  const { hostname, protocol, origin } = window.location;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+  return isLocal
+    ? `${protocol}//${hostname}:8000/api`
+    : `${origin}/api`;
+}
+
+export const API_BASE = getApiBaseUrl();
 
 const ISSUE_TYPES = {
   Informatics: [
@@ -38,7 +50,7 @@ const ISSUE_TYPES = {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-function formatFileSize(bytes) {
+export function formatFileSize(bytes) {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB"];
@@ -139,6 +151,11 @@ export default function TicketFormPage() {
 
   /* ---------- Submit ---------- */
 
+
+
+
+
+
   async function handleSubmit(e) {
     e.preventDefault();
     setGeneralError("");
@@ -159,8 +176,6 @@ export default function TicketFormPage() {
       formData.append("additional_details", additionalDetails);
       selectedFiles.forEach((file) => formData.append("attachments", file));
 
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const API_BASE = isLocal ? `${window.location.protocol}//${window.location.hostname}:8000/api` : `${window.location.origin}/api`;
       const res = await fetch(`${API_BASE}/tickets/`, {
         method: "POST",
         headers: authHeaders(), // JWT token; no Content-Type so browser sets multipart boundary

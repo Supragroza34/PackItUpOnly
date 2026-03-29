@@ -228,6 +228,37 @@
   padding: 16px 0;
 }
 
+.ticket-attachments-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ticket-attachments-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ticket-attachment-link {
+  color: #0f3460;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ticket-attachment-link:hover {
+  text-decoration: underline;
+}
+
+.ticket-attachment-size {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
 /* Reply form */
 .ticket-reply-form {
   margin-top: 16px;

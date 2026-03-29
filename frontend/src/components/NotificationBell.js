@@ -14,7 +14,7 @@ function NotificationBell({ onNotificationClick }) {
     if (!open) return;
     if (hasFetchedRef.current) return;
 
-    const token = localStorage.getItem("access");
+    const token = sessionStorage.getItem("access");
     if (!token) return;
 
     hasFetchedRef.current = true;

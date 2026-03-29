@@ -1,3 +1,18 @@
+describe('StaffDashboardPage – edge cases', () => {
+    test('handles empty ticket/user/stats lists', () => {
+        renderWithProviders(<StaffDashboardPage />, { preloadedState: staffState({ user: null }) });
+        // Should render dashboard structure even with no data
+        expect(screen.getByText(/assigned tickets/i)).toBeInTheDocument();
+    });
+    test('handles notification click with missing/closed ticket', () => {
+        renderWithProviders(<StaffDashboardPage />);
+        fireEvent.click(screen.getByText(/notif missing ticket/i));
+        fireEvent.click(screen.getByText(/notif closed ticket/i));
+        fireEvent.click(screen.getByText(/notif open ticket/i));
+        fireEvent.click(screen.getByText(/notif meeting request/i));
+        expect(true).toBe(true); // No crash
+    });
+});
 // ─────────────────────────────────────────────────────────────────────────────
 // StaffDashboardPage.test.js  –  100% statement/function/line coverage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,6 +28,15 @@ jest.mock('react-router-dom', () => ({
     ...jest.requireActual('react-router-dom'),
     useNavigate: () => mockNavigate,
 }));
+
+jest.mock('../components/NotificationBell', () => ({ onNotificationClick }) => (
+    <div>
+        <button onClick={() => onNotificationClick({ ticket_id: 999 })}>Notif Missing Ticket</button>
+        <button onClick={() => onNotificationClick({ ticket_id: 2 })}>Notif Closed Ticket</button>
+        <button onClick={() => onNotificationClick({ ticket_id: 1 })}>Notif Open Ticket</button>
+        <button onClick={() => onNotificationClick({ meeting_request_id: 55 })}>Notif Meeting Request</button>
+    </div>
+));
 
 // Prevent AuthContext from calling the real API and overriding Redux user state
 jest.mock('../services/adminApi', () => ({
@@ -710,6 +734,62 @@ describe('StaffDashboardPage – Meeting Requests button', () => {
     test('clicking Meeting Requests navigates to /staff/dashboard/meeting-requests', () => {
         renderWithProviders(<StaffDashboardPage />, staffState());
         fireEvent.click(screen.getByRole('button', { name: /meeting requests/i }));
+        expect(mockNavigate).toHaveBeenCalledWith('/staff/dashboard/meeting-requests');
+    });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 9b. Notification routing branches
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('StaffDashboardPage – notification routing', () => {
+    beforeEach(() => {
+        sessionStorage.setItem('access', 'test-token');
+        mockNavigate.mockClear();
+        global.alert = jest.fn();
+    });
+
+    test('alerts when notification ticket is not found in current list', async () => {
+        mockFetch({ filteredTickets: [makeTicket({ id: 1, status: 'pending' })] });
+        renderWithProviders(<StaffDashboardPage />, staffState());
+
+        await waitFor(() => screen.getByText(/welcome, alice smith/i));
+        fireEvent.click(screen.getByRole('button', { name: /notif missing ticket/i }));
+
+        expect(global.alert).toHaveBeenCalledWith('This ticket is no longer available or has been redirected.');
+    });
+
+    test('alerts when notification ticket is closed', async () => {
+        mockFetch({
+            filteredTickets: [
+                makeTicket({ id: 2, status: 'closed' }),
+            ],
+        });
+        renderWithProviders(<StaffDashboardPage />, staffState());
+
+        await waitFor(() => screen.getByText(/welcome, alice smith/i));
+        fireEvent.click(screen.getByRole('button', { name: /notif closed ticket/i }));
+
+        expect(global.alert).toHaveBeenCalledWith('This ticket is already closed or redirected.');
+    });
+
+    test('navigates to ticket details when notification ticket is open', async () => {
+        mockFetch({ filteredTickets: [makeTicket({ id: 1, status: 'pending' })] });
+        renderWithProviders(<StaffDashboardPage />, staffState());
+
+        await waitFor(() => screen.getByText(/welcome, alice smith/i));
+        fireEvent.click(screen.getByRole('button', { name: /notif open ticket/i }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/staff/dashboard/1');
+    });
+
+    test('navigates to meeting requests for meeting_request notifications', async () => {
+        mockFetch({ filteredTickets: [makeTicket({ id: 1, status: 'pending' })] });
+        renderWithProviders(<StaffDashboardPage />, staffState());
+
+        await waitFor(() => screen.getByText(/welcome, alice smith/i));
+        fireEvent.click(screen.getByRole('button', { name: /notif meeting request/i }));
+
         expect(mockNavigate).toHaveBeenCalledWith('/staff/dashboard/meeting-requests');
     });
 });

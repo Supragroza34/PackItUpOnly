@@ -15,17 +15,17 @@ KCLTicketingSystems/tests/test_admin_statistics.py
 KCLTicketingSystems/tests/test_close_ticket.py
 
 
-//Nitin
-KCLTicketingSystems/tests/test_forms_and_staff_meeting_requests.py
-KCLTicketingSystems/tests/test_notifications_view.py
-KCLTicketingSystems/tests/test_reply.py
-KCLTicketingSystems/tests/test_reply_view.py
-KCLTicketingSystems/tests/test_staff_dashboard_view.py
-KCLTicketingSystems/tests/test_staff_directory_view.py
-KCLTicketingSystems/tests/test_ticket_conversation_feature.py
-KCLTicketingSystems/tests/test_ticket_info_view.py
-KCLTicketingSystems/tests/test_user_dashboard_view.py
-KCLTicketingSystems/tests/test_utils.py
+//Nitin (All Refactored and Tested)
+KCLTicketingSystems/tests/test_forms_and_staff_meeting_requests.py (Done)
+KCLTicketingSystems/tests/test_notifications_view.py (Done)
+KCLTicketingSystems/tests/test_reply.py (Done)
+KCLTicketingSystems/tests/test_reply_view.py (Done)
+KCLTicketingSystems/tests/test_staff_dashboard_view.py (Done)
+KCLTicketingSystems/tests/test_staff_directory_view.py (Done)
+KCLTicketingSystems/tests/test_ticket_conversation_feature.py (Done)
+KCLTicketingSystems/tests/test_ticket_info_view.py (Done)
+KCLTicketingSystems/tests/test_user_dashboard_view.py (Done)
+KCLTicketingSystems/tests/test_utils.py (Done)
 
 
 //Amey
@@ -40,7 +40,7 @@ KCLTicketingSystems/views/user_dashboard_view.py
 
 
 
-//Tejas
+//Tejas-DONE
 frontend/src/AIChatbot/Chatbot.js
 frontend/src/Login.js
 frontend/src/api.js

@@ -18,7 +18,12 @@ const STATUS_OPTIONS = [
     { value: 'reported', label: 'Reported' },
 ];
 
-
+export function formatFileSize(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return 'Unknown size';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function TicketPage() {
     const { ticket_id } = useParams();
@@ -103,9 +108,10 @@ function TicketPage() {
     };
 
     function confirmCloseTwice() {
-        if (!window.confirm('Are you sure you want to close this ticket?')) return false;
-        if (!window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')) return false;
-        return true;
+        return (
+            window.confirm('Are you sure you want to close this ticket?') &&
+            window.confirm('Please confirm again. This will close the ticket. Do you want to proceed?')
+        );
     }
 
     function handleCloseTicket() {
@@ -215,6 +221,29 @@ function TicketPage() {
                   <p className="ticket-description">No description provided.</p>
                 )}
                 {ticket.department && <span className="ticket-department">📁 {ticket.department}</span>}
+            </div>
+
+            <div className="ticket-card">
+                <h2 className="ticket-card-title">Attachments</h2>
+                {ticket.attachments?.length ? (
+                    <ul className="ticket-attachments-list">
+                        {ticket.attachments.map((attachment) => (
+                            <li key={attachment.id} className="ticket-attachments-item">
+                                <a
+                                    href={attachment.file_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="ticket-attachment-link"
+                                >
+                                    {attachment.original_filename}
+                                </a>
+                                <span className="ticket-attachment-size">({formatFileSize(attachment.file_size)})</span>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="ticket-replies-empty">No attachments provided.</p>
+                )}
             </div>
 
             <div className="ticket-card">

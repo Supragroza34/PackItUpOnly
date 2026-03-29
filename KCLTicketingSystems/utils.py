@@ -39,11 +39,14 @@ def auto_close_stale_awaiting_response(days=3):
     cutoff = timezone.now() - timedelta(days=days)
     stale_ticket_ids = []
 
-    awaiting_tickets = Ticket.objects.filter(status=Ticket.Status.AWAITING_RESPONSE)
+    # Prefetch replies and users in bulk to avoid N+1
+    awaiting_tickets = Ticket.objects.filter(status=Ticket.Status.AWAITING_RESPONSE).prefetch_related("replies__user")
     for ticket in awaiting_tickets:
-        latest_reply = ticket.replies.select_related("user").order_by("-created_at").first()
-        if not latest_reply:
+        replies = list(ticket.replies.all())
+        if not replies:
             continue
+        # Find latest reply by created_at without extra queries
+        latest_reply = max(replies, key=lambda r: r.created_at)
         if _is_staff_or_admin(latest_reply.user) and latest_reply.created_at <= cutoff:
             stale_ticket_ids.append(ticket.id)
 
@@ -53,7 +56,7 @@ def auto_close_stale_awaiting_response(days=3):
     return Ticket.objects.filter(
         id__in=stale_ticket_ids,
         status=Ticket.Status.AWAITING_RESPONSE,
-    ).update(status=Ticket.Status.CLOSED, closed_by=None)
+    ).update(status=Ticket.Status.CLOSED, closed_by=None, updated_at=timezone.now())
 
 def notify_admin_on_ticket(ticket):
     """Notify all users with role='admin' that a new ticket was created."""

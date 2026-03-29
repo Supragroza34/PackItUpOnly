@@ -1,158 +1,213 @@
-import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import AdminDashboard from './AdminDashboard';
-import { renderWithProviders } from '../../utils/testUtils';
-import adminApi from '../../services/adminApi';
+import React from "react";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import AdminDashboard from "./AdminDashboard";
+import adminReducer from "../../store/slices/adminSlice";
+import authReducer from "../../store/slices/authSlice";
+import adminApi from "../../services/adminApi";
 
-// Mock the adminApi module
-jest.mock('../../services/adminApi', () => ({
+const mockNavigate = jest.fn();
+
+jest.mock("react-router-dom", () => ({
+  ...jest.requireActual("react-router-dom"),
+  useNavigate: () => mockNavigate,
+}));
+
+jest.mock("../../services/adminApi", () => ({
   __esModule: true,
   default: {
     getDashboardStats: jest.fn(),
+    updateTicket: jest.fn(),
   },
 }));
 
-// Mock console.error to keep tests clean
-const originalError = console.error;
-beforeAll(() => {
-  console.error = jest.fn();
-});
+jest.mock("./AdminTopbar", () => ({ user, handleLogout }) => (
+  <div>
+    <span>Welcome, {user?.first_name || "Admin"}</span>
+    <button onClick={handleLogout}>Topbar Logout</button>
+  </div>
+));
 
-afterAll(() => {
-  console.error = originalError;
-});
+function renderDashboard(preloadedAdmin = {}, preloadedAuth = {}) {
+  const store = configureStore({
+    reducer: {
+      admin: adminReducer,
+      auth: authReducer,
+    },
+    preloadedState: {
+      auth: {
+        user: { id: 99, first_name: "Admin", role: "admin" },
+        loading: false,
+        error: null,
+        isAuthenticated: true,
+        ...preloadedAuth,
+      },
+      admin: {
+        stats: null,
+        statsLoading: false,
+        statsError: null,
+        tickets: [],
+        ticketsTotal: 0,
+        ticketsTotalPages: 1,
+        ticketsLoading: false,
+        ticketsError: null,
+        selectedTicket: null,
+        users: [],
+        usersTotal: 0,
+        usersTotalPages: 1,
+        usersLoading: false,
+        usersError: null,
+        selectedUser: null,
+        staffList: [],
+        staffListLoading: false,
+        staffListError: null,
+        statistics: null,
+        statisticsLoading: false,
+        statisticsError: null,
+        ...preloadedAdmin,
+      },
+    },
+  });
 
-describe('AdminDashboard', () => {
+  return render(
+    <Provider store={store}>
+      <AdminDashboard />
+    </Provider>
+  );
+}
+
+describe("AdminDashboard", () => {
+  const stats = {
+    total_tickets: 3,
+    pending_tickets: 1,
+    in_progress_tickets: 1,
+    resolved_tickets: 0,
+    closed_tickets: 1,
+    total_users: 5,
+    total_students: 3,
+    total_staff: 2,
+    recent_tickets: [
+      {
+        id: 11,
+        user_name: "John Doe",
+        user_k_number: "K123",
+        department: "IT",
+        type_of_issue: "Login",
+        status: "in_progress",
+        priority: "high",
+        created_at: "2026-03-01T10:00:00Z",
+      },
+      {
+        id: 12,
+        user_name: "Jane Doe",
+        user_k_number: "K124",
+        department: "CS",
+        type_of_issue: "Access",
+        status: "closed",
+        closed_by_role: "staff",
+        priority: "medium",
+        created_at: "2026-03-02T10:00:00Z",
+      },
+      {
+        id: 13,
+        user_name: "Sam Doe",
+        user_k_number: "K125",
+        department: "HR",
+        type_of_issue: "Other",
+        status: "closed",
+        priority: "low",
+        created_at: "2026-03-03T10:00:00Z",
+      },
+    ],
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock successful API response by default
-    adminApi.getDashboardStats.mockResolvedValue({
-      total_tickets: 0,
-      pending_tickets: 0,
-      in_progress_tickets: 0,
-      resolved_tickets: 0,
-      total_users: 0,
-      staff_count: 0,
-      student_count: 0,
-    });
+    window.confirm = jest.fn(() => true);
+    window.alert = jest.fn();
+    adminApi.getDashboardStats.mockResolvedValue(stats);
+    adminApi.updateTicket.mockResolvedValue({ ...stats.recent_tickets[0], status: "closed" });
   });
 
-  test('renders loading state initially', () => {
-    renderWithProviders(<AdminDashboard />, {
-      admin: { statsLoading: true }
-    });
-    expect(screen.getByText('Loading dashboard...')).toBeInTheDocument();
+  test("shows loading state", () => {
+    renderDashboard({ statsLoading: true });
+    expect(screen.getByText(/loading dashboard/i)).toBeInTheDocument();
   });
 
-  test('renders dashboard stats after loading', async () => {
-    const mockStats = {
-      total_tickets: 100,
-      pending_tickets: 25,
-      in_progress_tickets: 30,
-      resolved_tickets: 45,
-      total_users: 50,
-      staff_count: 10,
-      student_count: 40,
-    };
+  test("shows error state", async () => {
+    adminApi.getDashboardStats.mockRejectedValueOnce(new Error("Boom"));
+    renderDashboard();
+    expect(await screen.findByText(/error: boom/i)).toBeInTheDocument();
+  });
 
-    // Mock API to return the stats
-    adminApi.getDashboardStats.mockResolvedValue(mockStats);
+  test("shows fallback loading when stats are missing", () => {
+    renderDashboard({ stats: null, statsLoading: false, statsError: null });
+    expect(screen.getByText(/loading dashboard/i)).toBeInTheDocument();
+  });
 
-    renderWithProviders(<AdminDashboard />, {
-      admin: { stats: mockStats, statsLoading: false }
-    });
+  test("renders stats table, status labels, and close action visibility", async () => {
+    renderDashboard({ stats, statsLoading: false });
+
+    expect(await screen.findByText(/recent tickets/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/in progress/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/closed by staff/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/^closed$/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("K123")).toBeInTheDocument();
+
+    const closeButtons = screen.getAllByRole("button", { name: "Close" });
+    expect(closeButtons).toHaveLength(1);
+  });
+
+  test("shows no recent tickets state", async () => {
+    adminApi.getDashboardStats.mockResolvedValueOnce({ ...stats, recent_tickets: [] });
+    renderDashboard();
+    expect(await screen.findByText(/no recent tickets/i)).toBeInTheDocument();
+  });
+
+  test("close ticket confirmation second step cancel does not update", async () => {
+    renderDashboard({ stats, statsLoading: false });
+    expect(await screen.findByText("K123")).toBeInTheDocument();
+
+    window.confirm.mockReturnValueOnce(true).mockReturnValueOnce(false);
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
     await waitFor(() => {
-      expect(screen.getByText('Total Tickets')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('Total Tickets')).toBeInTheDocument();
-    expect(screen.getByText('100')).toBeInTheDocument();
-    expect(screen.getByText('Pending')).toBeInTheDocument();
-    expect(screen.getByText('25')).toBeInTheDocument();
-    expect(screen.getByText('In Progress')).toBeInTheDocument();
-    expect(screen.getByText('30')).toBeInTheDocument();
-    expect(screen.getByText('Resolved')).toBeInTheDocument();
-    expect(screen.getByText('45')).toBeInTheDocument();
-  });
-
-  test('renders error state when API fails', async () => {
-    // Mock API to fail
-    adminApi.getDashboardStats.mockRejectedValue(new Error('Failed to fetch stats'));
-
-    renderWithProviders(<AdminDashboard />, {
-      admin: { statsError: null, statsLoading: false }
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText(/Error:/)).toBeInTheDocument();
+      expect(adminApi.updateTicket).not.toHaveBeenCalled();
     });
   });
 
-  test('displays user welcome message', async () => {
-    renderWithProviders(<AdminDashboard />, {
-      admin: {
-        stats: {
-          total_tickets: 0,
-          pending_tickets: 0,
-          in_progress_tickets: 0,
-          resolved_tickets: 0,
-          total_users: 0,
-          staff_count: 0,
-          student_count: 0,
-        },
-        statsLoading: false,
-      }
-    });
+  test("close ticket success refreshes dashboard", async () => {
+    renderDashboard({ stats, statsLoading: false });
+    expect(await screen.findByText("K123")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
     await waitFor(() => {
-      expect(screen.getByText(/👋 Welcome, Admin/)).toBeInTheDocument();
+      expect(adminApi.updateTicket).toHaveBeenCalledWith(11, { status: "closed" });
+      expect(adminApi.getDashboardStats).toHaveBeenCalledTimes(2);
     });
   });
 
-  test('renders navigation buttons', async () => {
-    renderWithProviders(<AdminDashboard />, {
-      admin: {
-        stats: {
-          total_tickets: 0,
-          pending_tickets: 0,
-          in_progress_tickets: 0,
-          resolved_tickets: 0,
-          total_users: 0,
-          staff_count: 0,
-          student_count: 0,
-        },
-        statsLoading: false,
-      }
-    });
+  test("close ticket failure shows alert", async () => {
+    adminApi.updateTicket.mockRejectedValueOnce(new Error("cannot close"));
+    renderDashboard({ stats, statsLoading: false });
+    expect(await screen.findByText("K123")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
     await waitFor(() => {
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining("Failed to close ticket"));
     });
-
-    expect(screen.getByText('Tickets')).toBeInTheDocument();
-    expect(screen.getByText('Users')).toBeInTheDocument();
   });
 
-  test('renders logout button', async () => {
-    renderWithProviders(<AdminDashboard />, {
-      admin: {
-        stats: {
-          total_tickets: 0,
-          pending_tickets: 0,
-          in_progress_tickets: 0,
-          resolved_tickets: 0,
-          total_users: 0,
-          staff_count: 0,
-          student_count: 0,
-        },
-        statsLoading: false,
-      }
-    });
-
+  test("topbar logout triggers navigate", async () => {
+    renderDashboard({ stats, statsLoading: false });
+    expect(await screen.findByText(/recent tickets/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /topbar logout/i }));
     await waitFor(() => {
-      expect(screen.getByText('Log Out')).toBeInTheDocument();
+      expect(mockNavigate).toHaveBeenCalledWith("/login");
     });
   });
 });

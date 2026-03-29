@@ -12,12 +12,12 @@ jest.mock("../api", () => ({
 
 describe("NotificationBell", () => {
   beforeEach(() => {
-    localStorage.setItem("access", "fake-jwt");
+    sessionStorage.setItem("access", "fake-jwt");
     jest.clearAllMocks();
   });
 
   afterEach(() => {
-    localStorage.removeItem("access");
+    sessionStorage.removeItem("access");
   });
 
   test("opens dropdown and fetches notifications once", async () => {
@@ -54,7 +54,7 @@ describe("NotificationBell", () => {
   });
 
   test("does not fetch when no token", async () => {
-    localStorage.removeItem("access");
+    sessionStorage.removeItem("access");
     render(<NotificationBell />);
     await userEvent.click(screen.getByText(/Notifications/i));
     await waitFor(() => {

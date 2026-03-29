@@ -6,87 +6,91 @@ from ..models import Ticket, Reply
 
 User = get_user_model()
 
+
 class UserDashboardViewTests(TestCase):
+    DASHBOARD_URL = "/api/dashboard/"
 
     def setUp(self):
-        # Create users with unique emails
+        self.client = APIClient()
+        self._create_users()
+        self._create_user_tickets_and_replies()
+        self._create_other_user_ticket()
+
+    def _create_users(self):
         self.user = User.objects.create_user(
-            username='testuser',
-            email='testuser@example.com',
-            password='password123',
-            k_number='K123456'
+            username="testuser",
+            email="testuser@example.com",
+            password="password123",
+            k_number="K123456",
         )
         self.other_user = User.objects.create_user(
-            username='otheruser',
-            email='otheruser@example.com',
-            password='password123',
-            k_number='K654321'
+            username="otheruser",
+            email="otheruser@example.com",
+            password="password123",
+            k_number="K654321",
         )
 
-        # Create tickets for self.user
-        self.ticket1 = Ticket.objects.create(
-            user=self.user,
-            type_of_issue='Software',
-            department='IT',
-            additional_details='Issue details 1',
-            status='open'
-        )
-        self.ticket2 = Ticket.objects.create(
-            user=self.user,
-            type_of_issue='Hardware',
-            department='Maintenance',
-            additional_details='Issue details 2',
-            status='closed'
+    def _create_ticket(self, user, issue, department, details, status):
+        return Ticket.objects.create(
+            user=user,
+            type_of_issue=issue,
+            department=department,
+            additional_details=details,
+            status=status,
         )
 
-        # Add replies to ticket1
-        self.reply1 = Reply.objects.create(
-            ticket=self.ticket1,
-            user=self.user,
-            body='Reply 1'
+    def _create_user_tickets_and_replies(self):
+        self.ticket1 = self._create_ticket(
+            self.user,
+            "Software",
+            "IT",
+            "Issue details 1",
+            "open",
         )
-        self.reply2 = Reply.objects.create(
-            ticket=self.ticket1,
-            user=self.user,
-            body='Reply 2'
+        self.ticket2 = self._create_ticket(
+            self.user,
+            "Hardware",
+            "Maintenance",
+            "Issue details 2",
+            "closed",
+        )
+        self.reply1 = Reply.objects.create(ticket=self.ticket1, user=self.user, body="Reply 1")
+        self.reply2 = Reply.objects.create(ticket=self.ticket1, user=self.user, body="Reply 2")
+
+    def _create_other_user_ticket(self):
+        self.other_ticket = self._create_ticket(
+            self.other_user,
+            "Network",
+            "IT",
+            "Other user ticket",
+            "open",
         )
 
-        # Ticket for other user (should not appear in self.user dashboard)
-        self.other_ticket = Ticket.objects.create(
-            user=self.other_user,
-            type_of_issue='Network',
-            department='IT',
-            additional_details='Other user ticket',
-            status='open'
-        )
+    def _auth(self):
+        self.client.force_authenticate(user=self.user)
 
-        # Initialize APIClient
-        self.client = APIClient()
+    def _dashboard_response(self):
+        return self.client.get(self.DASHBOARD_URL)
 
     def test_dashboard_requires_authentication(self):
-        # Unauthenticated request should be blocked
-        response = self.client.get('/api/dashboard/')
+        response = self._dashboard_response()
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
 
     def test_authenticated_user_dashboard_returns_correct_data(self):
-        # Authenticate the client
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get('/api/dashboard/')
+        self._auth()
+        response = self._dashboard_response()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
 
-        # Check user data
         self.assertEqual(data['user']['id'], self.user.id)
         self.assertEqual(data['user']['k_number'], self.user.k_number)
 
-        # Check tickets
         self.assertEqual(len(data['tickets']), 2)
         ticket_ids = [t['id'] for t in data['tickets']]
         self.assertIn(self.ticket1.id, ticket_ids)
         self.assertIn(self.ticket2.id, ticket_ids)
 
-        # Check replies for ticket1
         ticket1_data = next(t for t in data['tickets'] if t['id'] == self.ticket1.id)
         self.assertEqual(len(ticket1_data['replies']), 2)
         reply_bodies = [r['body'] for r in ticket1_data['replies']]
@@ -94,19 +98,18 @@ class UserDashboardViewTests(TestCase):
         self.assertIn('Reply 2', reply_bodies)
 
     def test_user_cannot_see_others_tickets(self):
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get('/api/dashboard/')
+        self._auth()
+        response = self._dashboard_response()
         data = response.json()
         ticket_ids = [t['id'] for t in data['tickets']]
         self.assertNotIn(self.other_ticket.id, ticket_ids)
 
     def test_closed_ticket_has_closed_by_role(self):
-        # Set closed_by for ticket2
         self.ticket2.closed_by = self.user
         self.ticket2.save()
 
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get('/api/dashboard/')
+        self._auth()
+        response = self._dashboard_response()
         data = response.json().get('tickets', [])
 
         ticket2_data = next(t for t in data if t['id'] == self.ticket2.id)
@@ -114,8 +117,8 @@ class UserDashboardViewTests(TestCase):
         self.assertEqual(ticket2_data["closed_by_role"], "student")
 
     def test_ticket_with_no_replies(self):
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get('/api/dashboard/')
+        self._auth()
+        response = self._dashboard_response()
         data = response.json()
 
         ticket2_data = next(t for t in data['tickets'] if t['id'] == self.ticket2.id)

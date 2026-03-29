@@ -1,29 +1,30 @@
 import React, { useState } from 'react';
 
-const renderAnswerBlocks = (answer) =>
-  answer
+function renderAnswerBlocks(answer) {
+  return answer
     .split('\n\n')
     .map((block) => block.trim())
     .filter(Boolean)
-    .map((block, index) => {
-      const lines = block
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean);
+    .map((block, index) => renderBlock(block, index));
+}
 
-      const isBulletBlock = lines.length > 0 && lines.every((line) => line.startsWith('- '));
-      if (isBulletBlock) {
-        return (
-          <ul key={`list-${index}`}>
-            {lines.map((line, lineIndex) => (
-              <li key={`${line}-${lineIndex}`}>{line.replace('- ', '')}</li>
-            ))}
-          </ul>
-        );
-      }
-
-      return <p key={`paragraph-${index}`}>{block}</p>;
-    });
+function renderBlock(block, index) {
+  const lines = block
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const isBulletBlock = lines.length > 0 && lines.every((line) => line.startsWith('- '));
+  if (isBulletBlock) {
+    return (
+      <ul key={`list-${index}`}>
+        {lines.map((line, lineIndex) => (
+          <li key={`${line}-${lineIndex}`}>{line.replace('- ', '')}</li>
+        ))}
+      </ul>
+    );
+  }
+  return <p key={`paragraph-${index}`}>{block}</p>;
+}
 
 const FaqAccordion = ({ items }) => {
   const [expandedItemId, setExpandedItemId] = useState(null);

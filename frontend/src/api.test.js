@@ -2,7 +2,7 @@ import { authHeaders, apiFetch } from "./api";
 
 describe("authHeaders", () => {
   afterEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   test("returns empty object when no token", () => {
@@ -10,7 +10,7 @@ describe("authHeaders", () => {
   });
 
   test("returns Authorization header when token present", () => {
-    localStorage.setItem("access", "tok123");
+    sessionStorage.setItem("access", "tok123");
     expect(authHeaders()).toEqual({ Authorization: "Bearer tok123" });
   });
 });
@@ -20,7 +20,7 @@ describe("apiFetch", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    localStorage.clear();
+    sessionStorage.clear();
     jest.restoreAllMocks();
   });
 
@@ -53,7 +53,7 @@ describe("apiFetch", () => {
   });
 
   test("includes auth header when auth option true", async () => {
-    localStorage.setItem("access", "jwt");
+    sessionStorage.setItem("access", "jwt");
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -118,6 +118,66 @@ describe("apiFetch", () => {
           "X-Custom": "1",
         }),
       })
+    );
+  });
+
+  test("throws HTTP status when error JSON has no extractable messages", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: () => Promise.resolve(JSON.stringify({ foo: 1 })),
+    });
+
+    await expect(apiFetch("/x/")).rejects.toThrow(/HTTP 400/);
+  });
+
+  test("throws HTTP status when error JSON is empty object", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      text: () => Promise.resolve(JSON.stringify({})),
+    });
+
+    await expect(apiFetch("/x/")).rejects.toThrow(/HTTP 422/);
+  });
+
+  test("collects string field errors from non-array values", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: () =>
+        Promise.resolve(JSON.stringify({ username: ["bad"], detail: "also bad" })),
+    });
+
+    await expect(apiFetch("/x/")).rejects.toThrow("bad also bad");
+  });
+});
+
+describe("apiFetch base URL (fresh module)", () => {
+  const originalLocation = window.location;
+
+  afterEach(() => {
+    window.location = originalLocation;
+    jest.resetModules();
+  });
+
+  test("uses same-origin /api when not on localhost", async () => {
+    jest.resetModules();
+    delete window.location;
+    window.location = {
+      hostname: "deployed.example",
+      origin: "https://deployed.example",
+    };
+    const { apiFetch } = require("./api");
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({}),
+    });
+    await apiFetch("/ping/");
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://deployed.example/api/ping/",
+      expect.any(Object)
     );
   });
 });

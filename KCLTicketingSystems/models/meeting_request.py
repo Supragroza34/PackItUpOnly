@@ -72,8 +72,8 @@ class MeetingRequest(models.Model):
         """Validates meeting datetime is in office hours and not in the past."""
         if not self.meeting_datetime:
             return
-        self._validate_office_hours_window()
         self._validate_not_in_past()
+        self._validate_office_hours_window()
     
     def save(self, *args, **kwargs):
         self.full_clean()

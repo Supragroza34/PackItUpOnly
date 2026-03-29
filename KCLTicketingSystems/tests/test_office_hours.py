@@ -117,7 +117,7 @@ class OfficeHoursModelTests(TestCase):
 
     def test_office_hours_valid(self):
         oh = OfficeHours(
-            staff=self.staff,
+            staff=self.staff_user,
             day_of_week="Monday",
             start_time=datetime.time(9, 0),
             end_time=datetime.time(17, 0)
@@ -127,7 +127,7 @@ class OfficeHoursModelTests(TestCase):
 
     def test_office_hours_invalid_times(self):
         oh = OfficeHours(
-            staff=self.staff,
+            staff=self.staff_user,
             day_of_week="Monday",
             start_time=datetime.time(17, 0),
             end_time=datetime.time(9, 0)
@@ -138,10 +138,10 @@ class OfficeHoursModelTests(TestCase):
 
     def test_office_hours_str(self):
         oh = OfficeHours(
-            staff=self.staff,
+            staff=self.staff_user,
             day_of_week="Monday",
             start_time=datetime.time(9, 0),
             end_time=datetime.time(17, 0)
         )
-        expected = f"{self.staff} - Monday 09:00:00-17:00:00"
+        expected = f"{self.staff_user} - Monday 09:00:00-17:00:00"
         self.assertEqual(str(oh), expected)

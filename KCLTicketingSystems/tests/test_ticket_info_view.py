@@ -452,9 +452,6 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         }, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-<<<<<<< HEAD
-       
-=======
 
     def test_reassign_returns_500_on_unexpected_error(self):
         self._auth(self.staff)
@@ -528,4 +525,3 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         open_ticket.refresh_from_db()
         self.assertEqual(open_ticket.status, Ticket.Status.CLOSED)
         self.assertEqual(open_ticket.closed_by, self.staff)
->>>>>>> origin/main

@@ -20,16 +20,20 @@ function statusClass(status) {
 
 function getProgressWidth(status) {
   switch (status) {
+    case "new":
+      return "10%";
     case "pending":
-        return "20%";
+      return "20%";
     case "seen":
-        return "40%";
+      return "40%";
     case "in_progress":
-        return "60%";
+      return "60%";
     case "awaiting_response":
-        return "75%";
+      return "75%";
     case "resolved":
       return "90%";
+    case "reported":
+      return "95%";
     case "closed":
       return "100%";
     default:

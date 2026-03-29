@@ -23,8 +23,8 @@ class DeleteOldClosedTicketsTest(TestCase):
             type_of_issue='Old Issue',
             additional_details='Old closed ticket',
             status=Ticket.Status.CLOSED,
-            updated_at=now - timedelta(hours=25)
         )
+        Ticket.objects.filter(pk=self.old_ticket.pk).update(updated_at=now - timedelta(hours=25))
         # Ticket closed 23 hours ago (should NOT be deleted)
         self.recent_ticket = Ticket.objects.create(
             user=self.user,
@@ -32,8 +32,8 @@ class DeleteOldClosedTicketsTest(TestCase):
             type_of_issue='Recent Issue',
             additional_details='Recent closed ticket',
             status=Ticket.Status.CLOSED,
-            updated_at=now - timedelta(hours=23)
         )
+        Ticket.objects.filter(pk=self.recent_ticket.pk).update(updated_at=now - timedelta(hours=23))
         # Ticket not closed (should NOT be deleted)
         self.open_ticket = Ticket.objects.create(
             user=self.user,

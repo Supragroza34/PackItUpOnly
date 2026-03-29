@@ -62,7 +62,6 @@ function NotificationBell({ onNotificationClick }) {
   const bellRef = useRef(null);
   const hasFetchedRef = useRef(false);
 
-<<<<<<< HEAD
   // Fetch lazily only when the dropdown is opened.
   // This avoids making extra `fetch()` calls during unrelated page renders/tests.
   useEffect(() => {
@@ -92,12 +91,12 @@ function NotificationBell({ onNotificationClick }) {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-=======
+  }, []);
+
   const fetchNotifications = useCallback(() => {
     return apiFetch("/notifications/", {}, { auth: true })
       .then((data) => setNotifications(toNotifications(data)))
       .catch((err) => console.error("Failed to fetch notifications:", err));
->>>>>>> origin/main
   }, []);
 
   useEffect(() => {

@@ -2,7 +2,6 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from unittest.mock import patch
 from datetime import timedelta
 import datetime
 
@@ -121,15 +120,12 @@ class MeetingRequestModelTests(TestCase):
         """Covers the `meeting_datetime < timezone.now()` branch."""
         past_monday = timezone.now() - timedelta(days=7)
         past_monday = past_monday.replace(hour=10, minute=0, second=0, microsecond=0)
-        with patch('KCLTicketingSystems.models.office_hours.OfficeHours.objects.filter') as mock_filter:
-            mock_qs = mock_filter.return_value
-            mock_qs.exists.return_value = True 
-            mr = MeetingRequest(
-                student=self.student,
-                staff=self.staff,
-                meeting_datetime=past_monday,
-                description='Past meeting',
-                )
+        mr = MeetingRequest(
+            student=self.student,
+            staff=self.staff,
+            meeting_datetime=past_monday,
+            description='Past meeting',
+        )
         with self.assertRaises(ValidationError) as ctx:
             mr.clean()
         self.assertIn("past", str(ctx.exception))

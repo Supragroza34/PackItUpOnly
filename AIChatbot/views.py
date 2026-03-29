@@ -18,8 +18,20 @@ from KCLTicketingSystems.models import Ticket
 logger = logging.getLogger(__name__)
 
 DEFAULT_SYSTEM = (
-    "You are a helpful support assistant for students at KCL. "
-    "Answer questions about the ticketing system, FAQs, and general study support briefly and clearly."
+    "You are the PackItUp support assistant for this project. "
+    "Answer using the project's own ticketing flows and FAQ wording. "
+    "Do not direct users to external KCL service desk portals. "
+    "Keep replies brief, practical, and action-oriented."
+)
+
+FAQ_ASSISTANT_GUIDANCE = (
+    "Project FAQ guidance:\n"
+    "- Creating a ticket: use the Create Ticket page in this app.\n"
+    "- Required fields: name, surname, K-Number, department, issue type, and clear details.\n"
+    "- K-Number is used to auto-generate the KCL email in the form.\n"
+    "- Ticket updates should be posted as replies on the same ticket.\n"
+    "- Ticket tracking happens in the user's dashboard and ticket detail views.\n"
+    "- If unsure about issue routing, pick the closest department and add context.\n"
 )
 
 SESSION_KEY_MESSAGES = "ai_chatbot_messages"
@@ -89,6 +101,7 @@ def _build_full_system_prompt(system_prompt, user):
     context = _get_ticket_context(user=user)
     return (
         f"{base_system}\n\n"
+        f"{FAQ_ASSISTANT_GUIDANCE}\n"
         "When the user says things like 'my tickets' or 'how many tickets I have', "
         "they mean the tickets listed in the 'This conversation is with user id=...' "
         "section of the context below.\n\n"

@@ -62,6 +62,37 @@ function NotificationBell({ onNotificationClick }) {
   const bellRef = useRef(null);
   const hasFetchedRef = useRef(false);
 
+  // Fetch lazily only when the dropdown is opened.
+  // This avoids making extra `fetch()` calls during unrelated page renders/tests.
+  useEffect(() => {
+    if (!open) return;
+    if (hasFetchedRef.current) return;
+
+    const token = sessionStorage.getItem("access");
+    if (!token) return;
+
+    hasFetchedRef.current = true;
+    apiFetch("/notifications/", {}, { auth: true })
+      .then((data) => {
+        setNotifications(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch notifications:", err);
+      });
+  }, [open]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (bellRef.current && !bellRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const fetchNotifications = useCallback(() => {
     return apiFetch("/notifications/", {}, { auth: true })
       .then((data) => setNotifications(toNotifications(data)))

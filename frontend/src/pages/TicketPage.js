@@ -38,7 +38,7 @@ function TicketPage() {
     const navigate = useNavigate();
 
     const authHeaders = () => ({
-        'Authorization': `Bearer ${localStorage.getItem('access')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access')}`,
     });
 
     function changeStatus(newStatus) {
@@ -62,7 +62,7 @@ function TicketPage() {
     }, [dispatch]);
 
     useEffect(() => {
-        if (!user && localStorage.getItem('access')) {
+        if (!user && sessionStorage.getItem('access')) {
             dispatch(checkAuth());
         }
     }, [dispatch, user]);
@@ -71,7 +71,7 @@ function TicketPage() {
         fetch(`/api/staff/dashboard/${ticket_id}/`, { headers: authHeaders() })
             .then(res => {
                 if (res.status === 401) {
-                    localStorage.removeItem('access');
+                    sessionStorage.removeItem('access');
                     navigate('/login');
                     return null;
                 }
@@ -85,7 +85,7 @@ function TicketPage() {
         fetch(`/api/staff/dashboard/${ticket_id}/`, { headers: authHeaders() })
             .then(res => {
                 if (res.status === 401) {
-                    localStorage.removeItem('access');
+                    sessionStorage.removeItem('access');
                     navigate('/login');
                     return null;
                 }

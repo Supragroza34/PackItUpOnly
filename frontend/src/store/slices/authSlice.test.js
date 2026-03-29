@@ -18,7 +18,7 @@ import { apiFetch } from '../../api';
 describe('authSlice', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   describe('reducers', () => {
@@ -40,7 +40,7 @@ describe('authSlice', () => {
   });
 
   describe('checkAuth', () => {
-    test('returns null when no token in localStorage', async () => {
+    test('returns null when no token in sessionStorage', async () => {
       const store = configureStore({ reducer: { auth: authReducer } });
       await store.dispatch(checkAuth());
       const state = store.getState().auth;
@@ -50,7 +50,7 @@ describe('authSlice', () => {
     });
 
     test('fulfills with user data when token exists', async () => {
-      localStorage.setItem('access', 'token123');
+      sessionStorage.setItem('access', 'token123');
       const mockUser = { id: 1, username: 'admin' };
       adminApi.getCurrentUser.mockResolvedValue(mockUser);
 
@@ -64,7 +64,7 @@ describe('authSlice', () => {
     });
 
     test('rejects and clears user on API error', async () => {
-      localStorage.setItem('access', 'token123');
+      sessionStorage.setItem('access', 'token123');
       adminApi.getCurrentUser.mockRejectedValue(new Error('Failed'));
 
       const store = configureStore({ reducer: { auth: authReducer } });
@@ -89,8 +89,8 @@ describe('authSlice', () => {
       const state = store.getState().auth;
       expect(state.user).toEqual(mockUser);
       expect(state.isAuthenticated).toBe(true);
-      expect(localStorage.getItem('access')).toBe('at');
-      expect(localStorage.getItem('refresh')).toBe('rt');
+      expect(sessionStorage.getItem('access')).toBe('at');
+      expect(sessionStorage.getItem('refresh')).toBe('rt');
     });
 
     test('rejects with Invalid username or password on 401', async () => {
@@ -123,8 +123,8 @@ describe('authSlice', () => {
 
   describe('logout', () => {
     test('clears tokens and user', async () => {
-      localStorage.setItem('access', 'at');
-      localStorage.setItem('refresh', 'rt');
+      sessionStorage.setItem('access', 'at');
+      sessionStorage.setItem('refresh', 'rt');
 
       const store = configureStore({
         reducer: { auth: authReducer },
@@ -139,8 +139,8 @@ describe('authSlice', () => {
       });
       await store.dispatch(logout());
 
-      expect(localStorage.getItem('access')).toBeNull();
-      expect(localStorage.getItem('refresh')).toBeNull();
+      expect(sessionStorage.getItem('access')).toBeNull();
+      expect(sessionStorage.getItem('refresh')).toBeNull();
       expect(store.getState().auth.user).toBeNull();
       expect(store.getState().auth.isAuthenticated).toBe(false);
     });

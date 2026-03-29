@@ -78,7 +78,7 @@ describe('Statistics', () => {
     window.alert = jest.fn();
     window.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
     HTMLAnchorElement.prototype.click = jest.fn();
-    localStorage.setItem('access', 'token-123');
+    sessionStorage.setItem('access', 'token-123');
   });
 
   afterAll(() => {

@@ -95,7 +95,7 @@ const TicketsManagement = () => {
         if (!replyBody.trim()) return;
         
         try {
-            const token = localStorage.getItem('access');
+            const token = sessionStorage.getItem('access');
             const response = await fetch('/api/replies/create/', {
                 method: 'POST',
                 headers: {

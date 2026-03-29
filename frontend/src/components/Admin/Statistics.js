@@ -62,7 +62,7 @@ const Statistics = () => {
     };
     
     const exportCsv = (type) => {
-        const token = localStorage.getItem('access');
+        const token = sessionStorage.getItem('access');
         const endpoint = type === 'statistics'
             ? '/api/admin/export/statistics-csv/'
             : '/api/admin/export/tickets-csv/';

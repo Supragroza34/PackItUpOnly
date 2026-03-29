@@ -328,10 +328,12 @@
 }
 
 .ticket-progress-fill.status-pending { background: #e65100; }
+.ticket-progress-fill.status-new { background: #546e7a; }
 .ticket-progress-fill.status-seen {background: #ffb300; }
 .ticket-progress-fill.status-in_progress { background: #0277bd; }
 .ticket-progress-fill.status-awaiting_response {background: #0288d1; }
 .ticket-progress-fill.status-resolved { background: #2e7d32; }
+.ticket-progress-fill.status-reported { background: #6a1b9a; }
 .ticket-progress-fill.status-closed { background: #880e4f; }
 
 /* Text on the bar */
@@ -596,10 +598,12 @@
 }
 
 .status-pending { background: #fff3e0; color: #e65100; }
-.status-seen { background: #e8eaf6; color: #3949ab; } 
+.status-new { background: #eceff1; color: #546e7a; }
+.status-seen { background: #e8eaf6; color: #3949ab; }
 .status-in_progress { background: #e3f2fd; color: #0277bd; }
 .status-awaiting_response { background: #fff8e1; color: #ffb300; }
 .status-resolved { background: #e8f5e9; color: #2e7d32; }
+.status-reported { background: #f3e5f5; color: #6a1b9a; }
 .status-closed { background: #fce4ec; color: #880e4f; }
 
 /* Empty state */

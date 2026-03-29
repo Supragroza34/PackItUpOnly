@@ -66,7 +66,7 @@ function ticketPayload(overrides = {}) {
 describe("TicketPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     global.fetch = jest.fn();
     window.confirm = jest.fn(() => true);
     window.alert = jest.fn();
@@ -239,7 +239,7 @@ describe("TicketPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
 
     await waitFor(() => {
-      expect(localStorage.getItem("access")).toBeNull();
+      expect(sessionStorage.getItem("access")).toBeNull();
       expect(mockNavigate).toHaveBeenCalledWith("/login");
     });
   });

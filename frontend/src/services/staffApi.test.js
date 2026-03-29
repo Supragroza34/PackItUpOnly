@@ -4,13 +4,13 @@ describe("staffApi", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    localStorage.setItem("access", "jwt-test");
+    sessionStorage.setItem("access", "jwt-test");
     global.fetch = jest.fn();
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   test("getStaffList returns JSON on success", async () => {
@@ -57,7 +57,7 @@ describe("staffApi", () => {
   });
 
   test("getAuthHeaders omits Authorization when no token", async () => {
-    localStorage.clear();
+    sessionStorage.clear();
     global.fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ staff: [] }) });
 
     await staffApi.getStaffList();

@@ -2,7 +2,7 @@ import { authHeaders, apiFetch } from "./api";
 
 describe("authHeaders", () => {
   afterEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   test("returns empty object when no token", () => {
@@ -10,7 +10,7 @@ describe("authHeaders", () => {
   });
 
   test("returns Authorization header when token present", () => {
-    localStorage.setItem("access", "tok123");
+    sessionStorage.setItem("access", "tok123");
     expect(authHeaders()).toEqual({ Authorization: "Bearer tok123" });
   });
 });
@@ -20,7 +20,7 @@ describe("apiFetch", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    localStorage.clear();
+    sessionStorage.clear();
     jest.restoreAllMocks();
   });
 
@@ -53,7 +53,7 @@ describe("apiFetch", () => {
   });
 
   test("includes auth header when auth option true", async () => {
-    localStorage.setItem("access", "jwt");
+    sessionStorage.setItem("access", "jwt");
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,

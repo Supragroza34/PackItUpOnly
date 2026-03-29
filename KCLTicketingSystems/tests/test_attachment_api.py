@@ -2,7 +2,9 @@ from django.test import TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 from rest_framework import status
+from unittest.mock import MagicMock
 from ..models import Ticket, Attachment
+from ..models.attachment import attachment_upload_path
 import io
 
 
@@ -42,7 +44,6 @@ class AttachmentAPITest(TestCase):
         self.assertIn('attachments_count', response.data)
         self.assertEqual(response.data['attachments_count'], 1)
         
-        # Verify ticket was created
         ticket = Ticket.objects.get(k_number='12345678')
         self.assertEqual(ticket.attachments.count(), 1)
         attachment = ticket.attachments.first()
@@ -67,7 +68,6 @@ class AttachmentAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['attachments_count'], 3)
         
-        # Verify all attachments were created
         ticket = Ticket.objects.get(k_number='87654321')
         self.assertEqual(ticket.attachments.count(), 3)
 
@@ -83,14 +83,12 @@ class AttachmentAPITest(TestCase):
         self.assertIn('attachments_count', response.data)
         self.assertEqual(response.data['attachments_count'], 0)
         
-        # Verify ticket was created
         ticket = Ticket.objects.get(k_number='12345678')
         self.assertEqual(ticket.attachments.count(), 0)
 
     def test_submit_ticket_with_oversized_file(self):
         """Test submitting a ticket with a file larger than 10MB"""
-        # Create a file larger than 10MB
-        large_content = b"x" * (11 * 1024 * 1024)  # 11MB
+        large_content = b"x" * (11 * 1024 * 1024)
         large_file = SimpleUploadedFile(
             "large_file.pdf",
             large_content,
@@ -158,7 +156,7 @@ class AttachmentAPITest(TestCase):
                 format='multipart'
             )
             
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED, 
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED,
                            f"Failed for {filename}")
 
     def test_submit_ticket_with_valid_document_types(self):
@@ -192,8 +190,7 @@ class AttachmentAPITest(TestCase):
 
     def test_submit_ticket_file_size_exactly_10mb(self):
         """Test submitting a file exactly at the 10MB limit (should pass)"""
-        # Create a file exactly 10MB
-        exact_size_content = b"x" * (10 * 1024 * 1024)  # Exactly 10MB
+        exact_size_content = b"x" * (10 * 1024 * 1024)
         exact_file = SimpleUploadedFile(
             "exact_10mb.pdf",
             exact_size_content,
@@ -264,7 +261,6 @@ class AttachmentAPITest(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('ticket_id', response.data)
-        # Should not have attachments_count if no files
         self.assertIn('attachments_count', response.data)
         self.assertEqual(response.data['attachments_count'], 0)
 
@@ -284,7 +280,6 @@ class AttachmentAPITest(TestCase):
         ticket = Ticket.objects.get(k_number='12345678')
         attachment = ticket.attachments.first()
         
-        # Check that file path contains ticket ID (Django adds random suffix to prevent collisions)
         self.assertIn(f'ticket_{ticket.id}', attachment.file.name)
         self.assertIn('test', attachment.file.name)
         self.assertTrue(attachment.file.name.endswith('.pdf'))
@@ -327,3 +322,69 @@ class AttachmentAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['attachments_count'], 0)
 
+
+class AttachmentModelUnitTests(TestCase):
+    """Unit tests targeting model-level branches for 100% coverage."""
+
+    def setUp(self):
+        self.ticket = Ticket.objects.create(
+            name='John',
+            surname='Doe',
+            k_number='12340000',
+            k_email='K12340000@kcl.ac.uk',
+            department='Informatics',
+            type_of_issue='Software Installation Issues',
+            additional_details='Test'
+        )
+
+    def test_upload_path_with_ticket_id(self):
+        """Covers the if branch in attachment_upload_path."""
+        mock_instance = MagicMock()
+        mock_instance.ticket.id = 42
+        result = attachment_upload_path(mock_instance, 'test.pdf')
+        self.assertEqual(result, 'attachments/ticket_42/test.pdf')
+
+    def test_upload_path_fallback_no_ticket(self):
+        """Covers the else branch when ticket is None."""
+        mock_instance = MagicMock()
+        mock_instance.ticket = None
+        result = attachment_upload_path(mock_instance, 'test.pdf')
+        self.assertEqual(result, 'attachments/temp/test.pdf')
+
+    def test_upload_path_fallback_no_ticket_id(self):
+        """Covers the else branch when ticket has no ID."""
+        mock_instance = MagicMock()
+        mock_instance.ticket.id = None
+        result = attachment_upload_path(mock_instance, 'test.pdf')
+        self.assertEqual(result, 'attachments/temp/test.pdf')
+
+    def test_save_does_not_overwrite_existing_original_filename(self):
+        """Covers the `not self.original_filename` branch being False."""
+        pdf_file = SimpleUploadedFile("new.pdf", b"content", content_type="application/pdf")
+        attachment = Attachment(
+            ticket=self.ticket,
+            file=pdf_file,
+            original_filename='already_set.pdf',
+            file_size=0,
+        )
+        attachment.save()
+        self.assertEqual(attachment.original_filename, 'already_set.pdf')
+
+    def test_save_without_file(self):
+        """Covers the `if self.file` branch being False."""
+        attachment = Attachment(
+            ticket=self.ticket,
+            original_filename='manual.pdf',
+            file_size=999,
+        )
+        attachment.save()
+        self.assertEqual(attachment.file_size, 999)
+
+    def test_str_representation(self):
+        """Covers the __str__ method."""
+        attachment = Attachment(
+            ticket=self.ticket,
+            original_filename='report.pdf',
+            file_size=1024,
+        )
+        self.assertEqual(str(attachment), f"report.pdf - Ticket #{self.ticket.id}")

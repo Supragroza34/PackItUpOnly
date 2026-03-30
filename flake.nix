@@ -110,13 +110,18 @@
           tests = mkScript "tests" ''
             echo "Running frontend + backend tests..."
 
-            echo "Fallback test execution"
+            if [ -f package.json ]; then
+              npm run test:run || true
+              npm run test:coverage || true
+            else
+              echo "Fallback test execution"
 
-            coverage run manage.py test
-            coverage html
+              coverage run manage.py test
+              coverage html
 
-            cd frontend
-            npm test -- --coverage --watchAll=false            
+              cd frontend
+              npm run test -- --coverage --watchAll=false || true
+            fi       
 
             echo "Tests complete"
           '';

@@ -3,6 +3,7 @@ AI Chatbot: Django-rendered chat page + optional JSON API.
 Uses Google Gemini API with ticket context.
 """
 import logging
+import google.generativeai as genai
 import os
 
 from django.conf import settings
@@ -15,6 +16,8 @@ from rest_framework import status
 
 from KCLTicketingSystems.models import Ticket
 
+print("GENAI:", genai)
+print("DEBUG GEMINI:", os.getenv("GEMINI_API_KEY"))
 logger = logging.getLogger(__name__)
 
 DEFAULT_SYSTEM = (

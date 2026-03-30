@@ -32,6 +32,17 @@ This project consists of a Django backend and a React.js frontend for a ticket s
    ```
    The backend will be available at `http://localhost:8000`
 
+### Environment variables
+
+Create a local `.env` file from the template:
+
+```bash
+cp .env.example .env
+```
+
+- `DJANGO_SECRET_KEY` is required.
+- `GEMINI_API_KEY` is optional (only required for AI chatbot endpoints).
+
 ## Frontend Setup (React)
 
 1. **Navigate to the frontend directory:**

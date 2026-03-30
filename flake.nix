@@ -147,7 +147,18 @@
           buildInputs = commonInputs;
 
           shellHook = ''
-            echo "Dev shell ready"
+            if [ -f .env ]; then
+              set -a
+              # Load local env vars (including GEMINI_API_KEY) without committing secrets.
+              source .env
+              set +a
+            fi
+
+            if [ -n "$GEMINI_API_KEY" ]; then
+              echo "Dev shell ready (GEMINI_API_KEY loaded)"
+            else
+              echo "Dev shell ready (GEMINI_API_KEY not set; AI chatbot remains optional)"
+            fi
           '';
         };
       }

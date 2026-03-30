@@ -42,7 +42,7 @@ Input Protection: Names and Surnames are restricted from containing numbers.
 Management & AI
 Admin Panel: Staff can manage and view all submitted tickets at http://localhost:8000/admin/.
 
-AI Chatbot: Integrates Google Gemini for intelligent assistance. Requires a GEMINI_API_KEY environment variable.
+AI Chatbot: Integrates Google Gemini for intelligent assistance. Requires a GEMINI_API_KEY environment variable only if you use chatbot features.
 
 🔧 Manual Setup (Optional)
 If you prefer to set up the components individually, follow these steps:
@@ -66,6 +66,6 @@ Run: npm start.
 ⚠️ Troubleshooting
 Port Conflicts: If port 8000 (Backend) or 3000 (Frontend) is occupied, the systems will prompt you to use an alternative or stop the conflicting service.
 
-AI Chatbot Issues: Ensure your GEMINI_API_KEY is set in your local environment or .env file. If using local models, verify Ollama and llama2 are installed and running.
+AI Chatbot Issues: Ensure your GEMINI_API_KEY is set in your local environment or .env file. The rest of the app runs without this key.
 
 Dependencies: If setup fails, ensure you are using Node.js 18.x as specified in the project configuration.

@@ -1,3 +1,5 @@
+"""File attachments linked to support tickets."""
+
 from django.db import models
 from .ticket import Ticket
 import os

@@ -1,3 +1,5 @@
+"""Support ticket model and lifecycle (status, priority, assignment)."""
+
 from django.db import models
 from django.conf import settings
 

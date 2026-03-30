@@ -1,8 +1,12 @@
+"""Remove demo/seeded data from the database (users, tickets, related rows)."""
+
 from django.core.management.base import BaseCommand
 from django.db import connection
 from ...models import User, Ticket
 
 class Command(BaseCommand):
+    """Delete seeded fixture data and related records where tables exist."""
+
     help = 'Remove all seeded data from the database'
 
     def _delete_model(self, model_class, table_name, model_name, tables):

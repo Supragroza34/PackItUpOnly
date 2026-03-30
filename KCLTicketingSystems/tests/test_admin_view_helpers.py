@@ -1,3 +1,5 @@
+"""Tests for Admin View Helpers."""
+
 from datetime import timedelta
 
 from django.test import RequestFactory, TestCase

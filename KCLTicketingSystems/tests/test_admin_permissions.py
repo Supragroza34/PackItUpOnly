@@ -1,3 +1,5 @@
+"""Tests for Admin Permissions."""
+
 from django.test import TestCase, RequestFactory
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView

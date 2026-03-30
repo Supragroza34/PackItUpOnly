@@ -1,1 +1,1 @@
-# Tests package
+"""Tests for the KCLTicketingSystems Django app."""

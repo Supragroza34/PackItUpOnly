@@ -1,3 +1,5 @@
+"""Tests for the WSGI application entrypoint."""
+
 import importlib
 import sys
 from django.test import SimpleTestCase

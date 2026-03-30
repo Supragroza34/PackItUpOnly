@@ -1,3 +1,4 @@
+"""Public ORM models for ``KCLTicketingSystems`` (imported by admin, serializers, views)."""
 from .user import User
 from .ticket import Ticket
 from .attachment import Attachment

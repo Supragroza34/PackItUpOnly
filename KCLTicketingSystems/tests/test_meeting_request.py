@@ -1,3 +1,5 @@
+"""Tests for Meeting Request."""
+
 from django.test import TestCase
 from django.utils import timezone
 from django.core.exceptions import ValidationError

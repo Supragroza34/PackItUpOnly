@@ -1,3 +1,4 @@
+"""List and mark-read API for navbar notifications."""
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -7,7 +8,8 @@ from ..models import Notification
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def notifications_list (request):
+def notifications_list(request):
+    """Return the current user's notifications, newest first (JSON for React bell)."""
     notifications = Notification.objects.filter(user=request.user).order_by("-created_at")
 
     data = [
@@ -29,6 +31,7 @@ def notifications_list (request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def mark_notification_read(request, pk):
+    """Set ``is_read`` on a notification owned by the request user."""
     try:
         notification = Notification.objects.get(id=pk, user=request.user)
     except Notification.DoesNotExist:

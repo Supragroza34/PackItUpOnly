@@ -1,3 +1,4 @@
+"""Custom DRF permission classes for role-based access."""
 from rest_framework.permissions import BasePermission
 
 

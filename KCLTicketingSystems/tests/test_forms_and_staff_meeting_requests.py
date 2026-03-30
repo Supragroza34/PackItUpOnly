@@ -1,3 +1,5 @@
+"""Tests for Forms And Staff Meeting Requests."""
+
 from datetime import timedelta, time
 
 from django.test import TestCase

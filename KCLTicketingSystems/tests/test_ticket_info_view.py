@@ -1,3 +1,5 @@
+"""Tests for Ticket Info View."""
+
 from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -243,12 +245,20 @@ class TicketInfoAndStaffListViewTests(APITestCase):
         self.assertEqual(response.data["closed_by_role"], "admin")
 
     def test_closed_by_role_falls_back_to_student_when_role_is_none(self):
-        """Covers the `or 'student'` fallback when closed_by.role is None/empty."""
-        with patch.object(self.admin.__class__, 'role', new_callable=lambda: property(lambda self: None)):
+        """Covers the `or 'student'` fallback when closed_by.role is falsy (empty string in DB).
+
+        Patching ``User.role`` on the model class breaks auth for every user; only the
+        closer's row is updated here, then restored.
+        """
+        try:
+            User.objects.filter(pk=self.admin.pk).update(role="")
             self.client.force_authenticate(user=self.staff)
             response = self.client.get(f"/api/staff/dashboard/{self.ticket.id}/")
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["closed_by_role"], "student")
+        finally:
+            User.objects.filter(pk=self.admin.pk).update(role=User.Role.ADMIN)
+            self.admin.refresh_from_db()
 
     def test_is_overdue_true_for_old_pending_ticket(self):
         from django.utils import timezone

@@ -1,1 +1,1 @@
-# AIChatbot app - Ollama-powered helper for student dashboard
+"""AIChatbot app: Ollama-powered helper for the student dashboard."""

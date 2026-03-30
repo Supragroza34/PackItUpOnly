@@ -1,3 +1,4 @@
+"""REST endpoints for listing and creating ticket replies (staff and student flows)."""
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -24,10 +25,12 @@ def _staff_can_access_ticket(user, ticket):
 
 
 def _is_staff_or_admin(user):
+    """True if user is staff, admin, or superuser."""
     return getattr(user, "is_superuser", False) or (user.role or "").lower() in ("staff", "admin")
 
 
 def _can_access_ticket_conversation(user, ticket):
+    """Student may read own ticket; staff/admin may read if assigned (or admin)."""
     if _is_staff_or_admin(user):
         return _staff_can_access_ticket(user, ticket)
     return ticket.user_id == user.id
@@ -57,6 +60,8 @@ def reply_details(request, ticket_id):
 
 
 class ReplyCreateView(generics.CreateAPIView):
+    """Authenticated reply creation; updates ticket status and sends notifications."""
+
     serializer_class = ReplyCreateSerializer
     permission_classes = [IsAuthenticated]
 

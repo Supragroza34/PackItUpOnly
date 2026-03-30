@@ -34,6 +34,7 @@
           grpcio
           google-auth
           google-api-python-client
+          google-generativeai
           openai
           reportlab
           tqdm

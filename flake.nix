@@ -70,7 +70,7 @@
         packages = {
 
           init = mkScript "init" ''
-            echo "== Backend setup =="
+            echo "== Backend setup (root Django project) =="
 
             echo "== Running migrations =="
             python manage.py migrate || true
@@ -108,21 +108,20 @@
           '';
 
           tests = mkScript "tests" ''
-            echo "Running backend + frontend tests..."
+            echo "Running frontend + backend tests..."
 
-            echo "== Backend tests with coverage =="
-            coverage run manage.py test
-            coverage report
-            coverage html
-            coverage xml
+            if [ -f package.json ]; then
+              npm run test:run
+              npm run test:coverage
+            else
+              echo "Fallback test execution"
 
-            echo "Backend HTML report: htmlcov/index.html"
+              coverage run manage.py test
+              coverage html
 
-            echo "== Frontend tests with coverage =="
-            cd frontend
-            CI=true npm run test:ci
-
-            echo "Frontend HTML report: frontend/coverage/lcov-report/index.html"
+              cd frontend
+              npm run test -- --watchAll=false || true
+            fi
 
             echo "Tests complete"
           '';

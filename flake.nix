@@ -108,20 +108,21 @@
           '';
 
           tests = mkScript "tests" ''
-            echo "Running frontend + backend tests..."
+            echo "Running backend + frontend tests..."
 
-            if [ -f package.json ]; then
-              npm run test:run
-              npm run test:coverage
-            else
-              echo "Fallback test execution"
+            echo "== Backend tests with coverage =="
+            coverage run manage.py test
+            coverage report
+            coverage html
+            coverage xml
 
-              coverage run manage.py test
-              coverage html
+            echo "Backend HTML report: htmlcov/index.html"
 
-              cd frontend
-              npm run test -- --watchAll=true
-            fi
+            echo "== Frontend tests with coverage =="
+            cd frontend
+            CI=true npm run test:ci
+
+            echo "Frontend HTML report: frontend/coverage/lcov-report/index.html"
 
             echo "Tests complete"
           '';

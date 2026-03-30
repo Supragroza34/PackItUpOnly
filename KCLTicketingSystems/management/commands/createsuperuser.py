@@ -1,8 +1,12 @@
+"""Extend Django's createsuperuser to align superusers with the custom User admin role."""
+
 from django.contrib.auth.management.commands import createsuperuser
 from django.core.management import CommandError
 
 
 class Command(createsuperuser.Command):
+    """Create a superuser and ensure the custom User model gets the admin role when appropriate."""
+
     help = 'Create a superuser with admin role (no k_number required for admins)'
 
     def add_arguments(self, parser):

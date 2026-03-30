@@ -1,3 +1,5 @@
+"""Weekly availability blocks for staff meeting scheduling."""
+
 from django.db import models
 from django.conf import settings
 

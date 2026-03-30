@@ -1,9 +1,13 @@
+"""Purge tickets that have been closed longer than the configured retention window."""
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
 from ...models import Ticket
 
 class Command(BaseCommand):
+    """Delete closed tickets whose last update is older than 24 hours."""
+
     help = 'Delete tickets that have been closed for more than 24 hours.'
 
     def handle(self, *args, **options):

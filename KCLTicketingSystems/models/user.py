@@ -1,7 +1,11 @@
+"""Custom user model with KCL-style ``k_number``, ``department``, and ``role``."""
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
 class User(AbstractUser):
+    """Auth user with KCL email, K-number, department, and student/staff/admin role."""
+
     email = models.EmailField(unique=True)
     k_number = models.CharField(max_length=20, blank=True, default='')
     department = models.CharField(max_length=255, blank=True)

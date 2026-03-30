@@ -1,3 +1,5 @@
+"""Student dashboard JSON API and endpoint to close the student's own ticket."""
+
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
@@ -16,6 +18,7 @@ from ..utils import notify_on_ticket_update, auto_close_stale_awaiting_response
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_dashboard(request):
+    """Return the current user's profile snippet and their tickets with replies."""
     auto_close_stale_awaiting_response()
 
     user = request.user

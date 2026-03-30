@@ -1,3 +1,5 @@
+"""Tests for the staff_selection service."""
+
 from django.test import TestCase
 from KCLTicketingSystems.services import staff_selection
 from KCLTicketingSystems.models import Ticket, User

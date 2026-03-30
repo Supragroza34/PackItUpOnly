@@ -1,3 +1,5 @@
+"""Tests for Ticket Form View."""
+
 from unittest.mock import patch
 
 from django.test import TestCase, Client

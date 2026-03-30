@@ -1,3 +1,5 @@
+"""Tests for Admin Statistics."""
+
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta

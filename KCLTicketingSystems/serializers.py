@@ -1,3 +1,9 @@
+"""
+DRF serializers for the ticketing API.
+
+Exposes read/write shapes for users, tickets, replies, staff lists, office hours,
+and meeting requests. Used by REST views under ``KCLTicketingSystems.views``.
+"""
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.db.models import Count
@@ -57,6 +63,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class ReplySerializer(serializers.ModelSerializer):
+    """Nested reply with author metadata and recursive ``children`` for threaded UI."""
     user_username = serializers.CharField(source="user.username", read_only=True)
     user_role = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
@@ -79,6 +86,7 @@ class ReplySerializer(serializers.ModelSerializer):
         return ReplySerializer(children, many=True, context=self.context).data    
 
 class ReplyCreateSerializer(serializers.ModelSerializer):
+    """Input serializer for POSTing a new reply (body, optional parent, ticket)."""
     class Meta:
         model=Reply
         fields = ['ticket', 'body', 'parent',]   
@@ -121,6 +129,7 @@ class TicketSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at']
 
     def get_closed_by_role(self, obj):
+        """Lowercased role of the user who closed the ticket, if status is closed."""
         if obj.status == 'closed' and obj.closed_by_id and hasattr(obj, 'closed_by') and obj.closed_by:
             return (obj.closed_by.role or 'student').lower()
         return None
@@ -155,6 +164,7 @@ class TicketListSerializer(serializers.ModelSerializer):
         return None
 
     def get_closed_by_role(self, obj):
+        """Lowercased role of the user who closed the ticket, if status is closed."""
         if obj.status == 'closed' and obj.closed_by_id and hasattr(obj, 'closed_by') and obj.closed_by:
             return (obj.closed_by.role or 'student').lower()
         return None
@@ -231,6 +241,7 @@ class DashboardStatsSerializer(serializers.Serializer):
 
 
 class StaffListSerializer(serializers.ModelSerializer):
+    """Minimal staff profile fields for assignment dropdowns and directory lists."""
     class Meta:
         model = User
         fields = ["id", "first_name", "last_name", "email", "department", "k_number"]

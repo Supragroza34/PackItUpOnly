@@ -1,3 +1,5 @@
+"""Admin REST API: dashboard metrics, ticket and user CRUD, staff listing, and CSV exports."""
+
 from collections import defaultdict
 from datetime import timedelta, datetime
 import csv

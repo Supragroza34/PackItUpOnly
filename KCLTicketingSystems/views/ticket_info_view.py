@@ -1,3 +1,5 @@
+"""Ticket detail, staff updates, reassignment, and department staff listing."""
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.generics import RetrieveAPIView
@@ -13,12 +15,16 @@ from ..models import Ticket, User, Reply, Attachment
 from ..serializers import ReplySerializer, TicketUpdateSerializer, StaffReassignTicket
 
 class UserSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = User
-            fields = ['first_name', 'last_name', 'email']
+    """Minimal user fields embedded in ticket detail responses."""
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
 
 
 class AttachmentSerializer(serializers.ModelSerializer):
+    """Ticket file metadata and absolute URL for download in staff ticket detail."""
+
     file_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -34,6 +40,8 @@ class AttachmentSerializer(serializers.ModelSerializer):
         return obj.file.url
 
 class TicketSerializer(serializers.ModelSerializer):
+    """Full ticket for staff dashboard: nested user, replies, attachments, and flags."""
+
     is_overdue = serializers.SerializerMethodField()
     closed_by_role = serializers.SerializerMethodField()
     user = UserSerializer(read_only=True)
@@ -64,11 +72,14 @@ class TicketSerializer(serializers.ModelSerializer):
         return ReplySerializer(replies, many=True).data
     
 class TicketDetailView(RetrieveAPIView):
+    """Retrieve a single ticket by primary key (DRF generic view)."""
+
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
 
 @api_view(['GET'])
 def ticket_info(request, ticket_id):
+    """Staff/admin-only ticket detail for the legacy ticket info endpoint."""
     if not request.user.is_authenticated:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
     if request.user.role not in ("staff", "Staff", "admin") and not getattr(request.user, "is_superuser", False):

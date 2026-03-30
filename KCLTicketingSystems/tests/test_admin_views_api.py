@@ -1,3 +1,5 @@
+"""Tests for Admin Views Api."""
+
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status

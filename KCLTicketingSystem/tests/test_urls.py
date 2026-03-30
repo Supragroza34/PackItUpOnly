@@ -1,3 +1,5 @@
+"""Tests for root URL routing."""
+
 from django.test import SimpleTestCase
 from django.urls import resolve, reverse
 from KCLTicketingSystem import urls as project_urls

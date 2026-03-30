@@ -1,3 +1,5 @@
+"""Tests for Attachment."""
+
 from django.test import TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError

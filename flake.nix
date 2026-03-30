@@ -117,7 +117,7 @@
 
             cd frontend
             npm run test -- --watchAll=false
-            fi
+            
 
             echo "Tests complete"
           '';

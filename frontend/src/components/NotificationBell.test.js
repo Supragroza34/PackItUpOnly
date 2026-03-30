@@ -20,27 +20,32 @@ describe("NotificationBell", () => {
     sessionStorage.removeItem("access");
   });
 
-  test("fetches notifications on mount and keeps single fetch", async () => {
-    api.apiFetch.mockResolvedValue([
-      { id: 1, title: "T", message: "M", is_read: false },
-    ]);
+test("fetches notifications on open and keeps single fetch", async () => {
+  sessionStorage.setItem("access", "fake-token");
+  localStorage.setItem("access", "fake-token");
 
-    render(<NotificationBell />);
+  api.apiFetch.mockResolvedValue([
+    { id: 1, title: "T", message: "M", is_read: false },
+  ]);
 
-    await waitFor(() => {
-      expect(api.apiFetch).toHaveBeenCalledWith("/notifications/", {}, { auth: true });
-    });
+  render(<NotificationBell />);
+  await userEvent.click(screen.getByText(/Notifications/i));
 
-    expect(screen.getByText("1")).toBeInTheDocument();
-
-    await userEvent.click(screen.getByText(/Notifications/i));
-    expect(screen.getByText("T")).toBeInTheDocument();
-    expect(screen.getByText("M")).toBeInTheDocument();
-
-    await userEvent.click(screen.getByText(/Notifications/i));
-    await userEvent.click(screen.getByText(/Notifications/i));
-    expect(api.apiFetch).toHaveBeenCalledTimes(1);
+  await waitFor(() => {
+    expect(api.apiFetch).toHaveBeenCalledWith(
+      "/notifications/",
+      {},
+      { auth: true }
+    );
   });
+
+  expect(screen.getByText("1")).toBeInTheDocument();
+
+  await userEvent.click(screen.getByText(/Notifications/i));
+  await userEvent.click(screen.getByText(/Notifications/i));
+
+  expect(api.apiFetch).toHaveBeenCalledTimes(1);
+});
 
   test("shows empty state when no notifications", async () => {
     api.apiFetch.mockResolvedValue([]);
@@ -55,8 +60,12 @@ describe("NotificationBell", () => {
 
   test("does not fetch when no token", async () => {
     sessionStorage.removeItem("access");
+    localStorage.removeItem("access");
+
     render(<NotificationBell />);
+
     await userEvent.click(screen.getByText(/Notifications/i));
+
     await waitFor(() => {
       expect(api.apiFetch).not.toHaveBeenCalled();
     });

@@ -9,12 +9,16 @@ describe("WeeklyCalendar", () => {
     { id: 2, day_of_week: "Wednesday", start_time: "13:00:00", end_time: "15:00:00" },
   ];
 
+  const today = new Date();
+  const meetingDate = new Date(today);
+  meetingDate.setHours(10, 0, 0, 0);
+
   const meetings = [
     {
       id: 1,
       student_name: "John Doe",
       student_email: "john@kcl.ac.uk",
-      meeting_datetime: "2026-03-23T09:15:00Z",
+      meeting_datetime:  meetingDate.toISOString(),
       description: "Need guidance",
       status: "accepted",
     },

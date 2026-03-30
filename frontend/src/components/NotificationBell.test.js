@@ -30,6 +30,8 @@ test("fetches notifications on open and keeps single fetch", async () => {
 
   render(<NotificationBell />);
   await userEvent.click(screen.getByText(/Notifications/i));
+  expect(screen.getByText("T")).toBeInTheDocument();
+  expect(screen.getByText("M")).toBeInTheDocument();
 
   await waitFor(() => {
     expect(api.apiFetch).toHaveBeenCalledWith(

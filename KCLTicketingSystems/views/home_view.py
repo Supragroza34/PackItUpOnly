@@ -1,3 +1,5 @@
+"""Serve the React SPA index for the main site and client-side routes."""
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings

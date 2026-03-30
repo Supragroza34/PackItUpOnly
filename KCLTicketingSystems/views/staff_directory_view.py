@@ -1,3 +1,5 @@
+"""List staff users for the directory, optionally filtered by department."""
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -8,6 +10,7 @@ from ..serializers import StaffListSerializer
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def staff_directory(request):
+    """Return staff profiles for the public directory; filter by ?department=."""
     qs = User.objects.filter(role=User.Role.STAFF)
 
     department = request.query_params.get("department")

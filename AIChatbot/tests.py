@@ -1,3 +1,5 @@
+"""Tests for the AI chatbot views (Ollama client and chat endpoint)."""
+
 import builtins
 import os
 import sys

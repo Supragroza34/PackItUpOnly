@@ -1,3 +1,5 @@
+"""Authenticated API to create a ticket and optional file attachments."""
+
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 

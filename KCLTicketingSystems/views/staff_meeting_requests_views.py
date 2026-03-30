@@ -1,3 +1,5 @@
+"""Staff meeting requests, office hours, slot availability, and student booking endpoints."""
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response

@@ -1,3 +1,8 @@
+"""
+Cross-cutting helpers: ticket status transitions, in-app notifications.
+
+Used by views and signals when tickets, replies, or meeting requests change.
+"""
 from .models import MeetingRequest, Notification, Ticket
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -7,6 +12,7 @@ User = get_user_model()
 
 
 def _is_staff_or_admin(user):
+    """Return True if ``user`` is staff, admin, or superuser (for reply routing)."""
     if not user:
         return False
     return getattr(user, "is_superuser", False) or (getattr(user, "role", "") or "").lower() in ("staff", "admin")

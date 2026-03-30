@@ -1,3 +1,5 @@
+"""Generate a PDF conversation summary for a closed ticket (student download)."""
+
 import io
 import re
 from html import unescape

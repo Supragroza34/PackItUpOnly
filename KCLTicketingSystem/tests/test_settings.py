@@ -1,3 +1,5 @@
+"""Tests for Django project settings configuration."""
+
 import os
 import importlib
 from django.test import TestCase, override_settings

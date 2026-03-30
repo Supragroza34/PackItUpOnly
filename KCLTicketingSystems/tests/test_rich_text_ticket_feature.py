@@ -1,3 +1,5 @@
+"""Tests for Rich Text Ticket Feature."""
+
 from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile

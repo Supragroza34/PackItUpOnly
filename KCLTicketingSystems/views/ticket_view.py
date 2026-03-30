@@ -1,3 +1,5 @@
+"""Legacy HTML ticket form and unauthenticated ticket submission API."""
+
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -6,7 +8,6 @@ from ..models import Ticket, Attachment
 import os
 import re
 
-# Create your views here.
 
 def ticket_form(request):
     """

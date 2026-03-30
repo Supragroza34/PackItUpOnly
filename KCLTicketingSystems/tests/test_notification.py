@@ -3,8 +3,9 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from KCLTicketingSystems.models.notification import Notification
-from KCLTicketingSystems.models.ticket import Ticket
-from KCLTicketingSystems.models.meeting_request import MeetingRequest
+from KCLTicketingSystems.models import Ticket, OfficeHours, MeetingRequest
+import datetime
+from django.utils import timezone
 
 User = get_user_model()
 

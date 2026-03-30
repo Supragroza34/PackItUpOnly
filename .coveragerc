@@ -1,0 +1,19 @@
+[run]
+source = .
+
+omit =
+    */migrations/*
+    */tests/*
+    */__init__.py
+    */settings/*
+    */wsgi.py
+    */asgi.py
+    */manage.py
+    */site-packages/*
+    */venv/*
+    */.venv/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:

@@ -31,11 +31,11 @@ function Consumer() {
 describe("AuthContext", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   test("hydrates user when token exists", async () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     adminApi.getCurrentUser.mockResolvedValueOnce({ username: "admin1" });
 
     render(
@@ -64,14 +64,14 @@ describe("AuthContext", () => {
     fireEvent.click(screen.getByText("login"));
 
     await waitFor(() => {
-      expect(localStorage.getItem("access")).toBe("a");
+      expect(sessionStorage.getItem("access")).toBe("a");
       expect(screen.getByTestId("user")).toHaveTextContent("student1");
     });
   });
 
   test("logout clears tokens", async () => {
-    localStorage.setItem("access", "a");
-    localStorage.setItem("refresh", "r");
+    sessionStorage.setItem("access", "a");
+    sessionStorage.setItem("refresh", "r");
 
     render(
       <AuthProvider>
@@ -82,8 +82,8 @@ describe("AuthContext", () => {
     fireEvent.click(screen.getByText("logout"));
 
     await waitFor(() => {
-      expect(localStorage.getItem("access")).toBeNull();
-      expect(localStorage.getItem("refresh")).toBeNull();
+      expect(sessionStorage.getItem("access")).toBeNull();
+      expect(sessionStorage.getItem("refresh")).toBeNull();
       expect(screen.getByTestId("user")).toHaveTextContent("none");
     });
   });
@@ -111,7 +111,7 @@ describe("AuthContext", () => {
   });
 
   test("checkAuth clears user when getCurrentUser fails", async () => {
-    localStorage.setItem("access", "bad");
+    sessionStorage.setItem("access", "bad");
     adminApi.getCurrentUser.mockRejectedValueOnce(new Error("expired"));
 
     render(
@@ -151,7 +151,7 @@ describe("AuthContext", () => {
       throw new Error("storage full");
     });
 
-    localStorage.setItem("access", "a");
+    sessionStorage.setItem("access", "a");
 
     function LogoutErr() {
       const { logout } = useAuth();

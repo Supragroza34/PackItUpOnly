@@ -4,13 +4,13 @@ describe("adminApi", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    localStorage.setItem("access", "admintoken");
+    sessionStorage.setItem("access", "admintoken");
     global.fetch = jest.fn();
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   test("getCurrentUser returns JSON", async () => {
@@ -141,7 +141,7 @@ describe("adminApi", () => {
   });
 
   test("getAuthHeaders omits Authorization when no token", async () => {
-    localStorage.clear();
+    sessionStorage.clear();
     global.fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ results: [] }) });
 
     await adminApi.getTickets({});
@@ -228,12 +228,12 @@ describe("adminApi non-localhost base URLs", () => {
   afterEach(() => {
     window.location = originalLocation;
     global.fetch = originalFetch;
-    localStorage.clear();
+    sessionStorage.clear();
     jest.resetModules();
   });
 
   test("uses deployed origin for dashboard and me when hostname is not local", async () => {
-    localStorage.setItem("access", "tok");
+    sessionStorage.setItem("access", "tok");
     delete window.location;
     window.location = {
       hostname: "deployed.example",

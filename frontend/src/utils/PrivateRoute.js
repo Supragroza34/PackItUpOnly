@@ -13,7 +13,7 @@ const PrivateRoute = ({ children }) => {
     const user = reduxUser ?? contextUser;
 
     useEffect(() => {
-        if (!reduxUser && localStorage.getItem('access')) {
+        if (!reduxUser && sessionStorage.getItem('access')) {
             dispatch(checkAuth());
         }
     }, [dispatch, reduxUser]);

@@ -59,7 +59,7 @@ function renderProfile(preloadedAuth) {
 describe("Profile", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     adminApi.getCurrentUser.mockResolvedValue(testUser);
   });
 

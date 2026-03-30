@@ -139,7 +139,7 @@ describe("TicketsManagement", () => {
     window.alert = jest.fn();
     window.confirm = jest.fn(() => true);
     global.fetch = jest.fn();
-    localStorage.setItem("access", "token123");
+    sessionStorage.setItem("access", "token123");
 
     adminApi.getTickets.mockResolvedValue({
       tickets,

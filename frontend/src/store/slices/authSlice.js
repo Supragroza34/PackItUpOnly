@@ -7,7 +7,7 @@ export const checkAuth = createAsyncThunk(
   'auth/checkAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('access');
+      const token = sessionStorage.getItem('access');
       if (!token) {
         return null;
       }
@@ -29,8 +29,8 @@ export const login = createAsyncThunk(
         body: JSON.stringify({ username, password }),
       });
       
-      localStorage.setItem('access', data.access);
-      localStorage.setItem('refresh', data.refresh);
+      sessionStorage.setItem('access', data.access);
+      sessionStorage.setItem('refresh', data.refresh);
       
       // Fetch user data
       const userData = await adminApi.getCurrentUser();
@@ -57,8 +57,8 @@ export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      localStorage.removeItem('access');
-      localStorage.removeItem('refresh');
+      sessionStorage.removeItem('access');
+      sessionStorage.removeItem('refresh');
       return null;
     } catch (error) {
       return rejectWithValue(error.message);

@@ -30,7 +30,7 @@ jest.mock("./utils/PrivateRoute", () => ({
 
 describe("App routes", () => {
   beforeEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
     window.history.pushState({}, "", "/");
   });
 
@@ -49,7 +49,7 @@ describe("App routes", () => {
   });
 
   test("renders protected route when authenticated", () => {
-    localStorage.setItem("access", "token");
+    sessionStorage.setItem("access", "token");
     window.history.pushState({}, "", "/dashboard");
     const App = require("./App").default;
     render(<App />);

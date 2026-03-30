@@ -20,16 +20,20 @@ function statusClass(status) {
 
 function getProgressWidth(status) {
   switch (status) {
+    case "new":
+      return "10%";
     case "pending":
-        return "20%";
+      return "20%";
     case "seen":
-        return "40%";
+      return "40%";
     case "in_progress":
-        return "60%";
+      return "60%";
     case "awaiting_response":
-        return "75%";
+      return "75%";
     case "resolved":
       return "90%";
+    case "reported":
+      return "95%";
     case "closed":
       return "100%";
     default:
@@ -58,7 +62,7 @@ export function coerceRepliesToArray(replies) {
 }
 
 export function getLocalToken() {
-  return localStorage.getItem("access") || "";
+  return sessionStorage.getItem("access") || "";
 }
 
 export function isTicketOpenForReply(selectedTicket) {
@@ -155,7 +159,7 @@ function UserDashboardPage() {
     if (!user) return;
 
     const fetchDashboard = async () => {
-      const token = localStorage.getItem("access");
+      const token = sessionStorage.getItem("access");
       if (!token) {
         nav("/login", { replace: true });
         return;
@@ -170,8 +174,8 @@ function UserDashboardPage() {
         });
 
         if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem("access");
-          localStorage.removeItem("refresh");
+          sessionStorage.removeItem("access");
+          sessionStorage.removeItem("refresh");
           nav("/login", { replace: true });
           return;
         }
@@ -235,7 +239,7 @@ function UserDashboardPage() {
   async function handleCloseTicket(ticketId) {
     if (!confirmCloseTwice()) return;
 
-    const token = localStorage.getItem("access");
+    const token = sessionStorage.getItem("access");
 
     try {
       const res = await fetch(`${API_BASE}/dashboard/tickets/${ticketId}/close/`, {
@@ -336,7 +340,7 @@ function UserDashboardPage() {
       return;
     }
 
-    const token = localStorage.getItem("access");
+    const token = sessionStorage.getItem("access");
     if (!token) {
       nav("/login", { replace: true });
       return;

@@ -134,7 +134,7 @@ function mockFetch({
 describe('StaffDashboardPage – rendering & structure', () => {
     beforeEach(() => {
         mockFetch();
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -186,7 +186,7 @@ describe('StaffDashboardPage – rendering & structure', () => {
 
 describe('StaffDashboardPage – empty states', () => {
     beforeEach(() => {
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -214,7 +214,7 @@ describe('StaffDashboardPage – empty states', () => {
 
 describe('StaffDashboardPage – ticket rendering', () => {
     beforeEach(() => {
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -303,7 +303,7 @@ describe('StaffDashboardPage – ticket rendering', () => {
 
 describe('StaffDashboardPage – status badges', () => {
     beforeEach(() => {
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -387,7 +387,7 @@ describe('StaffDashboardPage – status badges', () => {
 
 describe('StaffDashboardPage – summary card counts', () => {
     beforeEach(() => {
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -478,7 +478,7 @@ describe('StaffDashboardPage – summary card counts', () => {
 
 describe('StaffDashboardPage – API fetching', () => {
     beforeEach(() => {
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -556,7 +556,7 @@ describe('StaffDashboardPage – API fetching', () => {
             expect(global.alert).toHaveBeenCalledWith(
                 'You do not have permission to access this page.'
             );
-            expect(localStorage.getItem('access')).toBeNull();
+            expect(sessionStorage.getItem('access')).toBeNull();
             expect(mockNavigate).toHaveBeenCalledWith('/login');
         });
     });
@@ -594,7 +594,7 @@ describe('StaffDashboardPage – API fetching', () => {
 
 describe('StaffDashboardPage – close ticket', () => {
     beforeEach(() => {
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -707,7 +707,7 @@ describe('StaffDashboardPage – close ticket', () => {
 describe('StaffDashboardPage – logout', () => {
     beforeEach(() => {
         mockFetch();
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -727,7 +727,7 @@ describe('StaffDashboardPage – logout', () => {
 describe('StaffDashboardPage – Meeting Requests button', () => {
     beforeEach(() => {
         mockFetch();
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -744,7 +744,7 @@ describe('StaffDashboardPage – Meeting Requests button', () => {
 
 describe('StaffDashboardPage – notification routing', () => {
     beforeEach(() => {
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
         global.alert = jest.fn();
     });
@@ -801,7 +801,7 @@ describe('StaffDashboardPage – notification routing', () => {
 describe('StaffDashboardPage – role guard', () => {
     beforeEach(() => {
         mockFetch();
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 
@@ -834,7 +834,7 @@ describe('StaffDashboardPage – role guard', () => {
 
     test('does not redirect when user is null (effect returns early)', async () => {
         // Remove token so AuthContext's checkAuth skips fetching, keeping contextUser = null
-        localStorage.removeItem('access');
+        sessionStorage.removeItem('access');
         renderWithProviders(<StaffDashboardPage />, { auth: { user: null } });
         await waitFor(() =>
             expect(mockNavigate).not.toHaveBeenCalledWith('/dashboard', { replace: true })
@@ -848,7 +848,7 @@ describe('StaffDashboardPage – role guard', () => {
 
 describe('StaffDashboardPage – priority badge colours', () => {
     beforeEach(() => {
-        localStorage.setItem('access', 'test-token');
+        sessionStorage.setItem('access', 'test-token');
         mockNavigate.mockClear();
     });
 

@@ -237,11 +237,60 @@ class StaffDashboardViewTests(TestCase):
         self._auth(self.staff1)
         response = self._dashboard_response('?filtering=all')
         data = response.json()
-        # Verify structure includes closed_by_role field
+
+    def test_closed_by_role_fallback(self):
+        self.ticket3.closed_by = self.staff1
+        self.ticket3.save()
+        self.client.force_authenticate(user=self.staff1)
+        response = self.client.get('/api/staff/dashboard/?filtering=closed')
+        data = response.json()
+        ticket = next(t for t in data if t['id'] == self.ticket3.id)
+        self.assertEqual(ticket['closed_by_role'], 'staff')
         self.assertTrue(all('closed_by_role' in ticket for ticket in data))
 
     def test_open_filter_all_statuses(self):
         """Test that 'open' filter includes all open status types"""
+        new_ticket = Ticket.objects.create(
+            user=self.student,
+            type_of_issue='Software',
+            department='IT',
+            additional_details='New ticket',
+            status=Ticket.Status.NEW,
+            assigned_to=self.staff1
+        )
+        seen_ticket = Ticket.objects.create(
+            user=self.student,
+            type_of_issue='Software',
+            department='IT',
+            additional_details='Seen ticket',
+            status=Ticket.Status.SEEN,
+            assigned_to=self.staff1
+        )
+        awaiting_ticket = Ticket.objects.create(
+            user=self.student,
+            type_of_issue='Software',
+            department='IT',
+            additional_details='Awaiting response',
+            status=Ticket.Status.AWAITING_RESPONSE,
+            assigned_to=self.staff1
+        )
+        
+        self.client.force_authenticate(user=self.staff1)
+        response = self.client.get('/api/staff/dashboard/?filtering=open')
+        data = response.json()
+        ticket_ids = [t['id'] for t in data]
+        
+        self.assertIn(self.ticket1.id, ticket_ids)  
+        self.assertIn(self.ticket2.id, ticket_ids)  
+        self.assertIn(new_ticket.id, ticket_ids)
+        self.assertIn(seen_ticket.id, ticket_ids)
+        self.assertIn(awaiting_ticket.id, ticket_ids)
+        self.assertNotIn(self.ticket3.id, ticket_ids)
+
+    def test_open_filter_explicitly(self):
+        """Test that 'open' filter explicitly shows open statuses"""
+        self.client.force_authenticate(user=self.staff1)
+        response = self.client.get('/api/staff/dashboard/?filtering=open')
         dynamic_open_tickets = self._create_open_status_tickets()
         self._auth(self.staff1)
         response = self._dashboard_response('?filtering=open')

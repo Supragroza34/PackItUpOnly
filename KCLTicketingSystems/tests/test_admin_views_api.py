@@ -97,6 +97,7 @@ class AdminViewsAPIEdgeCasesTest(TestCase):
 
     def test_admin_user_update_exception(self):
         from unittest.mock import patch
+        self.client.force_authenticate(user=self.admin)
         with patch("KCLTicketingSystems.views.admin_views.User.objects.get", side_effect=Exception("fail")):
             resp = self.client.patch(f"/api/admin/users/{self.student.id}/update/", {"role": "staff"})
             self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)

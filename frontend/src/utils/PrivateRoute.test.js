@@ -23,7 +23,7 @@ function makeStore(authState) {
 
 describe("PrivateRoute", () => {
   beforeEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
     useAuth.mockReturnValue({ user: null });
   });
 

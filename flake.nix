@@ -70,7 +70,7 @@
         packages = {
 
           init = mkScript "init" ''
-            echo "== Backend setup (root Django project) =="
+            echo "== Backend setup =="
 
             echo "== Running migrations =="
             python manage.py migrate || true
@@ -110,17 +110,13 @@
           tests = mkScript "tests" ''
             echo "Running frontend + backend tests..."
 
-            if [ -f package.json ]; then
-              npm run test:run
-              npm run test:coverage
-            else
-              echo "Fallback test execution"
+            echo "Fallback test execution"
 
-              coverage run manage.py test
-              coverage html
+            coverage run manage.py test
+            coverage html
 
-              cd frontend
-              npm run test -- --watchAll=false || true
+            cd frontend
+            npm run test -- --watchAll=false
             fi
 
             echo "Tests complete"

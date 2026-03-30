@@ -54,6 +54,19 @@ The automated setup script will:
 
 **Total setup time**: 5-15 minutes (depending on internet speed)
 
+## Environment Variables
+
+Create a local `.env` file in the project root (do not commit it):
+
+```bash
+cp .env.example .env
+```
+
+Then set at least:
+
+- `DJANGO_SECRET_KEY` (required)
+- `GEMINI_API_KEY` (optional; only needed for AI chatbot features)
+
 ## AI Chatbot Setup
 
 The AI Chatbot now uses the Google Gemini API:
@@ -61,6 +74,8 @@ The AI Chatbot now uses the Google Gemini API:
 1. Obtain a Gemini API key from your Google Cloud project.
 2. Set the `GEMINI_API_KEY` environment variable locally (e.g. in your `.env` file).
 3. Restart your Django server so the new key is picked up.
+
+If `GEMINI_API_KEY` is missing, the rest of the ticketing platform still runs normally.
 
 ## Servers
 

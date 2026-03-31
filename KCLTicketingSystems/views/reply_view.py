@@ -1,4 +1,5 @@
 """REST endpoints for listing and creating ticket replies (staff and student flows)."""
+from django.db.models import Prefetch
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -15,6 +16,11 @@ from ..utils import (
     update_ticket_status_after_reply,
     auto_close_stale_awaiting_response,
 )
+
+
+def _reply_children_prefetch():
+    child_qs = Reply.objects.select_related("user").all()
+    return Prefetch("children", queryset=child_qs, to_attr="prefetched_children")
 
 
 def _staff_can_access_ticket(user, ticket):
@@ -115,7 +121,7 @@ def _reply_details_get(ticket_id):
     replies = (
         Reply.objects.filter(ticket=ticket_id, parent=None)
         .select_related("user")
-        .prefetch_related("children")
+        .prefetch_related(_reply_children_prefetch())
     )
     serializer = ReplySerializer(replies, many=True)
     return Response(serializer.data)
@@ -141,7 +147,12 @@ def _reply_details_post(request, ticket):
 
 def _ticket_replies_get(ticket):
     """Return a Response with top-level replies for the ticket in chronological order."""
-    replies = Reply.objects.filter(ticket=ticket, parent=None).order_by("created_at")
+    replies = (
+        Reply.objects.filter(ticket=ticket, parent=None)
+        .select_related("user")
+        .prefetch_related(_reply_children_prefetch())
+        .order_by("created_at")
+    )
     serializer = ReplySerializer(replies, many=True)
     return Response(serializer.data)
 

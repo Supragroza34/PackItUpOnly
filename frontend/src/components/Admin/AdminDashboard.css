@@ -207,7 +207,6 @@
     color: #e53935;
 }
 
-/* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
     .admin-dashboard {
         padding: 22px 14px;

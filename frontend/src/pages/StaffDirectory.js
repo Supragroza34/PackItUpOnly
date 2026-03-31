@@ -25,16 +25,12 @@ export default function StaffDirectory() {
         setStaff(data);
         setPage(1);
 
-        // Derive departments from the unfiltered staff list only.
-        // Avoids a stale closure on `departments` and removes the need for
-        // a separate /staff/departments/ endpoint that doesn't exist.
         if (!department) {
           const deptMap = new Map();
           (data || []).forEach((s) => {
             const raw = (s.department || "").trim();
             if (!raw) return;
 
-            // Normalize by case so backend-equivalent values are not duplicated.
             const key = raw.toLowerCase();
             if (!deptMap.has(key)) {
               deptMap.set(key, raw);

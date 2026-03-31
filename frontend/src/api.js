@@ -13,7 +13,7 @@ function parseApiError(text, status) {
     const errorData = JSON.parse(text);
     if (typeof errorData === 'object') {
       const messages = [];
-      for (const [field, errors] of Object.entries(errorData)) {
+      for (const [, errors] of Object.entries(errorData)) {
         if (Array.isArray(errors)) {
           messages.push(...errors);
         } else if (typeof errors === 'string') {

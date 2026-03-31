@@ -16,11 +16,6 @@ const PrivateRoute = ({ children }) => {
             dispatch(checkAuth());
         }
     }, [dispatch, reduxUser]);
-
-<<<<<<< HEAD
-=======
-    
->>>>>>> origin/main
     const loading = reduxLoading && !user;
 
     if (loading) {

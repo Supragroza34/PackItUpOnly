@@ -36,7 +36,7 @@ class StaffApi{
     }
     
     async reassignTicket(ticketId, data) {
-        const response = await fetch(`${API_BASE_URL}/dashboard/${ticketId}/reassign`, {
+        const response = await fetch(`${API_BASE_URL}/dashboard/${ticketId}/reassign/`, {
             method: 'PATCH',
             headers: getAuthHeaders(),
             body: JSON.stringify(data),

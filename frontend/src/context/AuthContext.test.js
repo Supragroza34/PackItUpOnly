@@ -89,11 +89,13 @@ describe("AuthContext", () => {
   });
 
   test("useAuth throws when used outside AuthProvider", () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     const Bad = () => {
       useAuth();
       return null;
     };
     expect(() => render(<Bad />)).toThrow(/must be used within an AuthProvider/i);
+    consoleSpy.mockRestore();
   });
 
   test("checkAuth leaves user unset when no token", async () => {

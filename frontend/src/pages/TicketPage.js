@@ -303,7 +303,7 @@ function TicketPage() {
 
             <div className="ticket-card">
                 <h2 className="ticket-card-title">Escalate ticket?</h2>
-                <td className="assign-cell">
+                <div className="assign-cell">
                     <select
                         className="assign-select"
                         value={ticket.assigned_to ?? ''}
@@ -320,7 +320,7 @@ function TicketPage() {
                     {staffList.length === 0 && (
                         <span className="assign-hint">No staff in list</span>
                     )}
-                </td>
+                </div>
             </div>
         </div>
     );

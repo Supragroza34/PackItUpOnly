@@ -22,8 +22,7 @@ function getAuthHeaders() {
 }
 
 class AdminAPI {
-    // ================= AUTHENTICATION =================
-    // Note: Login now uses the common JWT endpoint at /api/auth/token/
+     // Note: Login now uses the common JWT endpoint at /api/auth/token/
     // So we don't need separate admin login/logout methods
     
     async getCurrentUser() {
@@ -39,7 +38,6 @@ class AdminAPI {
         return response.json();
     }
     
-    // ================= DASHBOARD =================
     
     async getDashboardStats() {
         const response = await fetch(`${API_BASE_URL}/dashboard/stats/`, {
@@ -58,7 +56,6 @@ class AdminAPI {
         return response.json();
     }
     
-    // ================= TICKETS =================
     
     async getTickets(params = {}) {
         const queryParams = new URLSearchParams();
@@ -127,8 +124,6 @@ class AdminAPI {
         return response.json();
     }
     
-    // ================= USERS =================
-    
     async getUsers(params = {}) {
         const queryParams = new URLSearchParams();
         
@@ -190,8 +185,6 @@ class AdminAPI {
         return response.json();
     }
     
-    // ================= STAFF LIST =================
-    
     async getStaffList() {
         const response = await fetch(`${API_BASE_URL}/staff/`, {
             headers: getAuthHeaders(),
@@ -203,8 +196,6 @@ class AdminAPI {
         
         return response.json();
     }
-    
-    // ================= STATISTICS =================
     
     async getStatistics(params = {}) {
         const queryParams = new URLSearchParams();

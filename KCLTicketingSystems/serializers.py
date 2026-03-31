@@ -4,6 +4,8 @@ DRF serializers for the ticketing API.
 Exposes read/write shapes for users, tickets, replies, staff lists, office hours,
 and meeting requests. Used by REST views under ``KCLTicketingSystems.views``.
 """
+import re
+
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.db.models import Count
@@ -168,6 +170,79 @@ class TicketListSerializer(serializers.ModelSerializer):
         if obj.status == 'closed' and obj.closed_by_id and hasattr(obj, 'closed_by') and obj.closed_by:
             return (obj.closed_by.role or 'student').lower()
         return None
+
+
+class TicketSubmitSerializer(serializers.ModelSerializer):
+    """Serializer for public ticket submission with legacy contact fields."""
+
+    class Meta:
+        model = Ticket
+        fields = [
+            "name",
+            "surname",
+            "k_number",
+            "k_email",
+            "department",
+            "type_of_issue",
+            "additional_details",
+        ]
+        extra_kwargs = {
+            "name": {"required": True, "allow_blank": False},
+            "surname": {"required": True, "allow_blank": False},
+            "k_number": {"required": True, "allow_blank": False},
+            "k_email": {"required": True, "allow_blank": False},
+            "department": {"required": True, "allow_blank": False},
+            "type_of_issue": {"required": True, "allow_blank": False},
+            "additional_details": {"required": True, "allow_blank": False},
+        }
+
+    def validate_name(self, value):
+        value = (value or "").strip()
+        if re.search(r"\d", value):
+            raise serializers.ValidationError("Name cannot contain numbers")
+        return value
+
+    def validate_surname(self, value):
+        value = (value or "").strip()
+        if re.search(r"\d", value):
+            raise serializers.ValidationError("Surname cannot contain numbers")
+        return value
+
+    def validate_k_number(self, value):
+        value = (value or "").strip()
+        if re.search(r"[a-zA-Z]", value):
+            raise serializers.ValidationError("K-Number cannot contain letters")
+        if len(value) > 8:
+            raise serializers.ValidationError("K-Number cannot be more than 8 digits")
+        return value
+
+    def validate_k_email(self, value):
+        return (value or "").strip()
+
+    def validate_department(self, value):
+        value = (value or "").strip()
+        valid_departments = {"Informatics", "Engineering", "Medicine"}
+        if value not in valid_departments:
+            raise serializers.ValidationError("Invalid department selected")
+        return value
+
+    def validate_type_of_issue(self, value):
+        return (value or "").strip()
+
+    def validate_additional_details(self, value):
+        return (value or "").strip()
+
+    def validate(self, attrs):
+        k_number = attrs.get("k_number", "")
+        k_email = attrs.get("k_email", "")
+        if not k_number:
+            return attrs
+        pattern = rf"^K{re.escape(k_number)}@kcl\.ac\.uk$"
+        if not re.match(pattern, k_email):
+            raise serializers.ValidationError(
+                {"k_email": "Email must be in the format: KNumber@kcl.ac.uk"}
+            )
+        return attrs
 
 
 class TicketCreateSerializer(serializers.ModelSerializer):

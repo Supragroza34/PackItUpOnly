@@ -1,11 +1,10 @@
 """Admin REST API: dashboard metrics, ticket and user CRUD, staff listing, and CSV exports."""
 
-from collections import defaultdict
+import logging
 from datetime import timedelta, datetime
 import csv
 
-from django.shortcuts import render
-from django.db.models import Q, Count, Avg, F, Case, When, ExpressionWrapper, DurationField, IntegerField
+from django.db.models import Q
 from django.utils import timezone
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
@@ -15,7 +14,6 @@ from rest_framework import status
 
 from ..models.ticket import Ticket
 from ..models.user import User
-from ..models.reply import Reply
 from ..serializers import (
     TicketSerializer, 
     TicketListSerializer, 
@@ -24,8 +22,11 @@ from ..serializers import (
     DashboardStatsSerializer
 )
 from ..permissions import IsAdmin
+from ..services import statistics_service
 
 from ..utils import notify_on_ticket_update, auto_close_stale_awaiting_response
+
+logger = logging.getLogger(__name__)
 
 
 # ================= DASHBOARD STATISTICS =================
@@ -58,52 +59,35 @@ def _get_recent_tickets():
 
 
 def _compute_dept_response_times(tickets):
-    """Return a dict mapping department name to average first-response time in hours.
-
-    Response time is the gap between ticket creation and the first reply from a
-    staff or admin user.  Only departments that have at least one such reply are
-    included in the returned dict.
-    """
-    first_reply = _first_staff_reply_map(tickets)
-    ticket_meta = _ticket_meta_map(tickets)
-    return _dept_response_time_hours(first_reply, ticket_meta)
+    """Compatibility wrapper for tests; delegates to the statistics service."""
+    return statistics_service.compute_dept_response_times(tickets)
 
 
 def _first_staff_reply_map(tickets):
-    staff_roles = [User.Role.STAFF, User.Role.ADMIN]
-    first_reply = {}
-    for reply in (
-        Reply.objects.filter(ticket__in=tickets, user__role__in=staff_roles)
-        .order_by("created_at")
-        .values("ticket_id", "created_at")
-    ):
-        tid = reply["ticket_id"]
-        if tid not in first_reply:
-            first_reply[tid] = reply["created_at"]
-    return first_reply
+    """Compatibility wrapper for tests; delegates to the statistics service."""
+    return statistics_service._first_staff_reply_map(tickets)
 
 
 def _ticket_meta_map(tickets):
-    return {
-        tid: (dept, created)
-        for tid, dept, created in tickets.values_list("id", "department", "created_at")
-    }
+    """Compatibility wrapper for tests; delegates to the statistics service."""
+    return statistics_service._ticket_meta_map(tickets)
 
 
 def _dept_response_time_hours(first_reply, ticket_meta):
-    dept_times = defaultdict(list)
-    for ticket_id, first_reply_at in first_reply.items():
-        meta = ticket_meta.get(ticket_id)
-        if not meta:
-            continue
-        dept, created = meta
-        if not (dept and created):
-            continue
-        delta = (first_reply_at - created).total_seconds()
-        if delta < 0:
-            continue
-        dept_times[dept].append(delta)
-    return {dept: round((sum(times) / len(times)) / 3600, 2) for dept, times in dept_times.items()}
+    """Compatibility wrapper for tests; delegates to the statistics service."""
+    return statistics_service._dept_response_time_hours(first_reply, ticket_meta)
+
+
+def _internal_error_response(exc):
+    """Log internal exception details and return a generic API error payload."""
+    logger.exception("Admin API internal error: %s", exc)
+    return Response({"error": "An internal server error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _internal_error_http_response(exc):
+    """Log internal exception details and return a generic plain-text error response."""
+    logger.exception("Admin export internal error: %s", exc)
+    return HttpResponse("Error: An internal server error occurred.", status=500)
 
 
 @api_view(['GET'])
@@ -114,37 +98,40 @@ def dashboard_stats(request):
         auto_close_stale_awaiting_response()
         payload = _dashboard_stats_payload()
         return Response(DashboardStatsSerializer(payload).data)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 def _dashboard_stats_payload():
-    total_tickets = Ticket.objects.count()
-    pending = Ticket.objects.filter(status=Ticket.Status.PENDING).count()
-    in_progress = Ticket.objects.filter(status=Ticket.Status.IN_PROGRESS).count()
-    resolved = Ticket.objects.filter(status=Ticket.Status.RESOLVED).count()
-    closed = Ticket.objects.filter(status=Ticket.Status.CLOSED).count()
-    total_users = User.objects.count()
-    students = User.objects.filter(role=User.Role.STUDENT, is_superuser=False).count()
-    staff = User.objects.filter(role=User.Role.STAFF, is_superuser=False).count()
-    admins = User.objects.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True)).count()
-    week_ago = timezone.now() - timedelta(days=7)
-    recent = (
-        Ticket.objects.filter(created_at__gte=week_ago)
-        .order_by("-created_at")[:10]
-    )
+    payload = {}
+    payload.update(_dashboard_ticket_counts())
+    payload.update(_dashboard_user_counts())
+    payload["recent_tickets"] = _recent_dashboard_tickets()
+    return payload
+
+
+def _dashboard_ticket_counts():
     return {
-        "total_tickets": total_tickets,
-        "pending_tickets": pending,
-        "in_progress_tickets": in_progress,
-        "resolved_tickets": resolved,
-        "closed_tickets": closed,
-        "total_users": total_users,
-        "total_students": students,
-        "total_staff": staff,
-        "total_admins": admins,
-        "recent_tickets": recent,
+        "total_tickets": Ticket.objects.count(),
+        "pending_tickets": Ticket.objects.filter(status=Ticket.Status.PENDING).count(),
+        "in_progress_tickets": Ticket.objects.filter(status=Ticket.Status.IN_PROGRESS).count(),
+        "resolved_tickets": Ticket.objects.filter(status=Ticket.Status.RESOLVED).count(),
+        "closed_tickets": Ticket.objects.filter(status=Ticket.Status.CLOSED).count(),
     }
+
+
+def _dashboard_user_counts():
+    return {
+        "total_users": User.objects.count(),
+        "total_students": User.objects.filter(role=User.Role.STUDENT, is_superuser=False).count(),
+        "total_staff": User.objects.filter(role=User.Role.STAFF, is_superuser=False).count(),
+        "total_admins": User.objects.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True)).count(),
+    }
+
+
+def _recent_dashboard_tickets():
+    week_ago = timezone.now() - timedelta(days=7)
+    return Ticket.objects.filter(created_at__gte=week_ago).order_by("-created_at")[:10]
 
 
 # ================= TICKET MANAGEMENT =================
@@ -220,8 +207,8 @@ def admin_tickets_list(request):
         auto_close_stale_awaiting_response()
         tickets = _admin_tickets_queryset(request)
         return Response(_paginate_tickets(tickets, request))
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 def _admin_tickets_queryset(request):
@@ -246,8 +233,8 @@ def admin_ticket_detail(request, ticket_id):
         return Response(serializer.data)
     except Ticket.DoesNotExist:
         return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 @api_view(['PATCH', 'PUT'])
@@ -258,8 +245,8 @@ def admin_ticket_update(request, ticket_id):
         return _admin_ticket_update_response(request, ticket_id)
     except Ticket.DoesNotExist:
         return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 def _set_closed_by_if_needed(ticket, user):
@@ -293,8 +280,8 @@ def admin_ticket_delete(request, ticket_id):
         return Response({'success': True, 'message': 'Ticket deleted successfully'})
     except Ticket.DoesNotExist:
         return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 # ================= USER MANAGEMENT =================
@@ -339,8 +326,8 @@ def admin_users_list(request):
         users = _apply_user_search(users, request.GET.get("search", ""))
         users = _apply_users_role_filter(users, request.GET.get("role"))
         return Response(_paginate_users(users, request))
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 def _apply_users_role_filter(users, role_filter):
@@ -365,8 +352,8 @@ def admin_user_detail(request, user_id):
         return Response(serializer.data)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 def _update_user_fields(user, data):
@@ -397,8 +384,8 @@ def admin_user_update(request, user_id):
         return Response(serializer.data)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 @api_view(['DELETE'])
@@ -416,8 +403,8 @@ def admin_user_delete(request, user_id):
         return Response({'success': True, 'message': 'User deleted successfully'})
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 # ================= STAFF USERS FOR ASSIGNMENT =================
@@ -431,8 +418,8 @@ def admin_staff_list(request):
             'id', 'username', 'first_name', 'last_name', 'email', 'role'
         )
         return Response({'staff': list(staff)})
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 # ================= STATISTICS AND ANALYTICS =================
@@ -458,8 +445,8 @@ def get_ticket_statistics(request):
                 "department_statistics": formatted_stats,
             }
         )
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return _internal_error_response(exc)
 
 
 @api_view(['GET'])
@@ -474,8 +461,8 @@ def export_statistics_csv(request):
         start_date, end_date = parsed
         tickets = _tickets_for_date_range(start_date, end_date)
         return _export_statistics_csv_response(tickets, start_date, end_date)
-    except Exception as e:
-        return HttpResponse(f'Error: {str(e)}', status=500)
+    except Exception as exc:
+        return _internal_error_http_response(exc)
 
 
 @api_view(['GET'])
@@ -490,8 +477,8 @@ def export_tickets_csv(request):
         start_date, end_date = parsed
         tickets = _tickets_for_date_range(start_date, end_date, select_related=True)
         return _export_tickets_csv_response(tickets, start_date, end_date)
-    except Exception as e:
-        return HttpResponse(f'Error: {str(e)}', status=500)
+    except Exception as exc:
+        return _internal_error_http_response(exc)
 
 
 def _tickets_for_date_range(start_date, end_date, select_related=False):
@@ -505,17 +492,23 @@ def _parse_get_ticket_statistics_date_range(request):
     start_date_str = request.GET.get("start_date")
     end_date_str = request.GET.get("end_date")
     if start_date_str and end_date_str:
-        try:
-            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
-            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
-        except (ValueError, TypeError):
-            return Response(
-                {"error": "Invalid start_date or end_date format. Expected ISO 8601 format."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return start_date, end_date
+        return _parse_iso_date_range_for_api(start_date_str, end_date_str)
+    return _parse_days_date_range_for_api(request.GET.get("days", "30"))
 
-    days_param = request.GET.get("days", "30")
+
+def _parse_iso_date_range_for_api(start_date_str, end_date_str):
+    try:
+        start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+        end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return Response(
+            {"error": "Invalid start_date or end_date format. Expected ISO 8601 format."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return start_date, end_date
+
+
+def _parse_days_date_range_for_api(days_param):
     try:
         days = int(days_param)
         if days <= 0:
@@ -530,60 +523,18 @@ def _parse_get_ticket_statistics_date_range(request):
 
 
 def _ticket_department_stats_annotations():
-    return {
-        "total_tickets": Count("id"),
-        "pending": Count("id", filter=Q(status=Ticket.Status.PENDING)),
-        "in_progress": Count("id", filter=Q(status=Ticket.Status.IN_PROGRESS)),
-        "resolved": Count("id", filter=Q(status=Ticket.Status.RESOLVED)),
-        "closed": Count("id", filter=Q(status=Ticket.Status.CLOSED)),
-        "low": Count("id", filter=Q(priority=Ticket.Priority.LOW)),
-        "medium": Count("id", filter=Q(priority=Ticket.Priority.MEDIUM)),
-        "high": Count("id", filter=Q(priority=Ticket.Priority.HIGH)),
-        "urgent": Count("id", filter=Q(priority=Ticket.Priority.URGENT)),
-        "avg_resolution_seconds": Avg(
-            ExpressionWrapper(
-                F("updated_at") - F("created_at"),
-                output_field=DurationField(),
-            ),
-            filter=Q(status=Ticket.Status.CLOSED, updated_at__isnull=False),
-        ),
-    }
+    """Compatibility wrapper for tests; delegates to the statistics service."""
+    return statistics_service.ticket_department_stats_annotations()
 
 
 def _ticket_department_stats_queryset(tickets):
-    return tickets.values("department").annotate(**_ticket_department_stats_annotations()).order_by("-total_tickets")
+    """Compatibility wrapper for tests; delegates to the statistics service."""
+    return statistics_service.ticket_department_stats_queryset(tickets)
 
 
 def _format_department_statistics(department_stats, dept_response_times):
-    formatted = []
-    for stat in department_stats:
-        dept = stat["department"]
-        avg_resolution_hours = (
-            round(stat["avg_resolution_seconds"].total_seconds() / 3600, 2)
-            if stat["avg_resolution_seconds"]
-            else None
-        )
-        formatted.append(
-            {
-                "department": dept,
-                "total_tickets": stat["total_tickets"],
-                "status_breakdown": {
-                    "pending": stat["pending"],
-                    "in_progress": stat["in_progress"],
-                    "resolved": stat["resolved"],
-                    "closed": stat["closed"],
-                },
-                "priority_breakdown": {
-                    "low": stat["low"],
-                    "medium": stat["medium"],
-                    "high": stat["high"],
-                    "urgent": stat["urgent"],
-                },
-                "avg_resolution_time_hours": avg_resolution_hours,
-                "avg_response_time_hours": dept_response_times.get(dept),
-            }
-        )
-    return formatted
+    """Compatibility wrapper for tests; delegates to the statistics service."""
+    return statistics_service.format_department_statistics(department_stats, dept_response_times)
 
 
 def _parse_export_statistics_csv_date_range(request):
@@ -614,27 +565,29 @@ def _export_statistics_csv_response(tickets, start_date, end_date):
         "Content-Disposition"
     ] = f'attachment; filename="ticket_statistics_{start_date.date()}_to_{end_date.date()}.csv"'
     writer = csv.writer(response)
-    writer.writerow(
-        [
-            "Department",
-            "Total Tickets",
-            "Pending",
-            "In Progress",
-            "Resolved",
-            "Closed",
-            "Low Priority",
-            "Medium Priority",
-            "High Priority",
-            "Urgent Priority",
-            "Avg Resolution Time (hours)",
-            "Avg Response Time (hours)",
-        ]
-    )
+    writer.writerow(_statistics_csv_header())
 
     department_stats = _ticket_department_stats_queryset(tickets)
     dept_response_times = _compute_dept_response_times(tickets)
     _write_export_statistics_rows(writer, department_stats, dept_response_times)
     return response
+
+
+def _statistics_csv_header():
+    return [
+        "Department",
+        "Total Tickets",
+        "Pending",
+        "In Progress",
+        "Resolved",
+        "Closed",
+        "Low Priority",
+        "Medium Priority",
+        "High Priority",
+        "Urgent Priority",
+        "Avg Resolution Time (hours)",
+        "Avg Response Time (hours)",
+    ]
 
 
 def _write_export_statistics_rows(writer, department_stats, dept_response_times):

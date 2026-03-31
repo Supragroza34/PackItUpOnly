@@ -245,6 +245,11 @@ if "test" in sys.argv:
                 "level": "CRITICAL",
                 "propagate": False,
             },
+            "KCLTicketingSystems.views.admin_views": {
+                "handlers": ["console"],
+                "level": "CRITICAL",
+                "propagate": False,
+            },
             "AIChatbot.views": {
                 "handlers": ["console"],
                 "level": "CRITICAL",

@@ -5,8 +5,6 @@ import { BrowserRouter } from "react-router-dom";
 
 import UserNavbar from "./UserNavbar";
 
-// ─── Mocks ────────────────────────────────────────────────────────────────────
-
 const mockNavigate = jest.fn();
 
 jest.mock("react-router-dom", () => ({
@@ -20,8 +18,6 @@ jest.mock("../context/AuthContext", () => ({
   useAuth: () => ({ logout: mockLogout }),
 }));
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
-
 function renderNavbar() {
   return render(
     <BrowserRouter>
@@ -29,8 +25,6 @@ function renderNavbar() {
     </BrowserRouter>
   );
 }
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("UserNavbar — rendering", () => {
   beforeEach(() => {
@@ -50,7 +44,6 @@ describe("UserNavbar — rendering", () => {
 
   test("renders a Home link pointing to /dashboard", () => {
     renderNavbar();
-    // There are two links to /dashboard (brand + Home); find the one with text "Home"
     const homeLink = screen.getByRole("link", { name: /^home$/i });
     expect(homeLink).toBeInTheDocument();
     expect(homeLink).toHaveAttribute("href", "/dashboard");
@@ -96,8 +89,6 @@ describe("UserNavbar — rendering", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 describe("UserNavbar — Profile dropdown", () => {
   beforeEach(() => {
@@ -181,8 +172,6 @@ describe("UserNavbar — Profile dropdown", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 describe("UserNavbar — Log Out", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -207,14 +196,11 @@ describe("UserNavbar — Log Out", () => {
     mockLogout.mockRejectedValue(new Error("network error"));
     renderNavbar();
     fireEvent.click(screen.getByRole("button", { name: /log out/i }));
-    // Component catches the error and navigates anyway — user is never left stuck
     await waitFor(() =>
       expect(mockNavigate).toHaveBeenCalledWith("/login", { replace: true })
     );
   });
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 describe("UserNavbar — navigation links", () => {
   beforeEach(() => {
@@ -239,10 +225,8 @@ describe("UserNavbar — navigation links", () => {
 
   test("profile link to /profile is only visible after opening the dropdown", () => {
     renderNavbar();
-    // Before opening — dropdown not rendered, no menuitems
     expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
 
-    // After opening — one menuitem linking to /profile
     fireEvent.click(screen.getByRole("button", { name: /profile/i }));
     const items = screen.getAllByRole("menuitem");
     expect(items).toHaveLength(1);

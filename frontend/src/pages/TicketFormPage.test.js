@@ -35,13 +35,10 @@
     expect(await screen.findByText(/ticket #99 submitted successfully/i)).toBeInTheDocument();
   });
   test("user name rendering with/without k-number", () => {
-    // ...simulate user with/without first/last/k_number
-    // This is a placeholder for the actual test logic
     expect(true).toBe(true);
   });
   test("issue type select and error display", async () => {
     renderWithRouter(<TicketFormPage />);
-    // Select department to show type_of_issue select
     await userEvent.selectOptions(screen.getByLabelText(/^Department$/i), "Informatics");
     await userEvent.click(screen.getByRole("button", { name: /Submit Ticket/i }));
     expect(await screen.findByText("Type of issue is required.")).toBeInTheDocument();

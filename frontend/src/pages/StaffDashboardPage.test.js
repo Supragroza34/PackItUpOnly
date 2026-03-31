@@ -13,15 +13,12 @@ describe('StaffDashboardPage – edge cases', () => {
         expect(true).toBe(true); // No crash
     });
 });
-// ─────────────────────────────────────────────────────────────────────────────
-// StaffDashboardPage.test.js  –  100% statement/function/line coverage
-// ─────────────────────────────────────────────────────────────────────────────
+
 import React from 'react';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import StaffDashboardPage from './StaffDashboardPage';
 import { renderWithProviders } from '../utils/testUtils';
 
-// ── Module mocks ───────────────────────────────────────────────────────────────
 
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
@@ -65,8 +62,6 @@ afterAll(() => {
     console.error = _origConsoleError;
 });
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
 function makeTicket(overrides = {}) {
     return {
         id: 1,
@@ -92,12 +87,7 @@ function staffState(overrides = {}) {
     };
 }
 
-/**
- * Sets up global.fetch with URL-based routing:
- *  - filtering=all  → allTickets
- *  - /update/       → closeResponse (ok controlled by closeOk)
- *  - everything else → filteredTickets with filteredStatus
- */
+
 function mockFetch({
     allTickets = [],
     filteredTickets = [],
@@ -127,9 +117,6 @@ function mockFetch({
     });
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 1. Rendering & structure
-// ══════════════════════════════════════════════════════════════════════════════
 
 describe('StaffDashboardPage – rendering & structure', () => {
     beforeEach(() => {
@@ -180,10 +167,6 @@ describe('StaffDashboardPage – rendering & structure', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 2. Empty states
-// ══════════════════════════════════════════════════════════════════════════════
-
 describe('StaffDashboardPage – empty states', () => {
     beforeEach(() => {
         sessionStorage.setItem('access', 'test-token');
@@ -207,10 +190,6 @@ describe('StaffDashboardPage – empty states', () => {
         );
     });
 });
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 3. Ticket rendering
-// ══════════════════════════════════════════════════════════════════════════════
 
 describe('StaffDashboardPage – ticket rendering', () => {
     beforeEach(() => {
@@ -297,10 +276,6 @@ describe('StaffDashboardPage – ticket rendering', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 4. Status badges  (statusClass + getStatusLabel — every branch)
-// ══════════════════════════════════════════════════════════════════════════════
-
 describe('StaffDashboardPage – status badges', () => {
     beforeEach(() => {
         sessionStorage.setItem('access', 'test-token');
@@ -381,10 +356,6 @@ describe('StaffDashboardPage – status badges', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 5. Summary card counts + extractArray branches
-// ══════════════════════════════════════════════════════════════════════════════
-
 describe('StaffDashboardPage – summary card counts', () => {
     beforeEach(() => {
         sessionStorage.setItem('access', 'test-token');
@@ -399,7 +370,6 @@ describe('StaffDashboardPage – summary card counts', () => {
             makeTicket({ id: 4, status: 'closed',      is_overdue: false }),
             makeTicket({ id: 5, status: 'resolved',    is_overdue: false }),
         ];
-        // total=5, open=3 (all pending/in_progress), overdue=1, closed=2
         mockFetch({ allTickets, filteredTickets: [] });
         renderWithProviders(<StaffDashboardPage />, staffState());
         await waitFor(() => {
@@ -471,10 +441,6 @@ describe('StaffDashboardPage – summary card counts', () => {
         });
     });
 });
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 6. API fetching
-// ══════════════════════════════════════════════════════════════════════════════
 
 describe('StaffDashboardPage – API fetching', () => {
     beforeEach(() => {
@@ -588,10 +554,6 @@ describe('StaffDashboardPage – API fetching', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 7. Close ticket
-// ══════════════════════════════════════════════════════════════════════════════
-
 describe('StaffDashboardPage – close ticket', () => {
     beforeEach(() => {
         sessionStorage.setItem('access', 'test-token');
@@ -700,9 +662,6 @@ describe('StaffDashboardPage – close ticket', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 8. Logout
-// ══════════════════════════════════════════════════════════════════════════════
 
 describe('StaffDashboardPage – logout', () => {
     beforeEach(() => {
@@ -720,9 +679,6 @@ describe('StaffDashboardPage – logout', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 9. Meeting Requests button
-// ══════════════════════════════════════════════════════════════════════════════
 
 describe('StaffDashboardPage – Meeting Requests button', () => {
     beforeEach(() => {
@@ -738,9 +694,6 @@ describe('StaffDashboardPage – Meeting Requests button', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 9b. Notification routing branches
-// ══════════════════════════════════════════════════════════════════════════════
 
 describe('StaffDashboardPage – notification routing', () => {
     beforeEach(() => {
@@ -794,10 +747,6 @@ describe('StaffDashboardPage – notification routing', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 10. Role guard
-// ══════════════════════════════════════════════════════════════════════════════
-
 describe('StaffDashboardPage – role guard', () => {
     beforeEach(() => {
         mockFetch();
@@ -842,9 +791,6 @@ describe('StaffDashboardPage – role guard', () => {
     });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 11. Priority badge colours
-// ══════════════════════════════════════════════════════════════════════════════
 
 describe('StaffDashboardPage – priority badge colours', () => {
     beforeEach(() => {
@@ -865,4 +811,3 @@ describe('StaffDashboardPage – priority badge colours', () => {
         }
     );
 });
-//Staff dashboard tests added

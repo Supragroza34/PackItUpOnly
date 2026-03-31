@@ -65,7 +65,6 @@ function RequestCard({ req, onAccept, onDeny }) {
   );
 }
 
-// Page
 function StaffMeetingRequestsPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -77,7 +76,6 @@ function StaffMeetingRequestsPage() {
   const [success, setSuccess]                 = useState("");
   const [activeTab, setActiveTab]             = useState("pending");
 
-  // Office-hours form state
   const [dayOfWeek, setDayOfWeek]     = useState("Monday");
   const [startTime, setStartTime]     = useState("09:00");
   const [endTime, setEndTime]         = useState("17:00");
@@ -88,7 +86,6 @@ function StaffMeetingRequestsPage() {
     navigate("/login");
   };
 
-  // Data Loading
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
@@ -121,7 +118,6 @@ function StaffMeetingRequestsPage() {
         { auth: true }
       );
     } catch (e) {
-      // Rollback on failure
       setMeetingRequests((prev) =>
         prev.map((r) => (r.id === requestId ? { ...r, status: "pending" } : r))
       );
@@ -147,7 +143,6 @@ function StaffMeetingRequestsPage() {
     }
   }
 
-  // Office-hours actions 
   async function handleAddOfficeHours(e) {
     e.preventDefault();
     setAddingHours(true);
@@ -190,8 +185,6 @@ function StaffMeetingRequestsPage() {
     }
   }
 
-  // Derived data
-
   const tabCounts = {
     pending:  meetingRequests.filter((r) => r.status === "pending").length,
     accepted: meetingRequests.filter((r) => r.status === "accepted").length,
@@ -203,9 +196,7 @@ function StaffMeetingRequestsPage() {
   const sortedOfficeHours = [...officeHours].sort(
     (a, b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)
   );
-
-  // Render 
-
+  
   return (
     <div className="sd-page">
 
@@ -230,7 +221,6 @@ function StaffMeetingRequestsPage() {
       {err     && <div className="smr-alert smr-alert-error">{err}</div>}
       {success && <div className="smr-alert smr-alert-success">{success}</div>}
 
-      {/* Body */}
       {loading ? (
         <p className="smr-loading">Loading…</p>
       ) : (
@@ -289,7 +279,7 @@ function StaffMeetingRequestsPage() {
             </div>
           </div>
 
-          {/* ══ Right sidebar ══ */}
+          {/* Right sidebar */}
           <aside className="smr-sidebar">
 
             {/* Office hours list */}

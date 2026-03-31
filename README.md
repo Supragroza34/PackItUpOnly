@@ -2,6 +2,7 @@ PackItUpOnly Team Project:
 
 ## Team members
 The members of the team are:
+
 •⁠  ⁠Amey Tripathi
 •⁠  Hafsa Bhudye
 •⁠  ⁠Pasquale Benjamin Fuccio
@@ -17,7 +18,8 @@ It is a full-stack web application featuring a Django backend and a React.js fro
 
 ## Deployed version of the application
 The deployed version of the application can be found at:
-## Paste the above link into a browser to see the deployed website.
+
+Paste the above link into a browser to see the deployed website.
 
 ## Installation instructions
 To set up the ticketing system, the following commands should be followed:

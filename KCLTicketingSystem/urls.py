@@ -34,7 +34,6 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
     path('chat/', chat_page, name='chat_page'),
-    path('ticket-form/', views.ticket_form, name='ticket_form'),
     path('api/submit-ticket/', views.submit_ticket, name='submit_ticket'),
     
     # API Routes (includes JWT auth: /api/auth/token/, /api/auth/register/, /api/users/me/)

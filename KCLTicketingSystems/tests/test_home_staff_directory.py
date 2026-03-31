@@ -10,24 +10,24 @@ User = get_user_model()
 
 
 class HomeAndSpaViewTests(TestCase):
-    """home() and spa_catchall() serve React build or fallback template."""
+    """home() and spa_catchall() serve React build or return 503 when missing."""
 
     @patch("KCLTicketingSystems.views.home_view.FRONTEND_INDEX")
-    def test_home_uses_fallback_template_when_no_build(self, mock_index):
-        """Force exists() False so we hit render() even if repo has frontend/build locally."""
+    def test_home_returns_503_when_no_build(self, mock_index):
+        """Force exists() False so home() reports missing React build."""
         mock_index.exists.return_value = False
         client = Client()
         response = client.get("/")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"KCL Ticketing System", response.content)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn(b"Frontend build not found.", response.content)
 
     @patch("KCLTicketingSystems.views.home_view.FRONTEND_INDEX")
-    def test_spa_catchall_uses_fallback_when_no_build(self, mock_index):
+    def test_spa_catchall_returns_503_when_no_build(self, mock_index):
         mock_index.exists.return_value = False
         client = Client()
         response = client.get("/login/sub")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"KCL Ticketing System", response.content)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn(b"Frontend build not found.", response.content)
 
     @patch("builtins.open", new_callable=mock_open, read_data="<!DOCTYPE html><title>ReactBuild</title>")
     @patch("KCLTicketingSystems.views.home_view.FRONTEND_INDEX")

@@ -10,22 +10,21 @@ from KCLTicketingSystems.views import home_view
 
 
 class HomeViewTests(TestCase):
-    def test_home_falls_back_to_template_when_frontend_build_missing(self):
+    def test_home_returns_503_when_frontend_build_missing(self):
         missing_index = Path("C:/nonexistent/frontend/build/index.html")
         with patch.object(home_view, "FRONTEND_INDEX", missing_index):
             response = self.client.get("/")
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "KCL Ticketing System")
-        self.assertContains(response, "Go to Login")
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "Frontend build not found.", status_code=503)
 
-    def test_spa_catchall_falls_back_to_template_when_frontend_build_missing(self):
+    def test_spa_catchall_returns_503_when_frontend_build_missing(self):
         missing_index = Path("C:/nonexistent/frontend/build/index.html")
         with patch.object(home_view, "FRONTEND_INDEX", missing_index):
             response = self.client.get("/dashboard")
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "KCL Ticketing System")
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, "Frontend build not found.", status_code=503)
 
     def test_home_serves_react_index_when_frontend_build_exists(self):
         with TemporaryDirectory() as tmpdir:

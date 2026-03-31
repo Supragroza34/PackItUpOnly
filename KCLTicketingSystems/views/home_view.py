@@ -1,6 +1,5 @@
 """Serve the React SPA index for the main site and client-side routes."""
 
-from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
 
@@ -9,11 +8,11 @@ FRONTEND_INDEX = settings.BASE_DIR / 'frontend' / 'build' / 'index.html'
 
 
 def home(request):
-    """Serve React app index so SPA starts at sign-in; fallback to simple page if no build."""
+    """Serve React app index so SPA starts at sign-in."""
     if FRONTEND_INDEX.exists():
         with open(FRONTEND_INDEX, encoding='utf-8') as f:
             return HttpResponse(f.read(), content_type='text/html')
-    return render(request, 'home.html')
+    return HttpResponse("Frontend build not found.", status=503)
 
 
 def spa_catchall(request, path):
@@ -21,4 +20,4 @@ def spa_catchall(request, path):
     if FRONTEND_INDEX.exists():
         with open(FRONTEND_INDEX, encoding='utf-8') as f:
             return HttpResponse(f.read(), content_type='text/html')
-    return render(request, 'home.html')
+    return HttpResponse("Frontend build not found.", status=503)

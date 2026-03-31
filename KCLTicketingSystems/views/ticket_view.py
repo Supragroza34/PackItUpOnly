@@ -1,19 +1,11 @@
 """Legacy HTML ticket form and unauthenticated ticket submission API."""
 
-from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from ..models import Ticket, Attachment
 import os
 import re
-
-
-def ticket_form(request):
-    """
-    Display the ticket form page
-    """
-    return render(request, 'ticket_form.html')
 
 def _get_data_and_files(request):
     """Return (data, files) from the request, handling both multipart and JSON bodies."""

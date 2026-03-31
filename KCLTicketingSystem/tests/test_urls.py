@@ -17,10 +17,6 @@ class ProjectURLTests(SimpleTestCase):
         resolver = resolve('/chat/')
         self.assertEqual(resolver.view_name, 'chat_page')
 
-    def test_ticket_form_url_resolves(self):
-        resolver = resolve('/ticket-form/')
-        self.assertEqual(resolver.view_name, 'ticket_form')
-
     def test_api_submit_ticket_url_resolves(self):
         resolver = resolve('/api/submit-ticket/')
         self.assertEqual(resolver.view_name, 'submit_ticket')

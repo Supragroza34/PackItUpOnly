@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from datetime import timedelta
 from dotenv import load_dotenv
 import dj_database_url
@@ -234,3 +235,20 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# Keep test output concise: many tests intentionally trigger 4xx/5xx paths.
+if "test" in sys.argv:
+    LOGGING.setdefault("loggers", {}).update(
+        {
+            "django.request": {
+                "handlers": ["console"],
+                "level": "CRITICAL",
+                "propagate": False,
+            },
+            "AIChatbot.views": {
+                "handlers": ["console"],
+                "level": "CRITICAL",
+                "propagate": False,
+            },
+        }
+    )

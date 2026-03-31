@@ -48,16 +48,12 @@ export default function Login() {
   // Redirect when user is set in AuthContext
   useEffect(() => {
     if (user && loading) {
-      console.log("User loaded in context, redirecting...", user);
       // Redirect based strictly on custom role (plus admin flag)
       if (user.role === "admin" || user.is_superuser) {
-        console.log("Redirecting to admin dashboard");
         nav("/admin/dashboard", { replace: true });
       } else if (user.role === "staff" || user.role === "Staff") {
-        console.log("Redirecting to staff dashboard");
         nav("/staff/dashboard", { replace: true });
       } else {
-        console.log("Redirecting to user dashboard");
         nav("/dashboard", { replace: true });
       }
     }
@@ -90,17 +86,12 @@ export default function Login() {
     }
     
     try {
-      console.log("Attempting login with:", usernameValue);
-      
       // Dispatch Redux login action and get the user data
       const userData = await dispatch(loginAction({ username: usernameValue, password: passwordValue })).unwrap();
-      
-      console.log("Login successful, user data:", userData);
       
       // Redirect based on user role using the fresh userData
       navigateByRole(userData);
     } catch (e2) {
-      console.error("Login error:", e2);
       // Display the error message (already user-friendly from Redux)
       setErr(e2 || "Invalid username or password");
       setLoading(false);

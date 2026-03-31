@@ -28,6 +28,7 @@ def user_dashboard(request):
 
 
 def _get_user_tickets(user):
+    """Return all tickets for the given user, with replies pre-fetched, newest first."""
     return (
         Ticket.objects.filter(user=user)
         .select_related("user", "closed_by")
@@ -39,10 +40,12 @@ def _get_user_tickets(user):
 
 
 def _build_user_data(user):
+    """Return a minimal dict of user profile data for the dashboard response."""
     return {"id": user.id, "k_number": user.k_number}
 
 
 def _closed_by_role_for_ticket(ticket):
+    """Return the lowercased role of whoever closed the ticket, or None if it is still open."""
     if ticket.status != "closed" or not ticket.closed_by_id:
         return None
     role = ticket.closed_by.role if hasattr(ticket.closed_by, "role") else "student"
@@ -50,6 +53,7 @@ def _closed_by_role_for_ticket(ticket):
 
 
 def _ticket_to_dashboard_dict(ticket):
+    """Serialize a single ticket (with replies) into a dict for the dashboard response."""
     replies_data = ReplySerializer(ticket.replies.all(), many=True).data
     return {
         "id": ticket.id,
@@ -65,6 +69,7 @@ def _ticket_to_dashboard_dict(ticket):
 
 
 def _build_tickets_data(tickets):
+    """Return a list of dashboard dicts for each ticket in the queryset."""
     return [_ticket_to_dashboard_dict(t) for t in tickets]
 
 

@@ -26,7 +26,6 @@ from KCLTicketingSystems import views
 from AIChatbot.views import chat_page
 
 from KCLTicketingSystems.views import admin_views, staff_dashboard_view, ticket_info_view, reply_view, staff_meeting_requests_views, notification_view
-#from KCLTicketingSystems.views.email_webhook import email_webhook
 
 from KCLTicketingSystems.views import notifications_list, mark_notification_read
 
@@ -93,9 +92,6 @@ urlpatterns = [
 
     path("notifications/", notifications_list, name="notifications_list"),
     path("notifications/<int:pk>/read/", mark_notification_read, name="mark_notification_read"),
-
-    #path('api/email-webhook/', email_webhook, name='email_webhook'),
-
 
     # SPA: serve React app for all non-API/static/media routes (login, dashboard, etc.)
     re_path(r'^(?!(static/|api/|media/))(?P<path>.*)$', views.spa_catchall, name='spa_catchall')

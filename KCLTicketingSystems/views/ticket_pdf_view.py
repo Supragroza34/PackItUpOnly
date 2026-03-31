@@ -117,6 +117,7 @@ def _build_pdf(ticket) -> bytes:
 
 
 def _build_pdf_doc(buffer, ticket):
+    """Create and return a configured SimpleDocTemplate for the ticket PDF."""
     return SimpleDocTemplate(
         buffer,
         pagesize=A4,
@@ -130,6 +131,7 @@ def _build_pdf_doc(buffer, ticket):
 
 
 def _build_pdf_header(story, ticket, styles):
+    """Append the title, subtitle, and decorative rule to the PDF story."""
     story.append(Paragraph("KCL Ticketing System", styles["title"]))
     story.append(
         Paragraph(
@@ -142,6 +144,7 @@ def _build_pdf_header(story, ticket, styles):
 
 
 def _build_pdf_ticket_details(story, ticket, styles):
+    """Append the 'Ticket Details' section (meta table) to the PDF story."""
     story.append(Paragraph("Ticket Details", styles["section_heading"]))
     student_name = _user_display_name(ticket.user) if ticket.user else ((f"{ticket.name} {ticket.surname}".strip() or "Unknown"))
     assigned_name = _user_display_name(ticket.assigned_to) if ticket.assigned_to else "Unassigned"
@@ -158,6 +161,7 @@ def _build_pdf_ticket_details(story, ticket, styles):
 
 
 def _build_pdf_meta_table(ticket, student_name, assigned_name, closed_by_name, styles):
+    """Build and return the two-column metadata Table for the ticket details section."""
     meta_rows = [
         [Paragraph("Student", styles["label"]), Paragraph(_pdf_safe_text(student_name), styles["value"])],
         [Paragraph("Department", styles["label"]), Paragraph(_pdf_safe_text(ticket.department), styles["value"])],
@@ -187,6 +191,7 @@ def _build_pdf_meta_table(ticket, student_name, assigned_name, closed_by_name, s
 
 
 def _build_pdf_original_message(story, ticket, styles):
+    """Append the 'Original Message' section to the PDF story."""
     story.append(Paragraph("Original Message", styles["section_heading"]))
     original_message = _pdf_safe_text(ticket.additional_details) or "(no message)"
     story.append(Paragraph(original_message, styles["message"]))
@@ -195,6 +200,7 @@ def _build_pdf_original_message(story, ticket, styles):
 
 
 def _build_pdf_conversation_thread(story, ticket, styles):
+    """Append the 'Conversation Thread' section, rendering each reply as a styled table row."""
     story.append(Paragraph("Conversation Thread", styles["section_heading"]))
     replies = ticket.replies.select_related("user").order_by("created_at", "id")
     if not replies.exists():
@@ -208,6 +214,7 @@ def _build_pdf_conversation_thread(story, ticket, styles):
 
 
 def _build_reply_inner_table(reply, styles):
+    """Build and return a styled Table representing a single reply in the conversation thread."""
     role = (getattr(reply.user, "role", "student") or "student").lower() if reply.user else "student"
     is_staff = getattr(reply.user, "is_superuser", False) or role in ("staff", "admin")
     sender_label = "Staff" if is_staff else "Student"
@@ -236,6 +243,7 @@ def _build_reply_inner_table(reply, styles):
 
 
 def _build_pdf_footer(story, styles):
+    """Append the disclaimer footer rule and text to the PDF story."""
     story.append(Spacer(1, 6 * mm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER_GREY, spaceAfter=2 * mm))
     story.append(

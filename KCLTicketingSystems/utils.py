@@ -124,6 +124,7 @@ def notify_on_ticket_update(ticket, updated_by):
 
 
 def _create_ticket_update_notification(user, ticket, message):
+    """Create a Notification record linking the given user, ticket, and message."""
     Notification.objects.create(
         user=user,
         title="Ticket Update",
@@ -133,6 +134,7 @@ def _create_ticket_update_notification(user, ticket, message):
 
 
 def _student_ticket_update_message(ticket, updated_by):
+    """Return the appropriate notification message for the student, or None if no message applies."""
     if ticket.status == Ticket.Status.CLOSED:
         return (
             f"Your ticket '{ticket.type_of_issue}' has been closed by "
@@ -149,6 +151,7 @@ def _student_ticket_update_message(ticket, updated_by):
 
 
 def _staff_ticket_update_message(ticket, updated_by):
+    """Return the appropriate notification message for the assigned staff member, or None if not applicable."""
     if not ticket.assigned_to or ticket.assigned_to == updated_by:
         return None
     if ticket.status == Ticket.Status.CLOSED:
@@ -160,6 +163,7 @@ def _staff_ticket_update_message(ticket, updated_by):
 
 
 def _notify_admins_ticket_closed(ticket, updated_by):
+    """Send a closure notification to every admin except the one who performed the close."""
     admins = User.objects.filter(role="admin").exclude(id=updated_by.id)
     for admin in admins:
         _create_ticket_update_notification(

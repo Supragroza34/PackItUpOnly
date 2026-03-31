@@ -24,7 +24,6 @@ function getAuthHeaders() {
 }
 
 class StaffApi{
-    // ================= STAFF LIST =================
     
     async getStaffList() {
         const response = await fetch(`${API_BASE_URL}/list/`, {

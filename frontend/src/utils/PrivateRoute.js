@@ -18,7 +18,7 @@ const PrivateRoute = ({ children }) => {
         }
     }, [dispatch, reduxUser]);
 
-    // Consider loading only if Redux is loading and we have no user from either source
+    
     const loading = reduxLoading && !user;
 
     if (loading) {

@@ -22,10 +22,6 @@ function getAuthHeaders() {
 }
 
 class AdminAPI {
-    // ================= AUTHENTICATION =================
-    // Note: Login now uses the common JWT endpoint at /api/auth/token/
-    // So we don't need separate admin login/logout methods
-    
     async getCurrentUser() {
         const base = isLocal ? 'http://localhost:8000' : window.location.origin;
         const response = await fetch(`${base}/api/users/me/`, {

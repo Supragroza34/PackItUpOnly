@@ -5,16 +5,15 @@ Only allows: bold, italic, lists (ordered/unordered), indentation.
 
 import bleach
 
-# Allowed HTML tags for rich-text formatting
-ALLOWED_TAGS = [
-    'b', 'strong',      # bold
-    'i', 'em',          # italic
-    'ol', 'ul', 'li',   # lists
-    'br',               # line breaks
-    'div', 'p',         # block structure
-]
 
-# Allowed attributes - data-indent for indentation tracking
+ALLOWED_TAGS = [
+    'b', 'strong',      
+    'i', 'em',          
+    'ol', 'ul', 'li',   
+    'br',               
+    'div', 'p',         
+]
+g
 ALLOWED_ATTRIBUTES = {
     'div': ['data-indent'],
     'p': ['data-indent'],

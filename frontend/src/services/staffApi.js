@@ -22,6 +22,10 @@ function getAuthHeaders() {
 }
 
 class StaffApi{
+<<<<<<< HEAD
+=======
+    
+>>>>>>> origin/main
     async getStaffList() {
         const response = await fetch(`${API_BASE_URL}/list/`, {
             headers: getAuthHeaders(),

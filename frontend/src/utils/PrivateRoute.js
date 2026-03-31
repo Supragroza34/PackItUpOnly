@@ -17,6 +17,10 @@ const PrivateRoute = ({ children }) => {
         }
     }, [dispatch, reduxUser]);
 
+<<<<<<< HEAD
+=======
+    
+>>>>>>> origin/main
     const loading = reduxLoading && !user;
 
     if (loading) {

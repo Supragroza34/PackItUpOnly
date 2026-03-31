@@ -107,4 +107,4 @@ number of lines of code generated : 165/167
 Percentage use : 98%
 
 IMPORTANT DISCLOSURE:
-If the AI chatbot does not work when using the Nix interface, please check its functionality in the deployed version. This may occur because the Gemini API key cannot be shared in the repository due to security restrictions.
+If the AI chatbot does not work when using the Nix interface, please check its functionality in the deployed version. This may occur because the Gemini API key cannot be shared in the repository due to security restrictions and Google may have blocked that key. The Deployed version has it's own key.

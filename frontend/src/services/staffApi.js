@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:8000/api/staff';
+const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const API_BASE_URL = isLocal
+  ? "http://localhost:8000/api/staff"
+  : `${window.location.origin}/api/staff`;
 
 // Format DRF serializer errors { "field": ["msg"] } into a string
 function formatValidationErrors(obj) {

@@ -1,10 +1,15 @@
 KCL Ticketing System
-A full-stack web application featuring a Django backend and a React.js frontend designed for student ticket submissions, staff management, and an AI-powered chatbot.
+A full-stack web application featuring a Django backend and a React.js frontend designed for student ticket submissions, staff management and an AI-powered chatbot.
 
-🚀 Quick Start
-To get the project running quickly, use the automated scripts provided in the root directory.
+To set up the ticketing system, the following commands should be followed:
+nix run .#init
+nix run .#tests
+nix run .#run
+nix run .#seed 
+nix run .#unseed
 
-1. First-Time Setup
+These commands allow the system to run using the Nix environment. If the Nix setup fails, use the manual setup instructions below.
+First-Time Setup
 This script checks for prerequisites (Python 3.8+ and Node.js 14+), installs all dependencies for both backend and frontend, and runs database migrations.
 
 For Mac/Linux:
@@ -16,7 +21,8 @@ For Windows:
 
 Bash
 .\setup-all.bat
-2. Launch the Application
+
+Launch the Application
 Once the setup is complete, use the startup script to launch both the Django development server and the React frontend simultaneously.
 
 For Mac/Linux:
@@ -31,20 +37,18 @@ Backend URL: http://localhost:8000
 
 Frontend URL: http://localhost:3000
 
-🛠 Features
+Features
 Student Ticket Submission
 Automated Validation: K-Numbers are validated (numbers only) and automatically generate a King's College London email address (KNumber@kcl.ac.uk).
 
 Dynamic Forms: "Type of Issue" options change dynamically based on the selected Department (Informatics, Engineering, or Medicine).
-
-Input Protection: Names and Surnames are restricted from containing numbers.
 
 Management & AI
 Admin Panel: Staff can manage and view all submitted tickets at http://localhost:8000/admin/.
 
 AI Chatbot: Integrates Google Gemini for intelligent assistance. Requires a GEMINI_API_KEY environment variable only if you use chatbot features.
 
-🔧 Manual Setup (Optional)
+Manual Setup (Optional)
 If you prefer to set up the components individually, follow these steps:
 
 Backend (Django)
@@ -63,14 +67,28 @@ Install: npm install.
 
 Run: npm start.
 
-⚠️ Troubleshooting
+Troubleshooting
 Port Conflicts: If port 8000 (Backend) or 3000 (Frontend) is occupied, the systems will prompt you to use an alternative or stop the conflicting service.
 
 AI Chatbot Issues: Ensure your GEMINI_API_KEY is set in your local environment or .env file. The rest of the app runs without this key.
 
 Dependencies: If setup fails, ensure you are using Node.js 18.x as specified in the project configuration.
 
-AI Use In Code: Generative AI was used in the following file(s):
+Login Details for Ticketing System:
+Student: 
+Username: johndoe
+Password: Password123
+
+Staff:
+Username: janedee
+Password: Password123
+
+Admin:
+Username: alexadmin
+Password: Password123
+
+AI Usage Disclosure
+Generative AI tools were used in the development of the following file:
 
 Path to file: PackItUpOnly/flake.nix (in the root)
 Affected function/ method/ class: flake.nix 

@@ -24,11 +24,18 @@ export default function Signup() {
     e.preventDefault();
     if (loading) return;
     setErr("");
+
+    const trimmedKNumber = form.k_number.trim();
+    if (!/^\d{8}$/.test(trimmedKNumber)) {
+      setErr("K-Number must be exactly 8 digits.");
+      return;
+    }
+
     setLoading(true);
     try {
       await apiFetch("/auth/register/", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, k_number: trimmedKNumber }),
       });
       nav("/login");
     } catch (e2) {
@@ -135,6 +142,11 @@ export default function Signup() {
               placeholder="K number"
               value={form.k_number}
               onChange={onChange}
+              inputMode="numeric"
+              pattern="\d{8}"
+              minLength={8}
+              maxLength={8}
+              title="K-Number must be exactly 8 digits"
               required
               className="login-input"
               disabled={loading}

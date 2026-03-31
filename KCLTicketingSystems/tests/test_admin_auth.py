@@ -237,6 +237,30 @@ class UserRegistrationTest(TestCase):
         response = self.client.post(self.register_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_registration_k_number_too_short(self):
+        """Test registration with k_number shorter than 8 digits"""
+        data = self.valid_registration_data.copy()
+        data['k_number'] = '1234567'
+
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_registration_k_number_too_long(self):
+        """Test registration with k_number longer than 8 digits"""
+        data = self.valid_registration_data.copy()
+        data['k_number'] = '123456789'
+
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_registration_k_number_non_numeric(self):
+        """Test registration with non-numeric k_number"""
+        data = self.valid_registration_data.copy()
+        data['k_number'] = '12A45678'
+
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
 
 class UserMeViewTest(TestCase):
     """Test cases for /users/me/ endpoint"""

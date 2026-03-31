@@ -1,6 +1,24 @@
-KCL Ticketing System
-A full-stack web application featuring a Django backend and a React.js frontend designed for student ticket submissions, staff management and an AI-powered chatbot.
+PackItUpOnly Team Project: 
 
+Team members
+The members of the team are:
+Amey Tripathi
+Hafsa Bhudye
+Pasquale Benjamin Fuccio
+Jasmeen Sethi
+Tejas Raj
+Khushi Alam
+Ved Patel
+Nitin Anantharaju
+
+Project structure
+The project is called KCL Ticketing System. 
+It is a full-stack web application featuring a Django backend and a React.js frontend designed for student ticket submissions, staff management and an AI-powered chatbot.
+
+Deployed version of the application
+The deployed version of the application can be found at:
+
+Installation instructions
 To set up the ticketing system, the following commands should be followed:
 nix run .#init
 nix run .#tests
@@ -37,17 +55,6 @@ Backend URL: http://localhost:8000
 
 Frontend URL: http://localhost:3000
 
-Features
-Student Ticket Submission
-Automated Validation: K-Numbers are validated (numbers only) and automatically generate a King's College London email address (KNumber@kcl.ac.uk).
-
-Dynamic Forms: "Type of Issue" options change dynamically based on the selected Department (Informatics, Engineering, or Medicine).
-
-Management & AI
-Admin Panel: Staff can manage and view all submitted tickets at http://localhost:8000/admin/.
-
-AI Chatbot: Integrates Google Gemini for intelligent assistance. Requires a GEMINI_API_KEY environment variable only if you use chatbot features.
-
 Manual Setup (Optional)
 If you prefer to set up the components individually, follow these steps:
 
@@ -74,7 +81,11 @@ AI Chatbot Issues: Ensure your GEMINI_API_KEY is set in your local environment o
 
 Dependencies: If setup fails, ensure you are using Node.js 18.x as specified in the project configuration.
 
+Sources
+The packages used by this application are specified in requirements.txt
+
 Login Details for Ticketing System:
+
 Student: 
 Username: johndoe
 Password: Password123
@@ -94,3 +105,6 @@ Path to file: PackItUpOnly/flake.nix (in the root)
 Affected function/ method/ class: flake.nix 
 number of lines of code generated : 165/167
 Percentage use : 98%
+
+IMPORTANT DISCLOSURE:
+If the AI chatbot does not work when using the Nix interface, please check its functionality in the deployed version. This may occur because the Gemini API key cannot be shared in the repository due to security restrictions and Google may have blocked that key. The Deployed version has it's own key.

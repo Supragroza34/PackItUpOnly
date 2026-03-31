@@ -72,9 +72,9 @@ export default function WeeklyCalendar({ officeHours, acceptedMeetings }) {
   function isSameDay(isoStr, day) {
     const d = new Date(isoStr);
     return (
-      d.getFullYear() === day.getFullYear() &&
-      d.getMonth()    === day.getMonth()    &&
-      d.getDate()     === day.getDate()
+      d.getUTCFullYear() === day.getFullYear() &&
+      d.getUTCMonth()    === day.getMonth()    &&
+      d.getUTCDate()     === day.getDate()
     );
   }
 
@@ -160,7 +160,7 @@ export default function WeeklyCalendar({ officeHours, acceptedMeetings }) {
                     {/* Accepted-meeting blocks (15-min slots) */}
                     {dayMtg.map((m, k) => {
                       const d      = new Date(m.meeting_datetime);
-                      const startM = d.getHours() * 60 + d.getMinutes();
+                      const startM = d.getUTCHours() * 60 + d.getUTCMinutes();
                       const top    = toTop(startM);
                       const h      = Math.max((15 / 60) * HOUR_HEIGHT, 18);
                       return (
@@ -195,6 +195,7 @@ export default function WeeklyCalendar({ officeHours, acceptedMeetings }) {
             {new Date(tooltip.meeting.meeting_datetime).toLocaleString("en-GB", {
               weekday: "short", day: "numeric", month: "short",
               hour: "2-digit", minute: "2-digit",
+              timeZone: "UTC",
             })}
           </div>
           {tooltip.meeting.description && (

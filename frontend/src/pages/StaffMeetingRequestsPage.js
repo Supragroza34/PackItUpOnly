@@ -34,6 +34,7 @@ function RequestCard({ req, onAccept, onDeny }) {
   const dt = new Date(req.meeting_datetime).toLocaleString("en-GB", {
     weekday: "short", day: "numeric", month: "short",
     year: "numeric", hour: "2-digit", minute: "2-digit",
+    timeZone: "UTC",
   });
 
   return (

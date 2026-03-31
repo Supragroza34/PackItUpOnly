@@ -25,7 +25,7 @@ export default function MyMeetingsPage() {
 
   const formatDate = (d) => {
     try {
-      return new Date(d).toLocaleString();
+      return new Date(d).toLocaleString("en-GB", { timeZone: "UTC" });
     } catch {
       return d;
     }

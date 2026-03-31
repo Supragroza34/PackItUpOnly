@@ -69,3 +69,10 @@ Port Conflicts: If port 8000 (Backend) or 3000 (Frontend) is occupied, the syste
 AI Chatbot Issues: Ensure your GEMINI_API_KEY is set in your local environment or .env file. The rest of the app runs without this key.
 
 Dependencies: If setup fails, ensure you are using Node.js 18.x as specified in the project configuration.
+
+AI Use In Code: Generative AI was used in the following file(s):
+
+Path to file: PackItUpOnly/flake.nix (in the root)
+Affected function/ method/ class: flake.nix 
+number of lines of code generated : 165/167
+Percentage use : 98%

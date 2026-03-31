@@ -59,12 +59,6 @@ export default function Login() {
     }
   }, [user, loading, nav]);
   
-  useEffect(() => {
-    if (user && loading) {
-      navigateByRole(user);
-    }
-  }, [user, loading, nav]);
-
   async function onSubmit(e) {
     e.preventDefault();
     

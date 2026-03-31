@@ -1,7 +1,7 @@
 const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const API_BASE_URL = isLocal
-  ? "http://localhost:8000/api/staff"
-  : `${window.location.origin}/api/staff`;
+    ? "http://localhost:8000/api/staff"
+    : `${window.location.origin}/api/staff`;
 
 function formatValidationErrors(obj) {
     if (!obj || typeof obj !== 'object') return '';
@@ -21,7 +21,7 @@ function getAuthHeaders() {
     };
 }
 
-class StaffApi{
+class StaffApi {
     async getStaffList() {
         const response = await fetch(`${API_BASE_URL}/list/`, {
             headers: getAuthHeaders(),

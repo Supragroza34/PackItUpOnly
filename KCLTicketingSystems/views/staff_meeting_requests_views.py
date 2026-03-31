@@ -151,6 +151,7 @@ def staff_available_slots(request, staff_id):
 
 
 def _parse_selected_date(date_str):
+    """Parse a YYYY-MM-DD string into a date; return (date, None) or (None, error Response)."""
     if not date_str:
         return None, Response(
             {'error': 'date parameter required (YYYY-MM-DD).'},
@@ -167,6 +168,7 @@ def _parse_selected_date(date_str):
 
 
 def _generate_candidate_slots(selected_date, office_hours_blocks):
+    """Generate all 15-minute slots within office hours on selected_date that are still in the future."""
     from django.utils import timezone as dj_timezone
 
     current_tz = dj_timezone.get_current_timezone()
@@ -182,7 +184,6 @@ def _generate_candidate_slots(selected_date, office_hours_blocks):
             datetime.combine(selected_date, oh.end_time), current_tz
         )
         while current_slot + slot_duration <= end_dt:
-            # Use conditional expression to avoid an `if` statement node.
             all_slots.append(current_slot) if current_slot > now else None
             current_slot += slot_duration
     all_slots.sort()
@@ -190,6 +191,7 @@ def _generate_candidate_slots(selected_date, office_hours_blocks):
 
 
 def _get_booked_meeting_datetimes(staff):
+    """Return the set of datetimes already booked for the staff member (pending or accepted)."""
     return set(
         MeetingRequest.objects.filter(
             staff=staff,
@@ -218,8 +220,6 @@ def meeting_request_create(request):
     serializer = MeetingRequestCreateSerializer(data=data)
     
     if serializer.is_valid():
-        # Set the student to the current user
-        #serializer.save(student=request.user)
         meeting_request = serializer.save(student=request.user)
 
         notify_staff_on_meeting_request(meeting_request)

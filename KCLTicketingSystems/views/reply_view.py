@@ -106,10 +106,12 @@ def ticket_replies(request, ticket_id):
 
 
 def _staff_can_reply(user):
+    """Return True if the user holds a staff, admin, or superuser role."""
     return user.role in ("staff", "Staff", "admin") or getattr(user, "is_superuser", False)
 
 
 def _reply_details_get(ticket_id):
+    """Return a Response containing top-level replies (with children) for the given ticket."""
     replies = (
         Reply.objects.filter(ticket=ticket_id, parent=None)
         .select_related("user")
@@ -120,6 +122,7 @@ def _reply_details_get(ticket_id):
 
 
 def _reply_details_post(request, ticket):
+    """Create a staff reply on the ticket and send the student a notification."""
     if ticket.status == Ticket.Status.CLOSED:
         return Response(
             {"error": "Replies are disabled because this ticket is closed"},
@@ -137,12 +140,14 @@ def _reply_details_post(request, ticket):
 
 
 def _ticket_replies_get(ticket):
+    """Return a Response with top-level replies for the ticket in chronological order."""
     replies = Reply.objects.filter(ticket=ticket, parent=None).order_by("created_at")
     serializer = ReplySerializer(replies, many=True)
     return Response(serializer.data)
 
 
 def _ticket_replies_post(request, ticket):
+    """Create a reply on the ticket and dispatch the appropriate notification based on caller role."""
     if ticket.status == Ticket.Status.CLOSED:
         return Response(
             {"error": "Replies are disabled because this ticket is closed"},

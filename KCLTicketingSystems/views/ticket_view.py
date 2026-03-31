@@ -16,12 +16,14 @@ def ticket_form(request):
     return render(request, 'ticket_form.html')
 
 def _get_data_and_files(request):
+    """Return (data, files) from the request, handling both multipart and JSON bodies."""
     if request.content_type and "multipart/form-data" in request.content_type:
         return request.POST, request.FILES.getlist("attachments")
     return request.data, []
 
 
 def _extract_fields(data):
+    """Extract and strip all expected ticket submission fields from request data."""
     return {
         "name": data.get("name", "").strip(),
         "surname": data.get("surname", "").strip(),
@@ -34,6 +36,7 @@ def _extract_fields(data):
 
 
 def _validate_core_fields(fields):
+    """Run all field-level validators and return a dict of validation errors."""
     errors = {}
     _validate_name(fields["name"], errors)
     _validate_surname(fields["surname"], errors)
@@ -49,6 +52,7 @@ def _validate_core_fields(fields):
 
 
 def _validate_name(name, errors):
+    """Validate the name field; populate errors in-place if invalid."""
     if not name:
         errors["name"] = "Name is required"
     elif re.search(r"\d", name):
@@ -56,6 +60,7 @@ def _validate_name(name, errors):
 
 
 def _validate_surname(surname, errors):
+    """Validate the surname field; populate errors in-place if invalid."""
     if not surname:
         errors["surname"] = "Surname is required"
     elif re.search(r"\d", surname):
@@ -63,6 +68,7 @@ def _validate_surname(surname, errors):
 
 
 def _validate_k_number(k_number, errors):
+    """Validate the K-number field; populate errors in-place if invalid."""
     if not k_number:
         errors["k_number"] = "K-Number is required"
         return
@@ -74,6 +80,7 @@ def _validate_k_number(k_number, errors):
 
 
 def _validate_k_email(k_email, k_number, errors):
+    """Validate the KCL email field, ensuring it matches the pattern K<number>@kcl.ac.uk."""
     if not k_email:
         errors["k_email"] = "Email is required"
         return
@@ -83,6 +90,7 @@ def _validate_k_email(k_email, k_number, errors):
 
 
 def _validate_department(department, errors):
+    """Validate that department is one of the accepted values; populate errors in-place if not."""
     valid_departments = ["Informatics", "Engineering", "Medicine"]
     if not department:
         errors["department"] = "Department is required"
@@ -91,6 +99,7 @@ def _validate_department(department, errors):
 
 
 def _validate_issue_and_details(type_of_issue, additional_details, errors):
+    """Validate that both the issue type and additional details are provided."""
     if not type_of_issue:
         errors["type_of_issue"] = "Type of issue is required"
     if not additional_details:
@@ -98,6 +107,7 @@ def _validate_issue_and_details(type_of_issue, additional_details, errors):
 
 
 def _validate_attachments(files):
+    """Validate each uploaded file for size and extension; return a dict of errors."""
     errors = {}
     max_size = 10 * 1024 * 1024
     allowed_ext = [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".txt"]
@@ -110,6 +120,7 @@ def _validate_attachments(files):
 
 
 def _single_file_error(file, max_size, allowed_ext):
+    """Return an error string if the file violates size or extension rules, otherwise None."""
     if file.size > max_size:
         return f"{file.name} exceeds the maximum file size of 10MB"
     file_ext = os.path.splitext(file.name)[1].lower()
@@ -122,6 +133,7 @@ def _single_file_error(file, max_size, allowed_ext):
 
 
 def _create_ticket_and_attachments(fields, files):
+    """Create a Ticket and its Attachments; return (ticket, attachment_count)."""
     ticket = Ticket.objects.create(**fields)
     count = 0
     for file in files:
@@ -146,6 +158,7 @@ def submit_ticket(request):
 
 
 def _collect_errors(fields, files):
+    """Aggregate field and attachment validation errors into a single dict."""
     errors = _validate_core_fields(fields)
     if files:
         attachment_errors = _validate_attachments(files)
@@ -154,6 +167,7 @@ def _collect_errors(fields, files):
 
 
 def _success_response(ticket, count):
+    """Return a 201 response with the new ticket ID and attachment count."""
     return Response(
         {
             "message": "Ticket submitted successfully",
@@ -165,6 +179,7 @@ def _success_response(ticket, count):
 
 
 def _server_error_response(exc):
+    """Return a 500 response wrapping the exception message."""
     return Response(
         {"errors": {"general": f"An error occurred: {str(exc)}"}},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -225,6 +225,7 @@ def admin_tickets_list(request):
 
 
 def _admin_tickets_queryset(request):
+    """Build and return the filtered ticket queryset for the admin tickets list view."""
     tickets = (
         Ticket.objects.select_related("user", "closed_by")
         .all()
@@ -343,6 +344,7 @@ def admin_users_list(request):
 
 
 def _apply_users_role_filter(users, role_filter):
+    """Filter the users queryset by role; return unfiltered if no role_filter is given."""
     if not role_filter:
         return users
     if role_filter == "admin":

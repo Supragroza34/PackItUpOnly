@@ -82,7 +82,11 @@
             echo "== Frontend setup =="
             cd frontend
 
-            npm install            
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi          
 
             cd ..
 

@@ -39,7 +39,6 @@ function StaffDashboardPage() {
     const [nameSearch, setNameSearch] = useState('');
     const navigate = useNavigate();
 
-    // Hard guard: only staff (and admin) should see this page
     useEffect(() => {
         if (!user) return;
         const role = (user.role || '').toLowerCase();
@@ -58,7 +57,6 @@ function StaffDashboardPage() {
             .catch(() => {});
     }, []);
 
-    // Fetch filtered tickets
     useEffect(() => {
         const params = new URLSearchParams({ filtering: filter });
         if (nameSearch.trim()) params.set('search', nameSearch.trim());
@@ -276,5 +274,4 @@ function StaffDashboardPage() {
         </div>
     );
 }
-//Staff dashboard updated
 export default StaffDashboardPage;

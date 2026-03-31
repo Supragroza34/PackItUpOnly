@@ -88,7 +88,6 @@ export default function StaffMeetingPage() {
       }, { auth: true });
 
       setSuccess("Meeting request submitted successfully!");
-      // Remove slot from the list immediately so it can't be double-booked
       setAvailableSlots(prev => prev.filter(s => s !== selectedSlot));
       setSelectedSlot("");
       setDescription("");
@@ -99,8 +98,6 @@ export default function StaffMeetingPage() {
     }
   }
 
-  // Format ISO datetime to a readable time string (e.g. "09:15")
-  // Use UTC so displayed times match the office hours (stored/shown in UTC).
   function formatTime(isoStr) {
     const d = new Date(isoStr);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
@@ -114,7 +111,6 @@ export default function StaffMeetingPage() {
       .map(oh => `${oh.day_of_week}: ${oh.start_time.substring(0, 5)} – ${oh.end_time.substring(0, 5)}`);
   };
 
-  // Earliest selectable date is today
   const todayStr = new Date().toISOString().split('T')[0];
 
   if (loading) return (

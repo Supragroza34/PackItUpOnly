@@ -3,7 +3,6 @@ const API_BASE_URL = isLocal
   ? "http://localhost:8000/api/staff"
   : `${window.location.origin}/api/staff`;
 
-// Format DRF serializer errors { "field": ["msg"] } into a string
 function formatValidationErrors(obj) {
     if (!obj || typeof obj !== 'object') return '';
     const parts = [];
@@ -14,7 +13,6 @@ function formatValidationErrors(obj) {
     return parts.length ? parts.join('; ') : '';
 }
 
-// Helper to get auth headers with JWT token
 function getAuthHeaders() {
     const token = sessionStorage.getItem('access');
     return {
@@ -24,8 +22,6 @@ function getAuthHeaders() {
 }
 
 class StaffApi{
-    // ================= STAFF LIST =================
-    
     async getStaffList() {
         const response = await fetch(`${API_BASE_URL}/list/`, {
             headers: getAuthHeaders(),
@@ -48,7 +44,6 @@ class StaffApi{
         const body = await response.json().catch(() => ({}));
         
         if (!response.ok) {
-            // DRF validation errors: { "field": ["message"] } or backend { "error": "..." }
             const msg = body.error || (typeof body === 'object' && body.detail) || formatValidationErrors(body);
             throw new Error(msg || 'Failed to reassign ticket');
         }

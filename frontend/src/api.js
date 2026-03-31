@@ -1,4 +1,3 @@
-// Use local Django API when developing, same-origin API in production.
 const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 const API_BASE = isLocal ? "http://localhost:8000/api" : `${window.location.origin}/api`;
 

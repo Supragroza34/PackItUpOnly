@@ -9,7 +9,6 @@ const PrivateRoute = ({ children }) => {
     const { user: reduxUser, loading: reduxLoading } = useSelector((state) => state.auth);
     const { user: contextUser } = useAuth();
 
-    // Use either Redux or AuthContext user so login via AuthContext still allows access
     const user = reduxUser ?? contextUser;
 
     useEffect(() => {
@@ -18,7 +17,6 @@ const PrivateRoute = ({ children }) => {
         }
     }, [dispatch, reduxUser]);
 
-    // Consider loading only if Redux is loading and we have no user from either source
     const loading = reduxLoading && !user;
 
     if (loading) {

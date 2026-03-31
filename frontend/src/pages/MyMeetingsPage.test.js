@@ -8,7 +8,6 @@
       expect(screen.getByText("Staff")).toBeInTheDocument();
       expect(screen.getByText("Single")).toBeInTheDocument();
     });
-    // Initials fallback
     expect(screen.getAllByText("S").length).toBeGreaterThan(0);
   });
 import React from "react";

@@ -49,7 +49,6 @@ export default function Login() {
   useEffect(() => {
     if (user && loading) {
       console.log("User loaded in context, redirecting...", user);
-      // Redirect based strictly on custom role (plus admin flag)
       if (user.role === "admin" || user.is_superuser) {
         console.log("Redirecting to admin dashboard");
         nav("/admin/dashboard", { replace: true });
@@ -63,7 +62,6 @@ export default function Login() {
     }
   }, [user, loading, nav]);
   
-  // Redirect when user is set in AuthContext
   useEffect(() => {
     if (user && loading) {
       navigateByRole(user);
@@ -73,7 +71,7 @@ export default function Login() {
   async function onSubmit(e) {
     e.preventDefault();
     
-    if (loading) return; // Prevent double submission
+    if (loading) return;
     
     setErr("");
     setLoading(true);

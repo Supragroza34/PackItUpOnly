@@ -4,12 +4,11 @@ const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satu
 const HOUR_HEIGHT = 56; // px per hour
 const HEADER_H   = 36; // px for the day-name header row
 
-// ── helpers ────────────────────────────────────────────────────────────────
 
 function getMondayOfWeek(date) {
   const d = new Date(date);
-  const day = d.getDay();                // 0=Sun … 6=Sat
-  const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+  const day = d.getDay();                
+  const diff = day === 0 ? -6 : 1 - day; 
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -22,7 +21,6 @@ function addDays(date, n) {
 }
 
 function parseTimeToMinutes(timeStr) {
-  // accepts "HH:MM" or "HH:MM:SS"
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + (m || 0);
 }
@@ -33,23 +31,18 @@ function formatWeekLabel(start) {
   return `${fmt(start)} – ${fmt(end)} ${end.getFullYear()}`;
 }
 
-// ── component ───────────────────────────────────────────────────────────────
-
 const TOOLTIP_WIDTH = 240;
 
 export default function WeeklyCalendar({ officeHours, acceptedMeetings }) {
   const [weekStart, setWeekStart] = useState(() => getMondayOfWeek(new Date()));
-  const [tooltip, setTooltip] = useState(null); // { meeting, x, y }
+  const [tooltip, setTooltip] = useState(null); 
 
   function showTooltip(e, m) {
     const rect = e.currentTarget.getBoundingClientRect();
-    // Default: appear to the right of the block
     let x = rect.right + 10;
-    // Flip left if it would overflow the viewport
     if (x + TOOLTIP_WIDTH > window.innerWidth - 8) {
       x = rect.left - TOOLTIP_WIDTH - 10;
     }
-    // Clamp top so the tooltip doesn't fall below the viewport
     const y = Math.min(rect.top, window.innerHeight - 180);
     setTooltip({ meeting: m, x, y });
   }
@@ -59,7 +52,6 @@ export default function WeeklyCalendar({ officeHours, acceptedMeetings }) {
   }
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  // Derive visible time range from office hours (fallback 08:00–18:00)
   let minMin = 8 * 60;
   let maxMin = 18 * 60;
   officeHours.forEach((oh) => {
@@ -73,7 +65,6 @@ export default function WeeklyCalendar({ officeHours, acceptedMeetings }) {
   const hourCount = totalMin / 60;
   const calH      = hourCount * HOUR_HEIGHT;
 
-  // Convert a minute-of-day value to a px offset within the day body
   function toTop(minutes) {
     return ((minutes - minMin) / 60) * HOUR_HEIGHT;
   }
@@ -192,7 +183,7 @@ export default function WeeklyCalendar({ officeHours, acceptedMeetings }) {
         </div>
       </div>
 
-      {/* ── Hover tooltip (fixed so it's never clipped by overflow:hidden) ── */}
+      {/* ── Hover tooltip ── */}
       {tooltip && (
         <div
           className="wc-tooltip"

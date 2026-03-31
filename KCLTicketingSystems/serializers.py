@@ -45,7 +45,10 @@ class RegisterSerializer(serializers.ModelSerializer):
                   'k_number', 'department']
 
     def validate_k_number(self, value):
-        """Validate k_number uniqueness"""
+        """Validate k_number format and uniqueness."""
+        value = value.strip()
+        if not value.isdigit() or len(value) != 8:
+            raise serializers.ValidationError("K-Number must be exactly 8 digits.")
         if User.objects.filter(k_number=value).exists():
             raise serializers.ValidationError("A user with this K-Number already exists.")
         return value

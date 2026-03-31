@@ -198,6 +198,36 @@ class RegisterSerializerTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn('username', serializer.errors)
 
+    def test_register_serializer_k_number_too_short(self):
+        """Test that k_number shorter than 8 digits is rejected"""
+        data = self.valid_data.copy()
+        data['k_number'] = '1234567'
+
+        serializer = RegisterSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('k_number', serializer.errors)
+
+    def test_register_serializer_k_number_too_long(self):
+        """Test that k_number longer than 8 digits is rejected"""
+        data = self.valid_data.copy()
+        data['k_number'] = '123456789'
+
+        serializer = RegisterSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('k_number', serializer.errors)
+
+    def test_register_serializer_k_number_non_numeric(self):
+        """Test that non-numeric k_number is rejected"""
+        data = self.valid_data.copy()
+        data['k_number'] = '12A45678'
+
+        serializer = RegisterSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('k_number', serializer.errors)
+
 
 class TicketSerializerTest(TestCase):
     """Test cases for TicketSerializer"""

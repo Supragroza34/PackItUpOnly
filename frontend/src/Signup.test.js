@@ -31,7 +31,7 @@ describe("Signup", () => {
     await userEvent.type(screen.getByLabelText(/username/i), "newuser");
     await userEvent.type(screen.getByLabelText(/^email$/i), "n@kcl.ac.uk");
     await userEvent.type(screen.getByLabelText(/^password$/i), "secret123");
-    await userEvent.type(screen.getByLabelText(/k number/i), "K1234567");
+    await userEvent.type(screen.getByLabelText(/k number/i), "12345678");
 
     await userEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -51,11 +51,25 @@ describe("Signup", () => {
 
     await userEvent.type(screen.getByLabelText(/username/i), "u");
     await userEvent.type(screen.getByLabelText(/^email$/i), "e@e.com");
-    await userEvent.type(screen.getByLabelText(/^password$/i), "p");
-    await userEvent.type(screen.getByLabelText(/k number/i), "K1");
+    await userEvent.type(screen.getByLabelText(/^password$/i), "password123");
+    await userEvent.type(screen.getByLabelText(/k number/i), "12345678");
 
     await userEvent.click(screen.getByRole("button", { name: /create account/i }));
 
     expect(await screen.findByText(/Email already exists/i)).toBeInTheDocument();
+  });
+
+  test("shows error when k number is not exactly 8 digits", async () => {
+    render(<Signup />);
+
+    await userEvent.type(screen.getByLabelText(/username/i), "newuser");
+    await userEvent.type(screen.getByLabelText(/^email$/i), "n@kcl.ac.uk");
+    await userEvent.type(screen.getByLabelText(/^password$/i), "secret123");
+    await userEvent.type(screen.getByLabelText(/k number/i), "1234567");
+
+    await userEvent.click(screen.getByRole("button", { name: /create account/i }));
+
+    expect(await screen.findByText(/K-Number must be exactly 8 digits/i)).toBeInTheDocument();
+    expect(apiFetch).not.toHaveBeenCalled();
   });
 });

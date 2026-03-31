@@ -80,8 +80,6 @@ export default function TicketFormPage() {
       .trim();
   }
 
-  /* ---------- Handlers ---------- */
-
   function handleDepartmentChange(e) {
     setDepartment(e.target.value);
     setTypeOfIssue("");
@@ -121,7 +119,6 @@ export default function TicketFormPage() {
     }
 
     setSelectedFiles((prev) => [...prev, ...newFiles]);
-    // Reset file input so the same file can be re-added after removal
     e.target.value = "";
   }
 
@@ -138,7 +135,6 @@ export default function TicketFormPage() {
     });
   }
 
-  /* ---------- Validation ---------- */
 
   function validate() {
     const errs = {};
@@ -148,13 +144,6 @@ export default function TicketFormPage() {
       errs.additional_details = "Additional details are required.";
     return errs;
   }
-
-  /* ---------- Submit ---------- */
-
-
-
-
-
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -178,7 +167,7 @@ export default function TicketFormPage() {
 
       const res = await fetch(`${API_BASE}/tickets/`, {
         method: "POST",
-        headers: authHeaders(), // JWT token; no Content-Type so browser sets multipart boundary
+        headers: authHeaders(), 
         body: formData,
       });
 
@@ -212,8 +201,6 @@ export default function TicketFormPage() {
       setSubmitting(false);
     }
   }
-
-  /* ---------- Render ---------- */
 
   const issueOptions = ISSUE_TYPES[department] || [];
 

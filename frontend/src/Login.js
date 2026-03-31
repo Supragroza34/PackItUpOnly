@@ -59,7 +59,6 @@ export default function Login() {
     }
   }, [user, loading, nav]);
   
-  // Redirect when user is set in AuthContext
   useEffect(() => {
     if (user && loading) {
       navigateByRole(user);
@@ -69,7 +68,7 @@ export default function Login() {
   async function onSubmit(e) {
     e.preventDefault();
     
-    if (loading) return; // Prevent double submission
+    if (loading) return;
     
     setErr("");
     setLoading(true);

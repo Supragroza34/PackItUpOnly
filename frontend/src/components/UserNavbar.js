@@ -3,17 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./UserNavbar.css";
 
-// Handles logout and always redirects, even if the server-side call fails
 export async function handleLogout(logout, navigate) {
   try {
     await logout();
   } catch {
-    // ignore logout errors — always redirect
   }
   navigate("/login", { replace: true });
 }
 
-// The dropdown menu panel with Edit Profile link
 function DropdownMenu({ onClose }) {
   return (
     <div className="navbar-dropdown" role="menu">
@@ -24,7 +21,6 @@ function DropdownMenu({ onClose }) {
   );
 }
 
-// The toggle button that opens/closes the profile dropdown
 function ProfileToggle({ open, onToggle }) {
   return (
     <button
@@ -38,7 +34,6 @@ function ProfileToggle({ open, onToggle }) {
   );
 }
 
-// Manages dropdown open/close state and renders the toggle + menu
 function ProfileDropdown() {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -55,7 +50,6 @@ function ProfileDropdown() {
   );
 }
 
-// All navigation links in the right-hand section of the navbar
 function NavLinks({ onLogout }) {
   return (
     <div className="navbar-links">
@@ -70,7 +64,6 @@ function NavLinks({ onLogout }) {
   );
 }
 
-// Main navbar component — orchestrates auth hooks and renders the nav bar
 export default function UserNavbar() {
   const { logout } = useAuth();
   const navigate = useNavigate();

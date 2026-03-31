@@ -5,25 +5,17 @@ import "./RichTextEditor.css";
 
 const ALLOWED_FORMATS = ["bold", "italic", "list", "indent"];
 
-// Function to sanitize HTML by removing disallowed formats
 function sanitizeHtml(html) {
   if (!html) return "";
   
-  // Create a temp container to parse HTML
   const temp = document.createElement("div");
   temp.innerHTML = html;
   
-  // Remove all attributes except for those we explicitly allow
   const walk = (node) => {
     if (node.nodeType === Node.ELEMENT_NODE) {
-      // For list items and divs with indent, preserve their structure
-      // For other elements, remove all attributes
       if (node.tagName === "LI" || node.tagName === "OL" || node.tagName === "UL") {
-        // Keep list structure intact
       } else if (node.tagName === "DIV" || node.tagName === "P") {
-        // Check for data-indent attribute
         const indent = node.getAttribute("data-indent");
-        // Remove all attributes properly
         while (node.attributes.length > 0) {
           node.removeAttribute(node.attributes[0].name);
         }
@@ -31,9 +23,7 @@ function sanitizeHtml(html) {
           node.setAttribute("data-indent", indent);
         }
       } else if (node.tagName === "BR") {
-        // Keep BR tags
       } else if (!["STRONG", "EM", "B", "I", "OL", "UL", "LI"].includes(node.tagName)) {
-        // For disallowed tags, replace with their content
         while (node.firstChild) {
           node.parentNode.insertBefore(node.firstChild, node);
         }

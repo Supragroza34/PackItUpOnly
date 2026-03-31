@@ -6,7 +6,6 @@ import Chatbot from './Chatbot';
 describe('Chatbot component (AI helper)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Ensure authHeaders() returns a token
     sessionStorage.setItem('access', 'test-token-123');
   });
 
@@ -65,7 +64,6 @@ describe('Chatbot component (AI helper)', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong!');
     });
-    // The user message should be removed after error
     expect(screen.queryByText('Trigger error')).not.toBeInTheDocument();
   });
 
@@ -78,7 +76,6 @@ describe('Chatbot component (AI helper)', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Network down');
     });
-    // The user message should be removed after error
     expect(screen.queryByText('Network fail')).not.toBeInTheDocument();
   });
 
@@ -156,7 +153,6 @@ describe('Chatbot component (AI helper)', () => {
 
   test('scrollToBottom skips when scrollIntoView is not a function', async () => {
     const orig = HTMLElement.prototype.scrollIntoView;
-    // eslint-disable-next-line no-delete-var
     delete HTMLElement.prototype.scrollIntoView;
     global.fetch = jest.fn(() =>
       Promise.resolve({

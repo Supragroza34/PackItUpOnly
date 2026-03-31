@@ -9,6 +9,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Count, Q
+from django.db.models import Prefetch
 from datetime import timedelta
 
 from ..models import Ticket, User, Reply, Attachment
@@ -68,7 +69,17 @@ class TicketSerializer(serializers.ModelSerializer):
         return obj.status in (Ticket.Status.PENDING, Ticket.Status.IN_PROGRESS) and obj.created_at < cutoff
 
     def get_replies(self, obj):
-        replies = Reply.objects.filter(ticket=obj, parent=None)
+        replies = (
+            obj.replies.filter(parent=None)
+            .select_related("user")
+            .prefetch_related(
+                Prefetch(
+                    "children",
+                    queryset=Reply.objects.select_related("user"),
+                    to_attr="prefetched_children",
+                )
+            )
+        )
         return ReplySerializer(replies, many=True).data
     
 class TicketDetailView(RetrieveAPIView):

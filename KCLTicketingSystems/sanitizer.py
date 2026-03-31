@@ -13,7 +13,8 @@ ALLOWED_TAGS = [
     'br',               
     'div', 'p',         
 ]
-g
+
+
 ALLOWED_ATTRIBUTES = {
     'div': ['data-indent'],
     'p': ['data-indent'],

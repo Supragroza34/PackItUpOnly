@@ -1,21 +1,5 @@
-describe('StaffDashboardPage – edge cases', () => {
-    test('handles empty ticket/user/stats lists', () => {
-        renderWithProviders(<StaffDashboardPage />, { preloadedState: staffState({ user: null }) });
-        // Should render dashboard structure even with no data
-        expect(screen.getByText(/assigned tickets/i)).toBeInTheDocument();
-    });
-    test('handles notification click with missing/closed ticket', () => {
-        renderWithProviders(<StaffDashboardPage />);
-        fireEvent.click(screen.getByText(/notif missing ticket/i));
-        fireEvent.click(screen.getByText(/notif closed ticket/i));
-        fireEvent.click(screen.getByText(/notif open ticket/i));
-        fireEvent.click(screen.getByText(/notif meeting request/i));
-        expect(true).toBe(true); // No crash
-    });
-});
-
 import React from 'react';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, act } from '@testing-library/react';
 import StaffDashboardPage from './StaffDashboardPage';
 import { renderWithProviders } from '../utils/testUtils';
 
@@ -810,4 +794,29 @@ describe('StaffDashboardPage – priority badge colours', () => {
             });
         }
     );
+});
+
+
+describe('StaffDashboardPage – edge cases', () => {
+    beforeEach(() => {
+        mockFetch();
+        sessionStorage.setItem('access', 'test-token');
+        mockNavigate.mockClear();
+    });
+
+    test('handles empty ticket/user/stats lists', () => {
+        renderWithProviders(<StaffDashboardPage />, { preloadedState: staffState({ user: null }) });
+        expect(screen.getByText(/assigned tickets/i)).toBeInTheDocument();
+    });
+
+    test('handles notification click with missing/closed ticket', async () => {
+        renderWithProviders(<StaffDashboardPage />);
+        await act(async () => {
+            fireEvent.click(screen.getByText(/notif missing ticket/i));
+            fireEvent.click(screen.getByText(/notif closed ticket/i));
+            fireEvent.click(screen.getByText(/notif open ticket/i));
+            fireEvent.click(screen.getByText(/notif meeting request/i));
+        });
+        expect(true).toBe(true); // No crash
+    });
 });

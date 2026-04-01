@@ -86,7 +86,7 @@
               npm ci
             else
               npm install
-            fi          
+            fi
 
             cd ..
 
@@ -122,7 +122,7 @@
 
               cd frontend
               npm run test -- --coverage --watchAll=false || true
-            fi       
+            fi
 
             echo "Tests complete"
           '';

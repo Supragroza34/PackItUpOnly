@@ -96,6 +96,14 @@
           run = mkScript "run" ''
             echo "Starting backend and frontend..."
 
+            if [ -f .env ]; then
+              set -a
+              # shellcheck disable=SC1091
+              source .env
+              set +a
+              echo "Loaded .env file!"
+            fi
+
             (
               python manage.py runserver 0.0.0.0:8000
             ) &
